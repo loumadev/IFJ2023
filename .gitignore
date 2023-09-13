@@ -1,0 +1,9 @@
+# Local editor config
+.vscode/
+
+# Build files and binaries
+build/
+bin/
+
+# Dependencies
+#vendor/
