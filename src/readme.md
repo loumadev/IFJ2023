@@ -1,5 +1,8 @@
 # Allocating memory
 
+---
+
+# Importing files
 
 ---
 
@@ -46,7 +49,7 @@ assertf(num == 0, "expected num to be 0, but it is %d", num);
 will print:
 ```
 [ASSERT] expected num to be 0, but it is 1
-	at src/main.c:3
+    at src/main.c:3
 ```
 
 
@@ -63,7 +66,7 @@ Example:
 #include "inspector.h"
 
 int num = 123;
-char *chars = "Char array";
+char *chars = "Test string";
 String *str = String_alloc("Hello world!");
 
 dumpvar(num, chars, str);
