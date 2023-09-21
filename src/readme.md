@@ -1,8 +1,11 @@
 # Allocating memory
 
+
 ---
 
+
 # Importing files
+
 
 ---
 
@@ -75,7 +78,7 @@ will print:
 ```
 from src/main.c:8:
 num = 123
-str2 = "Test string"
+chars = "Test string"
 str = String { "Hello World!" }
 ```
 
