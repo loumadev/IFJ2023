@@ -20,6 +20,9 @@ void Array_resize(Array *array, size_t capacity);
 void Array_reserve(Array *array, size_t capacity);
 void Array_remove(Array *array, int index);
 
+void Array_print_compact(Array *array);
+void Array_print(Array *array, unsigned int depth, int isProperty);
+
 Array* Array_alloc(size_t size);
 void Array_free(Array *array);
 

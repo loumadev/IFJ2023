@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include "internal/String.h"
 #include "internal/Array.h"
+#include "inspector.h"
 
 #ifndef HASHMAP_H
 #define HASHMAP_H
@@ -36,6 +37,7 @@ void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value));
 HashMap* HashMap_alloc();
 void HashMap_free(HashMap *map);
 
+void HashMap_print_compact(HashMap *map);
 void HashMap_print(HashMap *map, unsigned int depth, int isProperty);
 
 #endif

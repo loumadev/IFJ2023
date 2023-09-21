@@ -1,11 +1,12 @@
 #include <stdbool.h>
-#include "compiler/lexer/Token.h"
-#include "overload.h"
+#include "internal/String.h"
+#include "internal/Array.h"
 
 enum Severity {
+	SEVERITY_NONE = 0,
 	SEVERITY_ERROR,
 	SEVERITY_WARNING,
-	SEVERITY_NOTE
+	SEVERITY_INFO
 };
 
 
@@ -39,20 +40,14 @@ enum ResultType {
 
 typedef struct Result {
 	bool success;
-	char *message;
-	Token *token;
 	enum ResultType type;
 	enum Severity severity;
+	String *message;
+	Array /*<Token*>*/ *markers;
+	// More properties added by subclasses
 } Result;
 
-
-void Result_constructor(Result *result, enum ResultType type, char *message, Token *token, enum Severity severity);
+void Result_constructor(Result *result, enum ResultType type, enum Severity severity, String *message);
 void Result_destructor(Result *result);
 
-Result __Result_Create(enum ResultType type, char *message, Token *token, enum Severity severity);
-
-#define Result(...) overload(__Result, __VA_ARGS__)
-#define __Result1(type) __Result_Create(type, 0, 0, SEVERITY_NOTE)
-#define __Result2(type, message) __Result_Create(type, message, 0, SEVERITY_ERROR)
-#define __Result3(type, message, token) __Result_Create(type, message, token, SEVERITY_ERROR)
-#define __Result4(type, message, token, severity) __Result_Create(type, message, token, severity)
+Result Result_addMarkers(Result *result, ...);

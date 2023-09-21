@@ -1,5 +1,6 @@
+#include <stdarg.h>
 #include <string.h>
-#include "utils.h"
+#include "inspector.h"
 #include "internal/String.h"
 #include "allocator/MemoryAllocator.h"
 
@@ -141,6 +142,34 @@ String* String_clone(String *string) {
 }
 
 
+String* String_fromFormat(char *format, ...) {
+	va_list args;
+	va_start(args, format);
+
+	// Allocate memory for the string
+	String *string = String_alloc(NULL);
+	if(!string) return NULL;
+
+	// Resize the string
+	String_resize(string, 128, true);
+
+	// Convert the long to a string
+	int length = vsnprintf(string->value, 127, format, args);
+	if(length < 0) return NULL;
+
+	if((size_t)length >= string->capacity) {
+		String_resize(string, length + 1, true);
+		length = vsnprintf(string->value, length + 1, format, args);
+	}
+
+	va_end(args);
+
+	string->length = length;
+	string->capacity = string->length;
+
+	return string;
+}
+
 String* String_fromSubstring(char *value, size_t start, size_t end) {
 	if(!value) return NULL;
 	if(start > end) return NULL;
@@ -213,27 +242,28 @@ void String_free(String *string) {
 	mem_free(string);
 }
 
+void String_print_compact(String *string) {
+	if(!string) return (void)print_null_nl();
+
+	print_type_head("String", "{");
+	print_string(string->value, NULL);
+	print_type_tail("}");
+}
+
 void String_print(String *string, unsigned int depth, int isProperty) {
 	if(!string) {
-		if(!isProperty) indent(depth);
-		printf("String { NULL }\n");
+		print_null_type("String");
 		return;
 	}
 
-	if(!isProperty) indent(depth);
-	printf("String {\n");
+	print_type_begin("String");
 
-	indent(depth + 1);
-	printf("value: ");
+	print_field("value");
 	if(string->value) print_string(string->value, NULL), putchar('\n');
-	else printf("NULL\n");
+	else print_null_field();
 
-	indent(depth + 1);
-	printf("length: %zu\n", string->length);
+	print_field("length", NUMBER "%zu", string->length);
+	print_field("capacity", NUMBER "%zu", string->capacity);
 
-	indent(depth + 1);
-	printf("capacity: %zu\n", string->capacity);
-
-	indent(depth);
-	printf("}\n");
+	print_type_end();
 }

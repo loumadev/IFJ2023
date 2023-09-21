@@ -1,5 +1,5 @@
 #include "internal/Array.h"
-#include "compiler/lexer/Result.h"
+#include "compiler/lexer/LexerResult.h"
 
 typedef struct Lexer {
 	char *source;
@@ -9,6 +9,7 @@ typedef struct Lexer {
 	int column;
 } Lexer;
 
+
 void Lexer_constructor(Lexer *tokenizer);
 void Lexer_destructor(Lexer *tokenizer);
-Result Lexer_tokenize(Lexer *tokenizer, char *source);
+LexerResult Lexer_tokenize(Lexer *tokenizer, char *source);

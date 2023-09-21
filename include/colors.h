@@ -41,6 +41,7 @@
 #define BLINK "\033[5m"
 
 #define RESET "\033[0m"
+#define RST RESET
 
 /*
 

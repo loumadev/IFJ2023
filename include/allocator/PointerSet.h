@@ -2,13 +2,13 @@
 
 #define ALLOCATOR_SET_SIZE 100
 
-typedef struct Node {
+typedef struct PointerNode {
 	void *ptr;
-	struct Node *next;
-} Node;
+	struct PointerNode *next;
+} PointerNode;
 
 typedef struct PointerSet {
-	Node *nodes[ALLOCATOR_SET_SIZE];
+	PointerNode *nodes[ALLOCATOR_SET_SIZE];
 } PointerSet;
 
 void PointerSet_add(PointerSet *set, void *ptr);

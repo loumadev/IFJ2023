@@ -1,5 +1,6 @@
 #include "internal/Array.h"
 #include "allocator/MemoryAllocator.h"
+#include "inspector.h"
 
 void Array_constructor(Array *array, size_t capacity) {
 	if(!array) return;
@@ -11,6 +12,8 @@ void Array_constructor(Array *array, size_t capacity) {
 
 void Array_destructor(Array *array) {
 	if(!array) return;
+
+	if(array->data) mem_free(array->data);
 
 	array->size = 0;
 	array->data = NULL;
@@ -76,7 +79,15 @@ void Array_resize(Array *array, size_t capacity) {
 	if(!array) return;
 
 	array->capacity = capacity;
-	array->data = mem_realloc(array->data, array->capacity * sizeof(void*));
+
+	if(capacity) {
+		// Non-zero capacity => reallocate the array
+		array->data = mem_realloc(array->data, array->capacity * sizeof(void*));
+	} else {
+		// Zero capacity => free the array and set it to NULL
+		if(array->data) mem_free(array->data);
+		array->data = NULL;
+	}
 }
 
 void Array_reserve(Array *array, size_t capacity) {
@@ -119,4 +130,51 @@ void Array_free(Array *array) {
 
 	Array_destructor(array);
 	mem_free(array);
+}
+
+void Array_print_compact(Array *array) {
+	if(!array) return (void)print_null_nl();
+
+	const size_t size = array->size;
+	const int multiline = size > 4;
+
+	print_type_head("Array", "[");
+	if(multiline) putchar('\n');
+	for(size_t i = 0; i < size; i++) {
+		if(multiline) indent(1);
+		void *value = array->data[i];
+
+		if(!value) print_null();
+		else print_pointer(value);
+		if(i != size - 1) print_separator();
+		if(multiline) putchar('\n');
+
+	}
+	print_type_tail("]");
+}
+
+void Array_print(Array *array, unsigned int depth, int isProperty) {
+	if(!array) {
+		print_null_type("Array");
+		return;
+	}
+
+	print_type_begin("Array");
+
+	print_field("data");
+	print_obj_begin(1);
+	for(size_t i = 0; i < array->size; i++) {
+		void *value = array->data[i];
+
+		print_formatted_field("%zu", i);
+		if(!value) print_null_field();
+		else print_pointer_field(value);
+	}
+	print_obj_end();
+
+	print_field("size", "%zu", array->size);
+
+	print_field("capacity", "%zu", array->capacity);
+
+	print_type_end();
 }

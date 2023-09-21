@@ -1,23 +1,24 @@
-#include "utils.h"
 #include "compiler/lexer/Token.h"
 #include "allocator/MemoryAllocator.h"
+#include "inspector.h"
 
-void Token_constructor(Token *token, enum TokenType type, union TokenValue value, TextRange range) {
+void Token_constructor(Token *token, enum TokenType type, enum TokenKind kind, TextRange range, union TokenValue value) {
 	if(!token) return;
 
 	token->type = type;
-	token->value = value;
+	token->kind = kind;
 	token->range = range;
+	token->value = value;
 }
 
 void Token_destructor(Token *token) {
 	if(!token) return;
 
-	if(token->type == TOKEN_STRING) {
+	if(token->kind == TOKEN_STRING) {
 		String_free(token->value.string);
 		token->value.string = NULL;
-	} else if(token->type & TOKEN_IDENTIFIER) {
-		mem_free(token->value.identifier);
+	} else if(token->type == TOKEN_IDENTIFIER) {
+		String_free(token->value.identifier);
 		token->value.identifier = NULL;
 	}
 
@@ -25,11 +26,11 @@ void Token_destructor(Token *token) {
 	TextRange_destructor(&token->range);
 }
 
-Token* Token_alloc(enum TokenType type, union TokenValue value, TextRange range) {
+Token* Token_alloc(enum TokenType type, enum TokenKind kind, TextRange range, union TokenValue value) {
 	Token *token = mem_alloc(sizeof(Token));
 	if(!token) return NULL;
 
-	Token_constructor(token, type, value, range);
+	Token_constructor(token, type, kind, range, value);
 	return token;
 }
 
@@ -42,28 +43,23 @@ void Token_free(Token *token) {
 
 void Token_print(Token *token, unsigned int depth, int isProperty) {
 	if(!token) {
-		if(!isProperty) indent(depth);
-		printf("Token { NULL }\n");
+		print_null_type("Token");
 		return;
 	}
 
-	if(!isProperty) indent(depth);
-	printf("Token {\n");
+	print_type_begin("Token");
 
-	indent(depth + 1);
-	printf("type: %d\n", token->type);
+	print_field("type", NUMBER "%d", token->type);
 
-	indent(depth + 1);
-	printf("value: ");
-	if(token->type == TOKEN_STRING) String_print(token->value.string, depth + 1, 1);
-	else if(token->type == TOKEN_NUMBER) printf("%f\n", token->value.number);
-	else if(token->type & TOKEN_IDENTIFIER) print_string(token->value.identifier, NULL), putchar('\n');
+	print_field("value");
+	if(token->kind == TOKEN_STRING) String_print(token->value.string, depth, 1);
+	else if(token->type == TOKEN_IDENTIFIER) String_print(token->value.identifier, depth, 1);
+	else if(token->kind == TOKEN_INTEGER) printf(NUMBER "%ld\n", token->value.integer);
+	else if(token->kind == TOKEN_FLOATING) printf(NUMBER "%f\n", token->value.floating);
 	else printf("Unknown\n");
 
-	indent(depth + 1);
-	printf("range: ");
-	TextRange_print(&token->range, depth + 1, 1);
+	print_field("range");
+	TextRange_print(&token->range, depth, 1);
 
-	indent(depth);
-	printf("}\n");
+	print_type_end();
 }

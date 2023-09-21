@@ -2,7 +2,7 @@
 
 #include "internal/HashMap.h"
 #include "allocator/MemoryAllocator.h"
-#include "utils.h"
+#include "inspector.h"
 
 void HashMap_constructor(HashMap *map) {
 	if(!map) return;
@@ -268,52 +268,79 @@ void HashMap_free(HashMap *map) {
 	mem_free(map);
 }
 
-void HashMap_print(HashMap *map, unsigned int depth, int isProperty) {
-	if(!map) {
-		if(!isProperty) indent(depth);
-		printf("HashMap { NULL }\n");
-		return;
-	}
+void HashMap_print_compact(HashMap *map) {
+	if(!map) return (void)print_null_nl();
 
-	if(!isProperty) indent(depth);
-	printf("HashMap {\n");
+	// Need to set these to avoid useless arguments
+	int isProperty = 0;
+	unsigned int depth = 0;
 
-	indent(depth + 1);
-	printf("entries: {\n");
-
-	size_t index = 0;
+	print_type_begin("HashMap");
 
 	for(size_t i = 0; i < map->capacity; i++) {
 		HashMapEntry *entry = map->entries[i];
 		if(!entry) continue;
 
 		while(entry) {
-			indent(depth + 2);
-			printf("%zu: {\n", index++);
-
-			indent(depth + 3);
-			printf("key: ");
-			String_print(entry->key, depth + 3, 1);
-
-			indent(depth + 3);
-			printf("value: ");
-			if(entry->value) printf("<Object at %p>\n", entry->value);
-			else printf("NULL\n");
-
-			indent(depth + 2);
-			if(index == map->size) printf("},\n");
-			else printf("}\n");
+			print_formatted_field("%s", entry->key->value);
+			if(entry->value) print_pointer_field(entry->value);
+			else print_null_field();
 
 			entry = entry->next;
 		}
 	}
 
-	indent(depth + 1);
-	printf("},\n");
+	print_type_end();
+}
 
-	indent(depth + 1);
-	printf("size: %zu,\n", map->size);
 
-	indent(depth + 1);
-	printf("capacity: %zu,\n", map->capacity);
+void HashMap_print(HashMap *map, unsigned int depth, int isProperty) {
+	if(!map) {
+		print_null_type("HashMap");
+		return;
+	}
+
+	print_type_begin("HashMap");
+
+	print_field("entries");
+	print_obj_begin(1);
+
+	#define HASHMAP_PRINT_COMPACT
+
+	size_t index = 0;
+	(void)index;
+
+	for(size_t i = 0; i < map->capacity; i++) {
+		HashMapEntry *entry = map->entries[i];
+		if(!entry) continue;
+
+		while(entry) {
+			#ifdef HASHMAP_PRINT_COMPACT
+			print_formatted_field("%s", entry->key->value);
+			if(entry->value) print_pointer_field(entry->value);
+			else print_null_field();
+			#else
+			print_formatted_field("%zu", index++);
+			print_obj_begin(1);
+
+			print_field("key");
+			String_print(entry->key, depth, 1);
+
+			print_field("value");
+			if(entry->value) print_pointer_field(entry->value);
+			else print_null_field();
+
+			print_obj_end();
+			#endif
+
+			entry = entry->next;
+		}
+	}
+
+	print_obj_end();
+
+	print_field("size", NUMBER "%zu", map->size);
+	print_field("capacity", NUMBER "%zu", map->capacity);
+
+	print_type_end();
 }

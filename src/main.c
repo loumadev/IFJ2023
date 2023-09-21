@@ -3,27 +3,38 @@
 #include <string.h>
 #include "colors.h"
 
+
 #include "allocator/MemoryAllocator.h"
+#include "internal/HashMap.h"
 #include "compiler/lexer/Lexer.h"
+#include "inspector.h"
 
 int main(int argc, const char *argv[]) {
 	(void)argc;
 	(void)argv;
 
-	// String *str = String_alloc("Hello World!");
+	String *str = String_alloc("Hello World!");
 	// String_print(str, 0, 0);
 
-	Lexer tokenizer;
-	Lexer_constructor(&tokenizer);
+	int num = 123;
+	char *str2 = "Test string";
 
-	Result result = Lexer_tokenize(&tokenizer, "  TestIdentifier  Hello World 3.141592 \"My \\\'Test\\\" String\" ");
+	dumpvar(num, str2, str);
+
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	// Result result = Lexer_tokenize(&lexer, "  TestIdentifier  Hello World 3.141592 \"My \\\'Test\\\" String\" ");
+	LexerResult result = Lexer_tokenize(&lexer, "let my_var = \"My \\\'Test\\\" String\";");
 	if(result.success) {
 		printf("Success!\n");
 
-		for(int i = 0; i < (int)tokenizer.tokens->size; i++) {
-			Token *token = tokenizer.tokens->data[i];
+		for(int i = 0; i < (int)lexer.tokens->size; i++) {
+			Token *token = lexer.tokens->data[i];
 
 			Token_print(token, 0, 0);
+
+			// dumpvar(i, token->value.identifier);
 
 			// if(token->type & TOKEN_IDENTIFIER) {
 			// 	printf("Identifier: %s\n", token->value.identifier);
@@ -42,10 +53,12 @@ int main(int argc, const char *argv[]) {
 			// }
 		}
 	} else {
+		// TODO: Add some error handling here
 		printf("Failure!\n");
+		printf(RED "Error: %s\n" RST, result.message->value);
 	}
 
-	Lexer_destructor(&tokenizer);
+	Lexer_destructor(&lexer);
 
 	Allocator_cleanup();
 	return 0;

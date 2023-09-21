@@ -13,7 +13,7 @@ void PointerSet_add(PointerSet *pointerSet, void *ptr) {
 	if(!pointerSet) return;
 
 	uint32_t hash = PointerSet_hash(ptr);
-	Node *node = safe_malloc(sizeof(Node));
+	PointerNode *node = safe_malloc(sizeof(PointerNode));
 
 	node->ptr = ptr;
 	node->next = pointerSet->nodes[hash]; // Prepend
@@ -24,7 +24,7 @@ bool PointerSet_has(PointerSet *pointerSet, void *ptr) {
 	if(!pointerSet) return false;
 
 	uint32_t hash = PointerSet_hash(ptr);
-	Node *node = pointerSet->nodes[hash];
+	PointerNode *node = pointerSet->nodes[hash];
 
 	while(node) {
 		if(node->ptr == ptr) return true;
@@ -38,7 +38,7 @@ void PointerSet_remove(PointerSet *pointerSet, void *ptr) {
 	if(!pointerSet) return;
 
 	uint32_t hash = PointerSet_hash(ptr);
-	Node *node = pointerSet->nodes[hash];
+	PointerNode *node = pointerSet->nodes[hash];
 
 	if(!node) return;
 
@@ -50,7 +50,7 @@ void PointerSet_remove(PointerSet *pointerSet, void *ptr) {
 
 	while(node->next) {
 		if(node->next->ptr == ptr) {
-			Node *next = node->next->next;
+			PointerNode *next = node->next->next;
 			safe_free(node->next);
 			node->next = next;
 			return;
@@ -64,11 +64,11 @@ void PointerSet_clear(PointerSet *pointerSet) {
 	if(!pointerSet) return;
 
 	for(size_t i = 0; i < ALLOCATOR_SET_SIZE; i++) {
-		Node *node = pointerSet->nodes[i];
+		PointerNode *node = pointerSet->nodes[i];
 		if(!node) continue;
 
 		while(node) {
-			Node *next = node->next;
+			PointerNode *next = node->next;
 			safe_free(node->ptr);
 			safe_free(node);
 			node = next;
