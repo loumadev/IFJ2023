@@ -8,6 +8,7 @@
 #include "internal/HashMap.h"
 #include "compiler/lexer/Lexer.h"
 #include "inspector.h"
+#include "assertf.h"
 
 int main(int argc, const char *argv[]) {
 	(void)argc;
@@ -24,8 +25,41 @@ int main(int argc, const char *argv[]) {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
 
+	assertf(num == 0, "num is not 0");
+
 	// Result result = Lexer_tokenize(&lexer, "  TestIdentifier  Hello World 3.141592 \"My \\\'Test\\\" String\" ");
-	LexerResult result = Lexer_tokenize(&lexer, "let my_var = \"My \\\'Test\\\" String\";");
+	// LexerResult result = Lexer_tokenize(&lexer, "let my_var = \"My \\\'Test\\\" String\";");
+
+	// TODO: Add tests
+	// LexerResult result = Lexer_tokenize(&lexer, "\"\"");
+	// LexerResult result = Lexer_tokenize(&lexer, "\"t\"");
+	// LexerResult result = Lexer_tokenize(&lexer, "\"test\"");
+	// LexerResult result = Lexer_tokenize(&lexer, "\"some 'quoted' text\"");
+	// LexerResult result = Lexer_tokenize(&lexer, "\"some \\\"quoted\\\" text\"");
+
+	// LexerResult result = Lexer_tokenize(&lexer, "test");
+	// LexerResult result = Lexer_tokenize(&lexer, "test ");
+	// LexerResult result = Lexer_tokenize(&lexer, "t");
+	// LexerResult result = Lexer_tokenize(&lexer, "t ");
+	// LexerResult result = Lexer_tokenize(&lexer, "t3_st");
+	// LexerResult result = Lexer_tokenize(&lexer, "_test");
+	// LexerResult result = Lexer_tokenize(&lexer, "3t");   // OK?
+	// LexerResult result = Lexer_tokenize(&lexer, "3test");   // OK?
+
+	LexerResult result = Lexer_tokenize(&lexer, "7");
+	// LexerResult result = Lexer_tokenize(&lexer, "7 ");
+	// LexerResult result = Lexer_tokenize(&lexer, "7 a");
+	// LexerResult result = Lexer_tokenize(&lexer, "256");
+	// LexerResult result = Lexer_tokenize(&lexer, "3.14159265359");
+	// LexerResult result = Lexer_tokenize(&lexer, "0.5");
+	// LexerResult result = Lexer_tokenize(&lexer, ".5");   // Error
+	// LexerResult result = Lexer_tokenize(&lexer, "0b");   // Error
+	// LexerResult result = Lexer_tokenize(&lexer, "0bA");   // Error
+	// LexerResult result = Lexer_tokenize(&lexer, "0b1");
+	// LexerResult result = Lexer_tokenize(&lexer, "0b10");
+	// LexerResult result = Lexer_tokenize(&lexer, "0o123");
+	// LexerResult result = Lexer_tokenize(&lexer, "0x1aB");
+
 	if(result.success) {
 		printf("Success!\n");
 

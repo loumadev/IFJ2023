@@ -73,7 +73,8 @@ void _print_TextRange(TextRange *var);
 #define __dumpvar6(var1, var2, var3, var4, var5, var6) do {__dumpvar5(var1, var2, var3, var4, var5); __dumpvar1(var6);} while(0)
 #define __dumpvar7(var1, var2, var3, var4, var5, var6, var7) do {__dumpvar6(var1, var2, var3, var4, var5, var6); __dumpvar1(var7);} while(0)
 #define __dumpvar8(var1, var2, var3, var4, var5, var6, var7, var8) do {__dumpvar7(var1, var2, var3, var4, var5, var6, var7); __dumpvar1(var8);} while(0)
-// #define println(format, ...) // format can be format or any variable
+
+#define println(format, ...) printf(format ENDL, ## __VA_ARGS__)
 
 #define print_separator() printf(PUNCT ", " RST)
 #define print_type(name) printf(TYPE name RST)
@@ -112,6 +113,7 @@ void _print_TextRange(TextRange *var);
 #define __print_field7(name, format, ...) __print_field3(name, format, ## __VA_ARGS__)
 #define __print_field8(name, format, ...) __print_field3(name, format, ## __VA_ARGS__)
 
+char* format_char(char ch);
 void print_string(char *str, char *end);
 
 #endif

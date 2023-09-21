@@ -3,6 +3,7 @@
 
 typedef struct Lexer {
 	char *source;
+	size_t sourceLength;
 	char *currentChar;
 	Array *tokens;
 	int line;

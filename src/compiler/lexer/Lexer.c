@@ -4,6 +4,7 @@
 #include "compiler/lexer/Lexer.h"
 #include "internal/String.h"
 #include "internal/Array.h"
+#include "inspector.h"
 #include "assertf.h"
 
 char __Lexer_resolveEscapedChar(char ch);
@@ -20,6 +21,7 @@ void Lexer_constructor(Lexer *tokenizer) {
 	if(!tokenizer) return;
 
 	tokenizer->source = NULL;
+	tokenizer->sourceLength = 0;
 	tokenizer->tokens = Array_alloc(2);
 	tokenizer->currentChar = '\0';
 	tokenizer->line = 1;
@@ -39,6 +41,7 @@ void Lexer_destructor(Lexer *tokenizer) {
 	}
 
 	tokenizer->source = NULL;
+	tokenizer->sourceLength = 0;
 	tokenizer->currentChar = '\0';
 	tokenizer->line = 0;
 	tokenizer->column = 0;
@@ -46,6 +49,8 @@ void Lexer_destructor(Lexer *tokenizer) {
 
 char Lexer_peek(Lexer *tokenizer, size_t offset) {
 	if(!tokenizer) return '\0';
+	if(!tokenizer->currentChar) return '\0';
+	if(tokenizer->currentChar + offset >= tokenizer->source + tokenizer->sourceLength) return '\0';
 
 	return *(tokenizer->currentChar + offset);
 }
@@ -54,10 +59,11 @@ size_t Lexer_compare(Lexer *tokenizer, char *str) {
 	if(!tokenizer) return 0;
 	if(!str) return 0;
 
-	char *ptr = strstr(tokenizer->currentChar, str);
-	if(!ptr) return 0;
+	size_t length = strlen(str);
 
-	return ptr - tokenizer->currentChar;
+	if(strncmp(tokenizer->currentChar, str, length) != 0) return 0;
+
+	return length;
 }
 
 size_t Lexer_match(Lexer *tokenizer, char *str) {
@@ -73,10 +79,11 @@ size_t Lexer_match(Lexer *tokenizer, char *str) {
 
 char Lexer_advance(Lexer *tokenizer) {
 	if(!tokenizer) return '\0';
+	if(!tokenizer->currentChar) return '\0';
 
-	char ch = *tokenizer->currentChar++;
+	char ch = *++tokenizer->currentChar;
 	// Prevent from advancing past the end of the string
-	if(ch == '\0') tokenizer->currentChar--;
+	// if(ch == '\0') tokenizer->currentChar--;
 
 	return ch;
 }
@@ -85,7 +92,7 @@ char Lexer_advance(Lexer *tokenizer) {
 #define is_binary_digit(ch) ((ch) == '0' || (ch) == '1')
 #define is_octal_digit(ch) ((ch) >= '0' && (ch) <= '7')
 #define is_decimal_digit(ch) ((ch) >= '0' && (ch) <= '9')
-#define is_hexadecimal_digit(ch) (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'a' && (ch) <= 'f'))
+#define is_hexadecimal_digit(ch) (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'a' && (ch) <= 'f') || ((ch) >= 'A' && (ch) <= 'F'))
 #define is_base_digit(ch, base) (base == 2 ? is_binary_digit(ch) : base == 8 ? is_octal_digit(ch) : base == 16 ? is_hexadecimal_digit(ch) : is_decimal_digit(ch))
 #define is_identifier_start(ch) ((ch) == '_' || ((ch) >= 'a' && (ch) <= 'z') || ((ch) >= 'A' && (ch) <= 'Z'))
 #define is_identifier_part(ch) (is_identifier_start(ch) || is_decimal_digit(ch))
@@ -97,6 +104,7 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 	tokenizer->line = 1;
 	tokenizer->column = 1;
 	tokenizer->source = source;
+	tokenizer->sourceLength = strlen(source);
 	tokenizer->currentChar = tokenizer->source;
 
 	char ch;
@@ -135,11 +143,15 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		else if(ch == '"' || ch == '\'') {
 			LexerResult result = __Lexer_tokenizeString(tokenizer);
 			if(!result.success) return result;
+
+			continue;
 		}
 		// Match identifiers
 		else if(is_identifier_start(ch)) {
 			LexerResult result = __Lexer_tokenizeIdentifier(tokenizer);
 			if(!result.success) return result;
+
+			continue;
 		}
 		// Match numbers
 		else if(
@@ -148,11 +160,13 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		) {
 			LexerResult result = __Lexer_tokenizeNumberLiteral(tokenizer);
 			if(!result.success) return result;
+
+			continue;
 		}
 		// Invalid character
 		else {
 			return LexerError(
-				String_fromFormat("unexpected token '%c'", ch),
+				String_fromFormat("unexpected token '%s'", format_char(ch)),
 				Token_alloc(
 					TOKEN_MARKER,
 					TOKEN_CARET,
@@ -203,25 +217,20 @@ char __Lexer_resolveEscapedChar(char ch) {
 	}
 }
 
+// TODO: Implement string parsing from specifiaction
 LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
 	char *start = tokenizer->currentChar;
 	char ch = *tokenizer->currentChar;
 
-	assertf(ch == '"' || ch == '\'', "Unexpected character '%c' (expected '\"' or \"'\" at the source stream head)", ch);
+	assertf(ch == '"' || ch == '\'', "Unexpected character '%s' (expected '\"' or \"'\" at the source stream head)", format_char(ch));
 
-	// (
-	// 	!(ch == '"' || ch == '\'') && ((*__errno_location ()) ?
-	// 	fprintf(stderr, "\033[91m" "[ASSERT] " "Unexpected character '%c' (expected '\"' or \"'\" at the source stream head)" ": %s\n  at%s:%d\n" "\033[0m", strerror((*__errno_location ())),ch, "/mnt/data0/win/desktop/Projekty/Projekty/Templates/FIT/IFJ/projects/01/src/compiler/lexer/Lexer.c", 205) :
-	// 	fprintf(stderr, "\033[91m" "[ASSERT] " "Unexpected character '%c' (expected '\"' or \"'\" at the source stream head)" "\n    at %s:%d\n" "\033[0m",ch, "/mnt/data0/win/desktop/Projekty/Projekty/Templates/FIT/IFJ/projects/01/src/compiler/lexer/Lexer.c", 205), abort(), 0)
-	// );
-
-	Lexer_advance(tokenizer); // Consume the opening quote
+	char quote = ch;
 	ch = Lexer_advance(tokenizer); // Consume the first character
 
-	String *string = String_alloc(NULL);
+	String *string = String_alloc("");
 
 	// Match string
-	while(ch != '"' && ch != '\'') {
+	while(ch != quote) {
 		// Handle unterminated string literals
 		if(ch == '\0') return LexerError(
 				String_fromFormat("unterminated string literal"),
@@ -238,6 +247,8 @@ LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
 				)
 		);
 
+		// This consumes two characters, so in case of `\<quote>`, both backslash
+		// and the quote are consumed and therefore the loop will not terminate
 		if(ch == '\\') {
 			char escaped = Lexer_advance(tokenizer);
 			// TODO: Add support for unicode and hex escapes according to the language specification
@@ -248,7 +259,10 @@ LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
 
 		ch = Lexer_advance(tokenizer);
 	}
-	tokenizer->currentChar--;
+	// if(ch) tokenizer->currentChar--;
+
+	// Consume the closing quote
+	Lexer_advance(tokenizer);
 
 	// Create a TextRange view
 	TextRange range;
@@ -264,16 +278,16 @@ LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
 }
 
 LexerResult __Lexer_tokenizeIdentifier(Lexer *tokenizer) {
+	char *start = tokenizer->currentChar;
 	char ch = *tokenizer->currentChar;
 
-	assertf(is_identifier_start(ch), "Unexpected character '%c' (expected identifier start at the source stream head)", ch);
+	assertf(is_identifier_start(ch), "Unexpected character '%s' (expected identifier start at the source stream head)", format_char(ch));
 
 	// Match identifier
-	char *start = tokenizer->currentChar;
 	while(is_identifier_part(ch)) {
 		ch = Lexer_advance(tokenizer);
 	}
-	tokenizer->currentChar--;
+	// if(ch) tokenizer->currentChar--; //?
 
 	// Create a TextRange view
 	TextRange range;
@@ -329,19 +343,19 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 		base == 8 ? "0o" :
 			base == 16 ? "0x" :
 				NULL;
+
 	assertf(prefix != NULL, "Invalid base '%d'; Allowed bases are 2, 8 and 16", base);
+
+	char *start = tokenizer->currentChar;
 
 	// Check and consume the prefix
 	assertf(Lexer_match(tokenizer, prefix) != 0, "Expected '%s' at the source stream head", prefix);
 
-	char *start = tokenizer->currentChar;
-	char ch = *start;
-
+	char ch = *tokenizer->currentChar;
 	if(!is_base_digit(ch, base)) return LexerError(
 			String_fromFormat(
-				"'%c' is not a valid %s in integer literal", ch,
-				base ==
-				2 ? "binary digit (0 or 1)" :
+				"'%s' is not a valid %s in integer literal", format_char(ch),
+				base == 2 ? "binary digit (0 or 1)" :
 					base == 8 ? "octal digit (0-7)" :
 						base == 16 ? "hexadecimal digit (0-9, a-f)" : "digit"
 			),
@@ -362,6 +376,7 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 	while(is_base_digit(*tokenizer->currentChar, base) || ch == '_') {
 		ch = Lexer_advance(tokenizer);
 	}
+	// if(ch) tokenizer->currentChar--; //?
 
 	// Create a TextRange view
 	TextRange range;
@@ -372,7 +387,7 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 	assertf(numberStr != NULL);
 
 	// Parse the number and free the string
-	long number = strtol(numberStr->value, NULL, 2);
+	long number = strtol(numberStr->value + 2, NULL, base);
 	String_free(numberStr);
 
 	// Create a token
@@ -397,14 +412,14 @@ LexerResult __Lexer_tokenizeHexadecimalLiteral(Lexer *tokenizer) {
 }
 
 LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
+	char *start = tokenizer->currentChar;
 	char ch = *tokenizer->currentChar;
 
-	assertf(is_decimal_digit(ch), "Unexpected character '%c' (expected decimal digit at the source stream head)", ch);
+	assertf(is_decimal_digit(ch) || ch == '.', "Unexpected character '%s' (expected decimal digit at the source stream head)", format_char(ch));
 
 	// Match number
 	// TODO: Add support for other bases, exponents and checks like '.5' and '075' according to the language specification; Update: none of these are supported
 	// Leading zeros are allowed
-	char *start = tokenizer->currentChar;
 	bool hasDot = false;
 	// TODO: Test "10.test()"
 	// TODO: Add handling for leading dot
@@ -426,7 +441,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 
 		ch = Lexer_advance(tokenizer);
 	}
-	tokenizer->currentChar--;
+	// if(ch) tokenizer->currentChar--;
 
 	// Create a TextRange view
 	TextRange range;

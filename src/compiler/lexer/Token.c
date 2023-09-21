@@ -50,13 +50,15 @@ void Token_print(Token *token, unsigned int depth, int isProperty) {
 	print_type_begin("Token");
 
 	print_field("type", NUMBER "%d", token->type);
+	print_field("kind", NUMBER "%d", token->kind);
 
 	print_field("value");
-	if(token->kind == TOKEN_STRING) String_print(token->value.string, depth, 1);
+	if(token->type == TOKEN_EOF) println(POINTER "EOF");
 	else if(token->type == TOKEN_IDENTIFIER) String_print(token->value.identifier, depth, 1);
-	else if(token->kind == TOKEN_INTEGER) printf(NUMBER "%ld\n", token->value.integer);
-	else if(token->kind == TOKEN_FLOATING) printf(NUMBER "%f\n", token->value.floating);
-	else printf("Unknown\n");
+	else if(token->kind == TOKEN_STRING) String_print(token->value.string, depth, 1);
+	else if(token->kind == TOKEN_INTEGER) println(NUMBER "%ld", token->value.integer);
+	else if(token->kind == TOKEN_FLOATING) println(NUMBER "%lf", token->value.floating);
+	else println(GREY "Unknown");
 
 	print_field("range");
 	TextRange_print(&token->range, depth, 1);
