@@ -1,4 +1,56 @@
-# Allocating memory
+# Memory management
+
+The project contains a custom memory allocator with "garbage collection". That means that you don't have to free memory manually, but you can do it if you want to.
+
+**!!!** Please avoid using default `malloc` and `free` functions, because they don't work with the custom allocator. Custom allocator can be explicitly set to use default memory allocator, but it's not recommended.
+
+To use custom memory allocator, please include `allocator/MemoryAllocator.c` to your project file.
+
+All memory functions are safe, thus they never return `NULL` and handle the errors internally, so you don't have to worry about it.
+
+**Note:** To force use default memory allocator, use `safe_malloc`, `safe_calloc`, `safe_realloc` and `safe_free` functions. Be aware that memory allocated by these functions has to be freed manually and causes memory leaks if not freed properly! (This is usually not needed by the end user; it is mainly used internally, but the API is exposed.)
+
+## void* mem_alloc(size_t size)
+
+Similar to `malloc`, but it never returns `NULL`. Memory allocated by this function is automatically freed when the program ends.
+
+```c
+char *str = mem_alloc(sizeof(char) * 10);
+...
+mem_free(str); // free memory explicitly
+```
+
+## void* mem_calloc(size_t num, size_t size)
+
+Similar to `calloc`, but it never returns `NULL`. Memory allocated by this function is automatically freed when the program ends.
+
+```c
+char *str = mem_calloc(10, sizeof(char));
+...
+mem_free(str); // free memory explicitly
+```
+
+## void* mem_realloc(void *ptr, size_t size)
+
+Similar to `realloc`, but it never returns `NULL`. Memory allocated by this function is automatically freed when the program ends.
+
+```c
+char *str = mem_alloc(sizeof(char) * 10);
+...
+str = mem_realloc(str, sizeof(char) * 20);
+...
+mem_free(str); // free memory explicitly
+```
+
+## void mem_free(void *ptr)
+
+Explicitly frees memory allocated by `mem_alloc`, `mem_calloc` or `mem_realloc` functions.
+
+```c
+char *str = mem_alloc(sizeof(char) * 10);
+...
+mem_free(str); // free memory explicitly
+```
 
 
 ---
