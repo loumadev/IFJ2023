@@ -390,6 +390,9 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 	String *numberStr = TextRange_toString(&range);
 	assertf(numberStr != NULL);
 
+	// Remove underscores
+	String_replaceAll(numberStr, "_", "");
+
 	// Parse the number and free the string
 	long number = strtol(numberStr->value + 2, NULL, base);
 	String_free(numberStr);
@@ -436,7 +439,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 	// 10.5.0			=> [10.5, ., 0] 				=> [10.5, ., ParserError(expected named member of <...>)]
 	// 10.5.0.field		=> [10.5, ., 0, ., "field"]	 	=> [10.5, ., ParseError(expected named member of <...>)]
 	// 10.5field		=> [10.5, "field"] 				=> [10.5, ParseError(consecutive statements on a line must be separated by ';')]
-	while(is_decimal_digit(ch) || ch == '.') {
+	while(is_decimal_digit(ch) || ch == '.' || ch == '_') {
 		if(ch == '.') {
 			// if(hasDot) return Result(RESULT_ERROR_STATIC_LEXICAL_ANALYSIS, "Unexpected character '.' in number");
 			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
@@ -475,6 +478,9 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 			)
 		);
 	}
+
+	// Remove underscores
+	String_replaceAll(numberStr, "_", "");
 
 	// Create a token
 	Token *token = hasDot ?
