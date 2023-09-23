@@ -499,11 +499,10 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 // 	TextRange range;
 // 	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
 
-// 	// Create a token
-// 	Token *token = Token_alloc(type, (union TokenValue){.number = 0}, range);
-// 	if(!token) return Result(RESULT_ERROR_INTERNAL);
+void Lexer_printTokens(Lexer *tokenizer) {
+	if(!tokenizer) return;
 
-// 	// Add the token to the array
-// 	Array_push(tokenizer->tokens, token);
-// 	return LexerSuccess();
-// }
+	for(size_t i = 0; i < tokenizer->tokens->size; i++) {
+		Token_print((Token*)Array_get(tokenizer->tokens, i), 0, false);
+	}
+}

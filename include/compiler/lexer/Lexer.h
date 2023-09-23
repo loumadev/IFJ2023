@@ -14,3 +14,5 @@ typedef struct Lexer {
 void Lexer_constructor(Lexer *tokenizer);
 void Lexer_destructor(Lexer *tokenizer);
 LexerResult Lexer_tokenize(Lexer *tokenizer, char *source);
+
+void Lexer_printTokens(Lexer *tokenizer);
