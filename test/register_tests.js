@@ -43,17 +43,17 @@ const MAIN_FILENAME = "test_main.c";
 ${files.map(file => `// Functions from file "${file.relative}"\n${file.functions.map(func => `void ${func.name}();`).join("\n")}\n`).join("\n")}
 
 int main(int argc, char** argv) {
-	TEST_BEGIN();
+	UNIT_BEGIN();
 
-	TEST_SILENT(argc > 1 && strcmp(argv[1], "silent") == 0);
+	UNIT_SILENT(argc > 1 && strcmp(argv[1], "silent") == 0);
 
-	${files.map(file => `TEST_REGISTER_FILE("${file.base}");\n\t${file.functions.map(func => `TEST_REGISTER_SUIT(${func.name}, "${file.relative}", "${func.line}");`).join("\n\t")}\n`).join("\n\t")}
+	${files.map(file => `UNIT_REGISTER_FILE("${file.base}");\n\t${file.functions.map(func => `UNIT_REGISTER_SUIT(${func.name}, "${file.relative}", "${func.line}");`).join("\n\t")}\n`).join("\n\t")}
 
-	TEST_END();
+	UNIT_END();
 
 	Allocator_cleanup();
 
-	return TEST_RESULT();
+	return UNIT_RESULT();
 }`);
 })();
 
