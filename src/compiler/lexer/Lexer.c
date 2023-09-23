@@ -89,6 +89,13 @@ char Lexer_advance(Lexer *tokenizer) {
 	return ch;
 }
 
+bool Lexer_isAtEnd(Lexer *tokenizer) {
+	if(!tokenizer) return true;
+	if(!tokenizer->currentChar) return true;
+
+	return tokenizer->currentChar >= tokenizer->source + tokenizer->sourceLength;
+}
+
 
 #define is_binary_digit(ch) ((ch) == '0' || (ch) == '1')
 #define is_octal_digit(ch) ((ch) >= '0' && (ch) <= '7')
@@ -130,7 +137,7 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		}
 		// Skip single-line comments
 		else if(Lexer_match(tokenizer, "//")) {
-			while(!Lexer_match(tokenizer, "\n")) {
+			while(!Lexer_isAtEnd(tokenizer) && !Lexer_match(tokenizer, "\n")) {
 				Lexer_advance(tokenizer);
 			}
 
@@ -138,7 +145,7 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		}
 		// Skip multi-line comments
 		else if(Lexer_match(tokenizer, "/*")) {
-			while(!Lexer_match(tokenizer, "*/")) {
+			while(!Lexer_isAtEnd(tokenizer) && !Lexer_match(tokenizer, "*/")) {
 				Lexer_advance(tokenizer);
 			}
 
@@ -588,6 +595,11 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *tokenizer) {
 
 void Lexer_printTokens(Lexer *tokenizer) {
 	if(!tokenizer) return;
+
+	if(!tokenizer->tokens->size) {
+		printf("No tokens to print\n");
+		return;
+	}
 
 	for(size_t i = 0; i < tokenizer->tokens->size; i++) {
 		Token_print((Token*)Array_get(tokenizer->tokens, i), 0, false);
