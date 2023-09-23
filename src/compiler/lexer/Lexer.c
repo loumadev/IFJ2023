@@ -16,6 +16,7 @@ LexerResult __Lexer_tokenizeBinaryLiteral(Lexer *tokenizer);
 LexerResult __Lexer_tokenizeOctalLiteral(Lexer *tokenizer);
 LexerResult __Lexer_tokenizeHexadecimalLiteral(Lexer *tokenizer);
 LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer);
+LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *tokenizer);
 
 void Lexer_constructor(Lexer *tokenizer) {
 	if(!tokenizer) return;
@@ -167,8 +168,13 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 
 			continue;
 		}
-		// Invalid character
+		// Something other
 		else {
+			// Try to match punctuators and operators
+			LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(tokenizer);
+			if(result.success) continue;
+
+			// Invalid character
 			return LexerError(
 				String_fromFormat("unexpected token '%s'", format_char(ch)),
 				Token_alloc(
@@ -512,17 +518,73 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 }
 
 
-// LexerResult __Lexer_tokenizeSymbols(Lexer *tokenizer) {
-// 	char *start = tokenizer->currentChar;
-// 	char ch = *start;
+LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *tokenizer) {
+	char *start = tokenizer->currentChar;
 
-// 	TokenType type = TOKEN_UNKNOWN;
+	enum TokenType type = TOKEN_INVALID;
+	enum TokenKind kind = TOKEN_DEFAULT;
 
-// 	if(Lexer_match(tokenizer, "//")) type = 10;
+	#define match_as(str, _type, _kind) if(Lexer_match(tokenizer, str)) type = _type, kind = _kind
 
-// 	// Create a TextRange view
-// 	TextRange range;
-// 	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+	// Swift operators (sorted by length)
+	match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
+	else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
+	else match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
+	else match_as("..<", TOKEN_OPERATOR, TOKEN_HALF_OPEN_RANGE);
+	else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
+	else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
+	else match_as("&&", TOKEN_OPERATOR, TOKEN_LOG_AND);
+	else match_as("||", TOKEN_OPERATOR, TOKEN_LOG_OR);
+	else match_as("??", TOKEN_OPERATOR, TOKEN_NULL_COALESCING);
+	else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
+	else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
+	else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
+	else match_as("/=", TOKEN_OPERATOR, TOKEN_DIV_ASSIGN);
+	else match_as("%%=", TOKEN_OPERATOR, TOKEN_MOD_ASSIGN);
+	else match_as("&=", TOKEN_OPERATOR, TOKEN_BIT_AND_ASSIGN);
+	else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
+	else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
+	else match_as("->", TOKEN_PUNCTUATOR, TOKEN_ARROW);
+	else match_as("+", TOKEN_OPERATOR, TOKEN_PLUS);
+	else match_as("-", TOKEN_OPERATOR, TOKEN_MINUS);
+	else match_as("*", TOKEN_OPERATOR, TOKEN_STAR);
+	else match_as("/", TOKEN_OPERATOR, TOKEN_SLASH);
+	else match_as("%%", TOKEN_OPERATOR, TOKEN_PERCENT);
+	else match_as("&", TOKEN_OPERATOR, TOKEN_AMPERSAND);
+	else match_as("|", TOKEN_OPERATOR, TOKEN_PIPE);
+	else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
+	else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
+
+	else match_as("{", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACE);
+	else match_as("}", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACE);
+	else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
+	else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
+	else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
+	else match_as(",", TOKEN_PUNCTUATOR, TOKEN_COMMA);
+	else match_as(":", TOKEN_PUNCTUATOR, TOKEN_COLON);
+	else match_as(";", TOKEN_PUNCTUATOR, TOKEN_SEMICOLON);
+	else match_as("=", TOKEN_PUNCTUATOR, TOKEN_EQUAL);
+	else match_as("@", TOKEN_PUNCTUATOR, TOKEN_AT);
+	else match_as("#", TOKEN_PUNCTUATOR, TOKEN_HASH);
+	else match_as("&", TOKEN_PUNCTUATOR, TOKEN_AMPERSAND);
+	else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
+	else match_as("?", TOKEN_PUNCTUATOR, TOKEN_QUESTION);
+	else match_as("!", TOKEN_PUNCTUATOR, TOKEN_EXCLAMATION);
+
+	#undef match_as
+
+	// Create a TextRange view
+	TextRange range;
+	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+
+	// Create a token
+	Token *token = Token_alloc(type, kind, range, (union TokenValue){0});
+
+	// Add the token to the array
+	Array_push(tokenizer->tokens, token);
+	return LexerSuccess();
+}
+
 
 void Lexer_printTokens(Lexer *tokenizer) {
 	if(!tokenizer) return;
