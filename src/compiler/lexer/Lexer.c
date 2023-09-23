@@ -441,8 +441,23 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 	// 10.5field		=> [10.5, "field"] 				=> [10.5, ParseError(consecutive statements on a line must be separated by ';')]
 	while(is_decimal_digit(ch) || ch == '.' || ch == '_') {
 		if(ch == '.') {
-			// if(hasDot) return Result(RESULT_ERROR_STATIC_LEXICAL_ANALYSIS, "Unexpected character '.' in number");
 			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
+			if(is_identifier_start(Lexer_peek(tokenizer, 1))) break;     // Accessor (ex. 10.toFixed())
+			if(!is_decimal_digit(Lexer_peek(tokenizer, 1))) return LexerError(
+					String_fromFormat("expected member name following '.'"),
+					Token_alloc(
+						TOKEN_MARKER,
+						TOKEN_CARET,
+						TextRange_construct(
+							tokenizer->currentChar,
+							tokenizer->currentChar + 1,
+							tokenizer->line,
+							tokenizer->column
+						),
+						(union TokenValue){0}
+					)
+			);
+
 			hasDot = true;
 		}
 
