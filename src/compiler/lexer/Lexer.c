@@ -101,6 +101,10 @@ char Lexer_advance(Lexer *tokenizer) {
 LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 	assertf(tokenizer != NULL);
 
+	// Reset the lexer
+	Lexer_destructor(tokenizer);
+	Lexer_constructor(tokenizer);
+
 	tokenizer->line = 1;
 	tokenizer->column = 1;
 	tokenizer->source = source;
