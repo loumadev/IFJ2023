@@ -16,6 +16,7 @@ void String_setSize(String *string, size_t capacity);
 void String_set(String *string, char *value);
 void String_append(String *string, char *value);
 void String_appendChar(String *string, char value);
+void String_replaceAll(String *string, char *value, char *replacement);
 bool String_equals(String *string, char *value);
 bool String_startsWith(String *string, char *value);
 bool String_endsWith(String *string, char *value);

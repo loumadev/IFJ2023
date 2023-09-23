@@ -85,6 +85,24 @@ void String_appendChar(String *string, char value) {
 	string->value[string->length] = '\0';
 }
 
+void String_replaceAll(String *string, char *value, char *replacement) {
+	if(!string) return;
+	if(!value) return;
+	if(!replacement) return;
+
+	size_t valueLength = strlen(value);
+	size_t replacementLength = strlen(replacement);
+
+	if(!string->value) return;
+
+	// Replace all occurrences
+	long index = 0;
+	while((index = String_indexOf(string, value)) != -1) {
+		String_splice(string, index, index + valueLength, replacement);
+		index += replacementLength;
+	}
+}
+
 bool String_equals(String *string, char *value) {
 	if(!string) return false;
 	if(!value) return false;
@@ -133,6 +151,47 @@ void String_copy(String *string, char *dest, size_t length) {
 	// Copy the string
 	dest[0] = '\0';
 	strncat(dest, string->value, length);
+}
+
+void String_splice(String *string, size_t start, size_t end, char *replacement) {
+	if(!string) return;
+	if(!replacement) return;
+	if(!string->value) return;
+
+	size_t length = strlen(replacement);
+	size_t newLength = string->length + length - (end - start);
+
+	// Resize the string
+	String_resize(string, newLength + 1, false);
+	if(!string->value) return;
+
+	// Move the string
+	memmove(string->value + start + length, string->value + end, string->length - end);
+	memcpy(string->value + start, replacement, length);
+	string->length = newLength;
+	string->value[string->length] = '\0';
+}
+
+String* String_slice(String *string, size_t start, size_t end) {
+	if(!string) return NULL;
+	if(start > end) return NULL;
+
+	size_t length = end - start;
+
+	// Allocate memory for the string
+	String *newString = String_alloc(NULL);
+	if(!newString) return NULL;
+
+	// Copy the substring
+	String_resize(newString, length + 1, true);
+	newString->value[0] = '\0';
+	strncat(newString->value, string->value + start, length);
+
+	newString->value[length] = '\0';
+	newString->length = length;
+	newString->capacity = newString->length;
+
+	return newString;
 }
 
 String* String_clone(String *string) {
