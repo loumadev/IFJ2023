@@ -210,6 +210,34 @@ void numbers_tokenization() {
 		EXPECT_FALSE(result.success);
 	})
 
+	TEST("Invalid digits in integer literal", {
+		result = Lexer_tokenize(&lexer, "1y");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10y");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10y6");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Invalid digits in float literal", {
+		result = Lexer_tokenize(&lexer, "1.0y");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "1y.0");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10.20y");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10y.20");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10y.20y6");
+		EXPECT_FALSE(result.success);
+	})
+
 
 	TEST("Invalid digits in based integer literal", {
 		result = Lexer_tokenize(&lexer, "0b");
@@ -298,6 +326,24 @@ void numbers_tokenization() {
 
 
 		result = Lexer_tokenize(&lexer, "0.1_");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_FLOAT(token->value.floating, 0.1);
+
+
+		result = Lexer_tokenize(&lexer, "0_.1");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_FLOAT(token->value.floating, 0.1);
+
+
+		result = Lexer_tokenize(&lexer, "0_.1_");
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
 
@@ -491,6 +537,22 @@ void numbers_tokenization() {
 		token = (Token*)Array_get(lexer.tokens, 0);
 		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
 		EXPECT_EQUAL_INT(token->value.floating, 0.5);
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->kind == TOKEN_DOT);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "_"));
+
+		//
+		result = Lexer_tokenize(&lexer, "1_.2_._");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_FLOAT(token->value.floating, 1.2);
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->kind == TOKEN_DOT);
