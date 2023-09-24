@@ -2,6 +2,137 @@
 #include "unit.h"
 #include <stdio.h>
 
+void comment_stripping() {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	// Token *token;
+
+	TEST_BEGIN("Single line comment") {
+		result = Lexer_tokenize(&lexer, "A // comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		result = Lexer_tokenize(&lexer, "A // comment\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		result = Lexer_tokenize(&lexer, "A // comment\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A // comment\nB // comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A // comment\n// comment\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A //\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A //\n//\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+	} TEST_END();
+
+
+	TEST_BEGIN("Multiline comment") {
+		result = Lexer_tokenize(&lexer, "A /* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		result = Lexer_tokenize(&lexer, "A /* comment */\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		result = Lexer_tokenize(&lexer, "A /* comment */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A /* comment */\nB /* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A /* comment */\n/* comment */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A/**/B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A/* */B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A/*\n*/B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A\n/*\nX\n*/\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+	} TEST_END();
+
+
+	TEST_BEGIN("Nested multiline comment") {
+		result = Lexer_tokenize(&lexer, "A /* comment /* nested1 */ */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		result = Lexer_tokenize(&lexer, "A /* comment /* nested1 */ */\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		result = Lexer_tokenize(&lexer, "A /* comment /* nested1 */ */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\n /* nested1 */ */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\n /* nested1\n */ */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\n /* nested1\n /* nested2\n /* nested3\n /* nested4\n */ \nX */ X\n */ \nX\n */ X */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+	} TEST_END();
+
+
+	TEST("Invalid use of multiline comment", {
+		result = Lexer_tokenize(&lexer, "A /* comment");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A comment */ X");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\nB");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\nB /* nested1");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\nB /* nested1\nC");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\nB /* nested1 */ \nC");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\nB */ nested1 */ \nC");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "A /* comment\nB /* nested1 /* nested1 /* nested1 */ X */ \nC");
+		EXPECT_FALSE(result.success);
+	});
+}
+
 void numbers_tokenization() {
 	Lexer lexer;
 	Lexer_constructor(&lexer);

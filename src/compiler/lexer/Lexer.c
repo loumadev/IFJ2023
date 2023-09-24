@@ -145,11 +145,53 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		}
 		// Skip multi-line comments
 		else if(Lexer_match(tokenizer, "/*")) {
-			while(!Lexer_isAtEnd(tokenizer) && !Lexer_match(tokenizer, "*/")) {
+			size_t depth = 1;
+
+			while(!Lexer_isAtEnd(tokenizer)) {
+				if(Lexer_match(tokenizer, "/*")) {
+					depth++;
+				} else if(Lexer_match(tokenizer, "*/")) {
+					depth--;
+
+					if(depth == 0) break;
+				}
+
 				Lexer_advance(tokenizer);
 			}
 
-			continue;
+			if(depth == 0) continue;
+
+			// There are still comments left
+			return LexerError(
+				String_fromFormat("unterminated '/*' comment"),
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					TextRange_construct(
+						tokenizer->currentChar,
+						tokenizer->currentChar + 1,
+						tokenizer->line,
+						tokenizer->column
+					),
+					(union TokenValue){0}
+				)
+			);
+		} else if(Lexer_match(tokenizer, "*/")) {
+			// There are no comments to close
+			return LexerError(
+				String_fromFormat("unexpected end of block comment"),
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					TextRange_construct(
+						tokenizer->currentChar,
+						tokenizer->currentChar + 1,
+						tokenizer->line,
+						tokenizer->column
+					),
+					(union TokenValue){0}
+				)
+			);
 		}
 		// Match strings
 		else if(ch == '"' || ch == '\'') {
