@@ -251,7 +251,7 @@ String* String_fromSubstring(char *value, size_t start, size_t end) {
 	return string;
 }
 
-String* String_fromNumber(long value, char *format) {
+String* String_fromLong(long value) {
 	// Allocate memory for the string
 	String *string = String_alloc(NULL);
 	if(!string) return NULL;
@@ -264,7 +264,7 @@ String* String_fromNumber(long value, char *format) {
 	}
 
 	// Convert the long to a string
-	int length = snprintf(string->value, 31, format, value);
+	int length = snprintf(string->value, 31, "%ld", value);
 
 	string->length = length;
 	string->capacity = string->length;
@@ -272,16 +272,25 @@ String* String_fromNumber(long value, char *format) {
 	return string;
 }
 
-String* String_fromULong(unsigned long value) {
-	return String_fromNumber(value, "%lu");
-}
-
-String* String_fromLong(long value) {
-	return String_fromNumber(value, "%ld");
-}
-
 String* String_fromDouble(double value) {
-	return String_fromNumber(value, "%f");
+	// Allocate memory for the string
+	String *string = String_alloc(NULL);
+	if(!string) return NULL;
+
+	// Resize the string
+	String_resize(string, 32, true);
+	if(!string->value) {
+		String_free(string);
+		return NULL;
+	}
+
+	// Convert the long to a string
+	int length = snprintf(string->value, 31, "%lf", value);
+
+	string->length = length;
+	string->capacity = string->length;
+
+	return string;
 }
 
 

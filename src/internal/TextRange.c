@@ -33,10 +33,9 @@ size_t TextRange_compare(TextRange *range, char *str) {
 	if(!range) return 0;
 	if(!str) return 0;
 
-	char *ptr = strstr(range->start, str);
-	if(!ptr) return 0;
+	size_t len = strlen(str);
 
-	return ptr - range->start;
+	return strncmp(range->start, str, len) == 0 ? len : 0;
 }
 
 String* TextRange_toString(TextRange *range) {

@@ -73,6 +73,7 @@ void Array_clear(Array *array) {
 	if(!array) return;
 
 	array->size = 0;
+	Array_resize(array, 0);
 }
 
 void Array_resize(Array *array, size_t capacity) {
@@ -98,11 +99,13 @@ void Array_reserve(Array *array, size_t capacity) {
 	}
 }
 
-void Array_remove(Array *array, int index) {
-	if(!array) return;
+void* Array_remove(Array *array, int index) {
+	if(!array) return NULL;
 
 	index = __Array_resolveIndex(array, index);
-	if((size_t)index >= array->size) return;
+	if((size_t)index >= array->size) return NULL;
+
+	void *value = array->data[index];
 
 	// Shift all elements after index, one to the left
 	for(size_t i = index; i < array->size - 1; i++) {
@@ -115,6 +118,8 @@ void Array_remove(Array *array, int index) {
 	if(array->size <= array->capacity >> 2) {
 		Array_resize(array, array->capacity >> 1);
 	}
+
+	return value;
 }
 
 Array* Array_alloc(size_t size) {
