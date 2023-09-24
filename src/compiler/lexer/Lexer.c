@@ -67,6 +67,7 @@ size_t Lexer_compare(Lexer *tokenizer, char *str) {
 	return length;
 }
 
+// TODO: Test this at the end of the input (may overflow to the beginning of the string for some reason)
 size_t Lexer_match(Lexer *tokenizer, char *str) {
 	if(!tokenizer) return 0;
 	if(!str) return 0;
@@ -96,13 +97,13 @@ bool Lexer_isAtEnd(Lexer *tokenizer) {
 	return tokenizer->currentChar >= tokenizer->source + tokenizer->sourceLength;
 }
 
-
+#define is_alpha(ch) (((ch) >= 'a' && (ch) <= 'z') || ((ch) >= 'A' && (ch) <= 'Z'))
 #define is_binary_digit(ch) ((ch) == '0' || (ch) == '1')
 #define is_octal_digit(ch) ((ch) >= '0' && (ch) <= '7')
 #define is_decimal_digit(ch) ((ch) >= '0' && (ch) <= '9')
 #define is_hexadecimal_digit(ch) (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'a' && (ch) <= 'f') || ((ch) >= 'A' && (ch) <= 'F'))
 #define is_base_digit(ch, base) (base == 2 ? is_binary_digit(ch) : base == 8 ? is_octal_digit(ch) : base == 16 ? is_hexadecimal_digit(ch) : is_decimal_digit(ch))
-#define is_identifier_start(ch) ((ch) == '_' || ((ch) >= 'a' && (ch) <= 'z') || ((ch) >= 'A' && (ch) <= 'Z'))
+#define is_identifier_start(ch) ((ch) == '_' || is_alpha(ch))
 #define is_identifier_part(ch) (is_identifier_start(ch) || is_decimal_digit(ch))
 
 
@@ -483,6 +484,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 	// TODO: Add support for other bases, exponents and checks like '.5' and '075' according to the language specification; Update: none of these are supported
 	// Leading zeros are allowed
 	bool hasDot = false;
+	bool hasExponent = false;
+
 	// TODO: Test "10.test()"
 	// TODO: Add handling for leading dot
 	// 10 				=> [10]
@@ -495,6 +498,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 	// 10.5.0.field		=> [10.5, ., 0, ., "field"]	 	=> [10.5, ., ParseError(expected named member of <...>)]
 	// 10.5field		=> [10.5, "field"] 				=> [10.5, ParseError(consecutive statements on a line must be separated by ';')]
 	while(is_decimal_digit(ch) || ch == '.' || ch == '_') {
+		// Handle fractional part
 		if(ch == '.') {
 			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
 			if(is_identifier_start(Lexer_peek(tokenizer, 1))) break;     // Accessor (ex. 10.toFixed())
@@ -516,7 +520,77 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 			hasDot = true;
 		}
 
+		// Advance to the next character
 		ch = Lexer_advance(tokenizer);
+
+		// Pre-handle exponent
+		if((ch == 'e' || ch == 'E') && !hasExponent) {
+			hasExponent = true;
+			ch = Lexer_advance(tokenizer);  // Consume the exponent character
+
+			if(ch == '+' || ch == '-') ch = Lexer_advance(tokenizer);       // Consume the sign character if present
+
+			// Missing exponent
+			if(!is_decimal_digit(ch)) return LexerError(
+					String_fromFormat("expected a digit in floating point exponent"),
+					Token_alloc(
+						TOKEN_MARKER,
+						TOKEN_CARET,
+						TextRange_construct(
+							tokenizer->currentChar,
+							tokenizer->currentChar + 1,
+							tokenizer->line,
+							tokenizer->column
+						),
+						(union TokenValue){0}
+					)
+			);
+		}
+
+		// Handle invalid characters
+		if(!is_alpha(ch)) continue;
+
+		// Invalid character in exponent
+		if(!is_decimal_digit(ch) && hasExponent) {
+			return LexerError(
+				String_fromFormat(
+					"'%s' is not a valid character in floating point exponent",
+					format_char(ch)
+				),
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					TextRange_construct(
+						tokenizer->currentChar,
+						tokenizer->currentChar + 1,
+						tokenizer->line,
+						tokenizer->column
+					),
+					(union TokenValue){0}
+				)
+			);
+		}
+
+		// Invalid character in integer literal
+		if(!is_decimal_digit(ch)) {
+			return LexerError(
+				String_fromFormat(
+					"'%s' is not a valid digit in integer literal",
+					format_char(ch)
+				),
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					TextRange_construct(
+						tokenizer->currentChar,
+						tokenizer->currentChar + 1,
+						tokenizer->line,
+						tokenizer->column
+					),
+					(union TokenValue){0}
+				)
+			);
+		}
 	}
 	// if(ch) tokenizer->currentChar--;
 
@@ -553,7 +627,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 	String_replaceAll(numberStr, "_", "");
 
 	// Create a token
-	Token *token = hasDot ?
+	Token *token = hasDot || hasExponent ?
 		Token_alloc(TOKEN_LITERAL, TOKEN_FLOATING, range, (union TokenValue){.floating = strtod(numberStr->value, NULL)}) :
 		Token_alloc(TOKEN_LITERAL, TOKEN_INTEGER, range, (union TokenValue){.integer = strtol(numberStr->value, NULL, 10)});
 	assertf(token != NULL);

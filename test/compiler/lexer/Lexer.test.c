@@ -364,7 +364,7 @@ void numbers_tokenization() {
 	})
 
 
-	TEST("Single digit per underscore", {
+	TEST("Singledigit per underscore", {
 		result = Lexer_tokenize(&lexer, "1_1_1_1");
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
@@ -421,7 +421,7 @@ void numbers_tokenization() {
 	})
 
 
-	TEST("Single digit per underscore in based literal", {
+	TEST("Singledigit per underscore in based literal", {
 		result = Lexer_tokenize(&lexer, "0x1_1_1");
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
@@ -606,7 +606,7 @@ void numbers_tokenization() {
 	})
 
 
-	TEST("Single digit per underscore in float literal", {
+	TEST("Singledigit per underscore in float literal", {
 		result = Lexer_tokenize(&lexer, "0.1_1_1_1");
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
@@ -618,17 +618,166 @@ void numbers_tokenization() {
 
 
 	// TODO: Test exponents
-	// {
-	// 	result = Lexer_tokenize(&lexer, "0x1aB");
-	// 	EXPECT_TRUE(result.success);
-	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+	TEST("General exponent use in integer literal", {
+		result = Lexer_tokenize(&lexer, "10e5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
 
-	// 	token = (Token*)Array_get(lexer.tokens, 0);
-	// 	EXPECT_TRUE(token->type == TOKEN_INTEGER);
-	// 	EXPECT_EQUAL_INT(token->value.integer, 683);
-	// }
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10e5);
 
 
+		result = Lexer_tokenize(&lexer, "10e+5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10e+5);
+
+
+		result = Lexer_tokenize(&lexer, "10E-5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10E-5);
+
+
+		result = Lexer_tokenize(&lexer, "10e+0");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10e+0);
+
+
+		result = Lexer_tokenize(&lexer, "1_0e+5_");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10e+5);
+	})
+
+	TEST("General exponent use in float literal", {
+		result = Lexer_tokenize(&lexer, "0.1e5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 0.1e5);
+
+
+		result = Lexer_tokenize(&lexer, "0.1e+5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 0.1e+5);
+
+
+		result = Lexer_tokenize(&lexer, "0.1E-5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 0.1E-5);
+
+
+		result = Lexer_tokenize(&lexer, "0.1e+0");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 0.1e+0);
+
+
+		result = Lexer_tokenize(&lexer, "0.1_e+5_");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 0.1e+5);
+	})
+
+	TEST("Singledigit/Multidigit exponent in singledigit/multidigit integer literal", {
+		result = Lexer_tokenize(&lexer, "1e5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 1e5);
+
+
+		result = Lexer_tokenize(&lexer, "1e10");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 1e10);
+
+
+		result = Lexer_tokenize(&lexer, "10e5");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10e5);
+
+
+		result = Lexer_tokenize(&lexer, "10e10");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+		EXPECT_EQUAL_INT(token->value.floating, 10e10);
+	})
+
+	TEST("Invalid use of exponent", {
+		result = Lexer_tokenize(&lexer, "10e");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e-");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+_");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e-_");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+5e");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+5e3");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+5e+3");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+5a");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "10e+5_");
+		EXPECT_TRUE(result.success);
+	})
 
 	if(result.success) {
 		// printf("Success!\n");
