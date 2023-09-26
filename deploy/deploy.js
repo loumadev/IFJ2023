@@ -45,6 +45,8 @@ const ARCHIVE_PATH = path.join(OUTPUT_DIR, "/xlouma00.zip");
 (async function main() {
 	const start = Date.now();
 
+	const FAILURE = `Failed to deploy project:`;
+
 
 	Utils.info("Preparing...");
 
@@ -131,7 +133,7 @@ const ARCHIVE_PATH = path.join(OUTPUT_DIR, "/xlouma00.zip");
 		for(const file of project.files) {
 			const duplicate = names.get(file.path);
 			if(duplicate) {
-				Utils.error(`Cannot deploy project: Duplicate file names "${duplicate.relative}" and "${file.relative}"!`);
+				Utils.error(FAILURE, `Duplicate file names "${duplicate.relative}" and "${file.relative}"!`);
 				process.exit(1);
 			}
 			names.set(file.path, file);
@@ -174,7 +176,7 @@ const ARCHIVE_PATH = path.join(OUTPUT_DIR, "/xlouma00.zip");
 		// Validate variables
 		for(const name of names) {
 			if(compilerSettings[name]) continue;
-			Utils.error(`Cannot deploy project: Missing variable "${name}" in Makefile!`);
+			Utils.error(FAILURE, `Missing or invalid variable "${name}" in Makefile!`);
 			process.exit(1);
 		}
 
@@ -209,7 +211,7 @@ all: \$(OUT)
 		});
 
 		if(proc.status !== 0) {
-			Utils.error(`Cannot deploy project: Failed to compile!`);
+			Utils.error(FAILURE, `Failed to compile the project!`);
 			Utils.error(proc.stdout.toString());
 			Utils.error(proc.stderr.toString());
 			process.exit(1);
@@ -231,7 +233,7 @@ all: \$(OUT)
 		});
 
 		if(zip.status !== 0) {
-			Utils.error(`Cannot deploy project: Failed to pack!`);
+			Utils.error(FAILURE, `Failed to create the project archive!`);
 			Utils.error(zip.stdout.toString());
 			Utils.error(zip.stderr.toString());
 			process.exit(1);
