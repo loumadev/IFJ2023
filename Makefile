@@ -14,7 +14,6 @@ INCLUDE_DIR = include
 BUILD_DIR = build
 BIN_DIR = bin
 TEST_DIR = test
-TEST_LIB_DIR = lib/Unity/src
 
 # Source, header object files
 PROD_MAIN_OBJ = $(BUILD_DIR)/$(PROD_MAIN).o
