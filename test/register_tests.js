@@ -2,12 +2,13 @@
 
 const path = require("path");
 const fs = require("fs");
+const {Utils} = require("../lib/Utils");
 
 const MAIN_FILENAME = "test_main.c";
 
 (async function main() {
 	const root = path.join(__dirname, "/../");
-	const allFiles = readDirRecursive(__dirname);
+	const allFiles = Utils.readDirRecursive(__dirname);
 	const testFiles = allFiles.filter(file => file.endsWith(".test.c"));
 
 	const files = testFiles.map(file => ({
@@ -56,42 +57,3 @@ int main(int argc, char** argv) {
 	return UNIT_RESULT();
 }`);
 })();
-
-/**
- * Recursively resolves all files in directory
- * @param {string} dirPath Starting directory
- * @param {number} [depth=Infinity] Max depth of recursion
- * @return {string[]} 
- */
-function readDirRecursive(dirPath, depth = Infinity) {
-	if(!fs.existsSync(dirPath)) return [];
-	if(!fs.statSync(dirPath).isDirectory()) return [dirPath];
-
-	/** @type {{path: string, depth: number}[]} */
-	const queue = [{path: dirPath, depth: 0}];
-
-	/** @type {string[]} */
-	const arrayOfFiles = [];
-
-	while(queue.length) {
-		const dir = queue.shift();
-		if(!dir || dir.depth > depth) continue;
-
-		const files = fs.readdirSync(dir.path);
-
-		for(const file of files) {
-			const pathname = path.join(dir.path, "/", file);
-
-			if(fs.statSync(pathname).isDirectory()) {
-				queue.push({
-					path: pathname,
-					depth: dir.depth + 1
-				});
-			} else {
-				arrayOfFiles.push(pathname);
-			}
-		}
-	}
-
-	return arrayOfFiles;
-}

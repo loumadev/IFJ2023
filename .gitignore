@@ -4,6 +4,7 @@
 # Build files and binaries
 build/
 bin/
+deploy/output/
 
 # Dependencies
 #vendor/
