@@ -251,7 +251,7 @@ all: \$(OUT)
  * @return {FileModule} 
  */
 function resolveDependencies(project, file) {
-	if(project[file.path]) return project.dependencies[file.path];
+	if(project.dependencies[file.path]) return project.dependencies[file.path];
 
 	const source = fs.readFileSync(file.path, "utf8");
 
