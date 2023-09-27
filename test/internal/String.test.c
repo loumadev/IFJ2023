@@ -10,7 +10,32 @@ DESCRIBE(equals, "String_equals") {
 
 		EXPECT_TRUE(String_equals(str, "Hello, World!"));
 		EXPECT_FALSE(String_equals(str, "Hello!"));
-		EXPECT_FALSE(String_equals(str, "\0"));
+		EXPECT_FALSE(String_equals(str, ""));
+	})
+
+	TEST("Partial equals", {
+		str = String_alloc("ABC");
+
+		EXPECT_TRUE(String_equals(str, "ABC"));
+		EXPECT_FALSE(String_equals(str, "AB"));
+		EXPECT_FALSE(String_equals(str, "A"));
+		EXPECT_FALSE(String_equals(str, "B"));
+	})
+
+	TEST("Single character equals", {
+		str = String_alloc("A");
+
+		EXPECT_TRUE(String_equals(str, "A"));
+		EXPECT_FALSE(String_equals(str, "B"));
+		EXPECT_FALSE(String_equals(str, ""));
+	})
+
+	TEST("Empty equals", {
+		str = String_alloc("");
+
+		EXPECT_TRUE(String_equals(str, ""));
+		EXPECT_FALSE(String_equals(str, "A"));
+		EXPECT_FALSE(String_equals(str, "ABC"));
 	})
 }
 
@@ -103,6 +128,22 @@ DESCRIBE(startsWith, "String_startsWith") {
 		EXPECT_TRUE(String_startsWith(str, "Hello, World!"));
 		EXPECT_FALSE(String_startsWith(str, "Hello, World! "));
 	})
+
+	TEST("Single character startsWith", {
+		str = String_alloc("A");
+
+		EXPECT_TRUE(String_startsWith(str, "A"));
+		EXPECT_FALSE(String_startsWith(str, "B"));
+		EXPECT_TRUE(String_startsWith(str, ""));
+	})
+
+	TEST("Empty startsWith", {
+		str = String_alloc("");
+
+		EXPECT_TRUE(String_startsWith(str, ""));
+		EXPECT_FALSE(String_startsWith(str, "A"));
+		EXPECT_FALSE(String_startsWith(str, "ABC"));
+	})
 }
 
 DESCRIBE(endsWith, "String_endsWith") {
@@ -115,6 +156,22 @@ DESCRIBE(endsWith, "String_endsWith") {
 		EXPECT_FALSE(String_endsWith(str, "Hello"));
 		EXPECT_TRUE(String_endsWith(str, "Hello, World!"));
 		EXPECT_FALSE(String_endsWith(str, " Hello, World!"));
+	})
+
+	TEST("Single character endsWith", {
+		str = String_alloc("A");
+
+		EXPECT_TRUE(String_endsWith(str, "A"));
+		EXPECT_FALSE(String_endsWith(str, "B"));
+		EXPECT_TRUE(String_endsWith(str, ""));
+	})
+
+	TEST("Empty endsWith", {
+		str = String_alloc("");
+
+		EXPECT_TRUE(String_endsWith(str, ""));
+		EXPECT_FALSE(String_endsWith(str, "A"));
+		EXPECT_FALSE(String_endsWith(str, "ABC"));
 	})
 }
 
@@ -130,6 +187,22 @@ DESCRIBE(indexOf, "String_indexOf") {
 		EXPECT_TRUE(String_indexOf(str, "Hello, World!") == 0);
 		EXPECT_TRUE(String_indexOf(str, "Hello, World! ") == -1);
 		EXPECT_TRUE(String_indexOf(str, "Empty") == -1);
+	})
+
+	TEST("Single character indexOf", {
+		str = String_alloc("A");
+
+		EXPECT_TRUE(String_indexOf(str, "A") == 0);
+		EXPECT_TRUE(String_indexOf(str, "B") == -1);
+		EXPECT_TRUE(String_indexOf(str, "") == 0);
+	})
+
+	TEST("Empty indexOf", {
+		str = String_alloc("");
+
+		EXPECT_TRUE(String_indexOf(str, "") == 0);
+		EXPECT_TRUE(String_indexOf(str, "A") == -1);
+		EXPECT_TRUE(String_indexOf(str, "ABC") == -1);
 	})
 }
 
