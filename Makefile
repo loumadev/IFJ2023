@@ -28,7 +28,7 @@ TEST_SRCS = $(shell find $(TEST_DIR) -name "*.c" ! -name "$(TEST_MAIN).c")
 TEST_OBJS = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/%.o, $(TEST_SRCS))
 
 # Build target
-build: create_bin_dir create_build_dirs $(OBJS) $(PROD_MAIN_OBJ)
+build: create_output_dirs $(OBJS) $(PROD_MAIN_OBJ)
 	$(COMPILER) $(CFLAGS) -I$(INCLUDE_DIR) -o $(BIN_DIR)/$(OUT) $(OBJS) $(PROD_MAIN_OBJ) $(LIBS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HDRS)
@@ -41,7 +41,7 @@ $(PROD_MAIN_OBJ): $(SRC_DIR)/$(PROD_MAIN).c $(HDRS)
 create_test_main:
 	node test/register_tests.js
 
-build_test: create_bin_dir create_build_dirs create_test_main $(OBJS) $(TEST_OBJS) $(TEST_MAIN_OBJ)
+build_test: create_output_dirs create_test_main $(OBJS) $(TEST_OBJS) $(TEST_MAIN_OBJ)
 	$(COMPILER) $(CFLAGS) -I$(INCLUDE_DIR) -I$(TEST_DIR) -o $(BIN_DIR)/test $(OBJS) $(TEST_OBJS) $(TEST_MAIN_OBJ) $(LIBS)
 
 $(BUILD_DIR)/%.o: $(TEST_DIR)/%.c $(HDRS) $(TEST_HDRS)
@@ -50,13 +50,11 @@ $(BUILD_DIR)/%.o: $(TEST_DIR)/%.c $(HDRS) $(TEST_HDRS)
 $(TEST_MAIN_OBJ): $(TEST_DIR)/$(TEST_MAIN).c $(HDRS)
 
 
-# Create build directories for subdirectories in src/
-create_build_dirs:
+# Create output directories
+create_output_dirs:
+	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(dir $(OBJS))
 
-# Create the BIN_DIR if it doesn't exist
-create_bin_dir:
-	@mkdir -p $(BIN_DIR)
 
 run: build
 	$(BIN_DIR)/$(OUT)
