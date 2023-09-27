@@ -24,7 +24,7 @@ void Lexer_constructor(Lexer *tokenizer) {
 	tokenizer->source = NULL;
 	tokenizer->sourceLength = 0;
 	tokenizer->tokens = Array_alloc(2);
-	tokenizer->currentChar = (char*)'\0';
+	tokenizer->currentChar = NULL;
 	tokenizer->line = 1;
 	tokenizer->column = 1;
 }
@@ -43,7 +43,7 @@ void Lexer_destructor(Lexer *tokenizer) {
 
 	tokenizer->source = NULL;
 	tokenizer->sourceLength = 0;
-	tokenizer->currentChar = (char*)'\0';
+	tokenizer->currentChar = NULL;
 	tokenizer->line = 0;
 	tokenizer->column = 0;
 }
