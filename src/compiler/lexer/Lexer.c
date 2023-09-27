@@ -8,6 +8,7 @@
 #include "assertf.h"
 
 char __Lexer_resolveEscapedChar(char ch);
+
 LexerResult __Lexer_tokenizeString(Lexer *lexer);
 LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer);
 LexerResult __Lexer_tokenizeNumberLiteral(Lexer *lexer);
@@ -24,7 +25,7 @@ void Lexer_constructor(Lexer *lexer) {
 	lexer->source = NULL;
 	lexer->sourceLength = 0;
 	lexer->tokens = Array_alloc(2);
-	lexer->currentChar = '\0';
+	lexer->currentChar = NULL;
 	lexer->line = 1;
 	lexer->column = 1;
 }
@@ -43,7 +44,7 @@ void Lexer_destructor(Lexer *lexer) {
 
 	lexer->source = NULL;
 	lexer->sourceLength = 0;
-	lexer->currentChar = '\0';
+	lexer->currentChar = NULL;
 	lexer->line = 0;
 	lexer->column = 0;
 }

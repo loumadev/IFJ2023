@@ -158,6 +158,15 @@ void String_splice(String *string, size_t start, size_t end, char *replacement) 
 	if(!replacement) return;
 	if(!string->value) return;
 
+	if(start > string->length) {
+		start = string->length;
+		end = string->length;
+	}
+
+	if(end > string->length) end = string->length;
+
+  if (start > end) end = start;
+
 	size_t length = strlen(replacement);
 	size_t newLength = string->length + length - (end - start);
 
@@ -172,9 +181,11 @@ void String_splice(String *string, size_t start, size_t end, char *replacement) 
 	string->value[string->length] = '\0';
 }
 
-String* String_slice(String *string, size_t start, size_t end) {
+String * String_slice(String *string, size_t start, size_t end) {
 	if(!string) return NULL;
 	if(start > end) return NULL;
+  if(start >= string->length) return NULL;
+  if(end > string->length) end = string->length;
 
 	size_t length = end - start;
 
