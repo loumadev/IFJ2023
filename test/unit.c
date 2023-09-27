@@ -52,8 +52,8 @@ void unit_register_file(char *name) {
 	unit_g.has_current_file_failed = false;
 }
 
-void unit_register_suit(char *name) {
-	print(" • %s\n", name);
+void unit_register_suit(char *desc) {
+	print(" • %s\n", desc);
 
 	unit_g.suites_count++;
 	unit_g.has_current_suit_failed = false;
@@ -96,8 +96,8 @@ void unit_run_test_finish() {
 }
 
 
-void unit_run_test_suite(char *name, void (*test)(void)) {
-	unit_register_suit(name);
+void unit_run_test_suite(char *desc, void (*test)(void)) {
+	unit_register_suit(desc);
 
 	test();
 

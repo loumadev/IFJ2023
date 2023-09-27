@@ -41,10 +41,10 @@ void unit_end();
 void unit_set_silent(bool silent);
 int unit_get_result();
 void unit_register_file(char *name);
-void unit_register_suit(char *name);
+void unit_register_suit(char *desc);
 void unit_run_test_start(char *description, char *location);
 void unit_run_test_finish();
-void unit_run_test_suite(char *name, void (*test)(void));
+void unit_run_test_suite(char *desc, void (*test)(void));
 bool unit_assert(bool condition, char *name, char *message);
 void unit_print_results();
 
@@ -57,13 +57,15 @@ void unit_print_results();
 
 #define UNIT_EXPECT(condition, message) if(unit_assert(condition, #condition, message)) break
 #define UNIT_REGISTER_FILE(name) unit_register_file(name)
-#define UNIT_REGISTER_SUIT(func, file, line) unit_run_test_suite(WHITE #func " " __locationFormat(file, line) RST, func)
+#define UNIT_REGISTER_SUIT(func, desc, file, line) unit_run_test_suite(WHITE desc " " __locationFormat(file, line) RST, func)
 #define UNIT_BEGIN() unit_begin()
 #define UNIT_END() unit_end()
 #define UNIT_RESULT() unit_get_result()
 #define UNIT_SILENT(state) unit_set_silent(state)
 
 // For user to use
+
+#define DESCRIBE(id, name) void unit__ ## id()
 
 #define TEST_BEGIN(name) unit_run_test_start(name, __string(__location(), __LINE__)); do
 #define TEST_END() while(0); unit_run_test_finish();

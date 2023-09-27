@@ -4,7 +4,7 @@
 
 1. Create a file named `<name>.test.c` somewhere in the `test/` directory (follow the `src/` directory structure if possible)
 2. Import the framework using `#include "unit.h"`
-3. Create a test suite by defining a function with the signature `void <name>(void)`, where `<name>` does NOT start with `_` (functions prefixed with `_` are considered private and are not tested!)
+3. Create a test suite by using `DESCRIBE(<unique_id>, "<description>") { ... }`, where `<unique_id>` is a unique identifier of the test suite (should be unique between files as well) and `<description>` is a human readable description of the test suite
 4. Inside a test suite define a test case using `TEST("<some_description>", { <your_code_here> })` or `TEST_BEGIN("<some_description>") { <your_code_here> } TEST_END()` (the latter is debuggable, cuz debugger cannot step into a macro)
 5. Inside a test case use macros defined in `unit.h`, like `EXPECT_TRUE(<expression>)` to test your code
 6. When you are done with writing test, use Makefile target `make test` to run the tests
@@ -20,7 +20,7 @@
 ```c
 #include "unit.h"
 
-void test_suite1(void) {
+DESCRIBE(test_suite1, "Test suite 1") {
 	TEST("Check equality of integers", {
 		EXPECT_TRUE(1 == 1);
 		EXPECT_FALSE(1 == 2);
@@ -31,7 +31,7 @@ void test_suite1(void) {
 	})
 }
 
-void test_suite2(void) {
+DESCRIBE(test_suite2, "Test suite 2") {
 	// This test is debuggable
 	TEST_BEGIN("Check inequality of characters") {
 		// > can step here
@@ -48,10 +48,10 @@ void test_suite2(void) {
 
 ```
 MyTests.test.c
- • test_suite1 (at test/MyTests.test.c:3)
+ • Test suite 1 (at test/MyTests.test.c:3)
     ✓  Test case 1: Check equality of integers (0ms)
     ✓  Test case 2: Check inequality of strings (0ms)
- • test_suite2 (at test/MyTests.test.c:15)
+ • Test suite 2 (at test/MyTests.test.c:15)
     ✕  Check inequality of characters   
          'A' == 'B'   Expected 'A' == 'B', got 'A' != 'B' (at test/MyTests.test.c:16)
     ✓  Check equality of floats (0ms)

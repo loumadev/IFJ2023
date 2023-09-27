@@ -2,7 +2,7 @@
 #include "unit.h"
 #include <stdio.h>
 
-void equals() {
+DESCRIBE(equals, "String_equals") {
 	String *str = NULL;
 
 	TEST("Simple equals", {
@@ -14,7 +14,7 @@ void equals() {
 	})
 }
 
-void replaceAll() {
+DESCRIBE(replaceAll, "String_replaceAll") {
 	String *str;
 
 	TEST("Simple replacement", {
@@ -92,7 +92,7 @@ void replaceAll() {
 	})
 }
 
-void startsWith() {
+DESCRIBE(startsWith, "String_startsWith") {
 	String *str = NULL;
 
 	TEST("Simple startsWith", {
@@ -105,7 +105,7 @@ void startsWith() {
 	})
 }
 
-void endsWith() {
+DESCRIBE(endsWith, "String_endsWith") {
 	String *str = NULL;
 
 	TEST("Simple endsWith", {
@@ -119,7 +119,7 @@ void endsWith() {
 }
 
 
-void indexOf() {
+DESCRIBE(indexOf, "String_indexOf") {
 	String *str = NULL;
 
 	TEST("Simple indexOf", {
@@ -133,7 +133,7 @@ void indexOf() {
 	})
 }
 
-void splice() {
+DESCRIBE(splice, "String_splice") {
 	String *str = NULL;
 	TEST("Simple splice", {
 		str = String_alloc("Hello, World!");
@@ -189,8 +189,7 @@ void splice() {
 
 }
 
-void slice() {
-
+DESCRIBE(slice, "String_slice") {
 	String *str = NULL;
 	String *out = NULL;
 
