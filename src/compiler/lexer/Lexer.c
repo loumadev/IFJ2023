@@ -8,93 +8,93 @@
 #include "assertf.h"
 
 char __Lexer_resolveEscapedChar(char ch);
-LexerResult __Lexer_tokenizeString(Lexer *tokenizer);
-LexerResult __Lexer_tokenizeIdentifier(Lexer *tokenizer);
-LexerResult __Lexer_tokenizeNumberLiteral(Lexer *tokenizer);
-LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base);
-LexerResult __Lexer_tokenizeBinaryLiteral(Lexer *tokenizer);
-LexerResult __Lexer_tokenizeOctalLiteral(Lexer *tokenizer);
-LexerResult __Lexer_tokenizeHexadecimalLiteral(Lexer *tokenizer);
-LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer);
-LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *tokenizer);
+LexerResult __Lexer_tokenizeString(Lexer *lexer);
+LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer);
+LexerResult __Lexer_tokenizeNumberLiteral(Lexer *lexer);
+LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *lexer, int base);
+LexerResult __Lexer_tokenizeBinaryLiteral(Lexer *lexer);
+LexerResult __Lexer_tokenizeOctalLiteral(Lexer *lexer);
+LexerResult __Lexer_tokenizeHexadecimalLiteral(Lexer *lexer);
+LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer);
+LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer);
 
-void Lexer_constructor(Lexer *tokenizer) {
-	if(!tokenizer) return;
+void Lexer_constructor(Lexer *lexer) {
+	if(!lexer) return;
 
-	tokenizer->source = NULL;
-	tokenizer->sourceLength = 0;
-	tokenizer->tokens = Array_alloc(2);
-	tokenizer->currentChar = '\0';
-	tokenizer->line = 1;
-	tokenizer->column = 1;
+	lexer->source = NULL;
+	lexer->sourceLength = 0;
+	lexer->tokens = Array_alloc(2);
+	lexer->currentChar = '\0';
+	lexer->line = 1;
+	lexer->column = 1;
 }
 
-void Lexer_destructor(Lexer *tokenizer) {
-	if(!tokenizer) return;
+void Lexer_destructor(Lexer *lexer) {
+	if(!lexer) return;
 
-	if(tokenizer->tokens) {
-		for(size_t i = 0; i < tokenizer->tokens->size; i++) {
-			Token_destructor((Token*)Array_get(tokenizer->tokens, i));
+	if(lexer->tokens) {
+		for(size_t i = 0; i < lexer->tokens->size; i++) {
+			Token_destructor((Token*)Array_get(lexer->tokens, i));
 		}
 
-		Array_destructor(tokenizer->tokens);
-		tokenizer->tokens = NULL;
+		Array_destructor(lexer->tokens);
+		lexer->tokens = NULL;
 	}
 
-	tokenizer->source = NULL;
-	tokenizer->sourceLength = 0;
-	tokenizer->currentChar = '\0';
-	tokenizer->line = 0;
-	tokenizer->column = 0;
+	lexer->source = NULL;
+	lexer->sourceLength = 0;
+	lexer->currentChar = '\0';
+	lexer->line = 0;
+	lexer->column = 0;
 }
 
-char Lexer_peek(Lexer *tokenizer, size_t offset) {
-	if(!tokenizer) return '\0';
-	if(!tokenizer->currentChar) return '\0';
-	if(tokenizer->currentChar + offset >= tokenizer->source + tokenizer->sourceLength) return '\0';
+char Lexer_peek(Lexer *lexer, size_t offset) {
+	if(!lexer) return '\0';
+	if(!lexer->currentChar) return '\0';
+	if(lexer->currentChar + offset >= lexer->source + lexer->sourceLength) return '\0';
 
-	return *(tokenizer->currentChar + offset);
+	return *(lexer->currentChar + offset);
 }
 
-size_t Lexer_compare(Lexer *tokenizer, char *str) {
-	if(!tokenizer) return 0;
+size_t Lexer_compare(Lexer *lexer, char *str) {
+	if(!lexer) return 0;
 	if(!str) return 0;
 
 	size_t length = strlen(str);
 
-	if(strncmp(tokenizer->currentChar, str, length) != 0) return 0;
+	if(strncmp(lexer->currentChar, str, length) != 0) return 0;
 
 	return length;
 }
 
 // TODO: Test this at the end of the input (may overflow to the beginning of the string for some reason)
-size_t Lexer_match(Lexer *tokenizer, char *str) {
-	if(!tokenizer) return 0;
+size_t Lexer_match(Lexer *lexer, char *str) {
+	if(!lexer) return 0;
 	if(!str) return 0;
 
-	size_t offset = Lexer_compare(tokenizer, str);
+	size_t offset = Lexer_compare(lexer, str);
 	if(offset == 0) return 0;
 
-	tokenizer->currentChar += offset;
+	lexer->currentChar += offset;
 	return offset;
 }
 
-char Lexer_advance(Lexer *tokenizer) {
-	if(!tokenizer) return '\0';
-	if(!tokenizer->currentChar) return '\0';
+char Lexer_advance(Lexer *lexer) {
+	if(!lexer) return '\0';
+	if(!lexer->currentChar) return '\0';
 
-	char ch = *++tokenizer->currentChar;
+	char ch = *++lexer->currentChar;
 	// Prevent from advancing past the end of the string
-	// if(ch == '\0') tokenizer->currentChar--;
+	// if(ch == '\0') lexer->currentChar--;
 
 	return ch;
 }
 
-bool Lexer_isAtEnd(Lexer *tokenizer) {
-	if(!tokenizer) return true;
-	if(!tokenizer->currentChar) return true;
+bool Lexer_isAtEnd(Lexer *lexer) {
+	if(!lexer) return true;
+	if(!lexer->currentChar) return true;
 
-	return tokenizer->currentChar >= tokenizer->source + tokenizer->sourceLength;
+	return lexer->currentChar >= lexer->source + lexer->sourceLength;
 }
 
 #define is_alpha(ch) (((ch) >= 'a' && (ch) <= 'z') || ((ch) >= 'A' && (ch) <= 'Z'))
@@ -107,57 +107,57 @@ bool Lexer_isAtEnd(Lexer *tokenizer) {
 #define is_identifier_part(ch) (is_identifier_start(ch) || is_decimal_digit(ch))
 
 
-LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
-	assertf(tokenizer != NULL);
+LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
+	assertf(lexer != NULL);
 
 	// Reset the lexer
-	Lexer_destructor(tokenizer);
-	Lexer_constructor(tokenizer);
+	Lexer_destructor(lexer);
+	Lexer_constructor(lexer);
 
-	tokenizer->line = 1;
-	tokenizer->column = 1;
-	tokenizer->source = source;
-	tokenizer->sourceLength = strlen(source);
-	tokenizer->currentChar = tokenizer->source;
+	lexer->line = 1;
+	lexer->column = 1;
+	lexer->source = source;
+	lexer->sourceLength = strlen(source);
+	lexer->currentChar = lexer->source;
 
 	char ch;
-	while((ch = *tokenizer->currentChar)) {
+	while((ch = *lexer->currentChar)) {
 
 		// Update line and column counters
 		if(ch == '\n') {
-			tokenizer->line++;
-			tokenizer->column = 1;
+			lexer->line++;
+			lexer->column = 1;
 		} else {
-			tokenizer->column++;
+			lexer->column++;
 		}
 
 		// Skip whitespace
 		if(ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
-			Lexer_advance(tokenizer);
+			Lexer_advance(lexer);
 			continue;
 		}
 		// Skip single-line comments
-		else if(Lexer_match(tokenizer, "//")) {
-			while(!Lexer_isAtEnd(tokenizer) && !Lexer_match(tokenizer, "\n")) {
-				Lexer_advance(tokenizer);
+		else if(Lexer_match(lexer, "//")) {
+			while(!Lexer_isAtEnd(lexer) && !Lexer_match(lexer, "\n")) {
+				Lexer_advance(lexer);
 			}
 
 			continue;
 		}
 		// Skip multi-line comments
-		else if(Lexer_match(tokenizer, "/*")) {
+		else if(Lexer_match(lexer, "/*")) {
 			size_t depth = 1;
 
-			while(!Lexer_isAtEnd(tokenizer)) {
-				if(Lexer_match(tokenizer, "/*")) {
+			while(!Lexer_isAtEnd(lexer)) {
+				if(Lexer_match(lexer, "/*")) {
 					depth++;
-				} else if(Lexer_match(tokenizer, "*/")) {
+				} else if(Lexer_match(lexer, "*/")) {
 					depth--;
 
 					if(depth == 0) break;
 				}
 
-				Lexer_advance(tokenizer);
+				Lexer_advance(lexer);
 			}
 
 			if(depth == 0) continue;
@@ -169,15 +169,15 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 					TOKEN_MARKER,
 					TOKEN_CARET,
 					TextRange_construct(
-						tokenizer->currentChar,
-						tokenizer->currentChar + 1,
-						tokenizer->line,
-						tokenizer->column
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
 					),
 					(union TokenValue){0}
 				)
 			);
-		} else if(Lexer_match(tokenizer, "*/")) {
+		} else if(Lexer_match(lexer, "*/")) {
 			// There are no comments to close
 			return LexerError(
 				String_fromFormat("unexpected end of block comment"),
@@ -185,10 +185,10 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 					TOKEN_MARKER,
 					TOKEN_CARET,
 					TextRange_construct(
-						tokenizer->currentChar,
-						tokenizer->currentChar + 1,
-						tokenizer->line,
-						tokenizer->column
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
 					),
 					(union TokenValue){0}
 				)
@@ -196,14 +196,14 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		}
 		// Match strings
 		else if(ch == '"' || ch == '\'') {
-			LexerResult result = __Lexer_tokenizeString(tokenizer);
+			LexerResult result = __Lexer_tokenizeString(lexer);
 			if(!result.success) return result;
 
 			continue;
 		}
 		// Match identifiers
 		else if(is_identifier_start(ch)) {
-			LexerResult result = __Lexer_tokenizeIdentifier(tokenizer);
+			LexerResult result = __Lexer_tokenizeIdentifier(lexer);
 			if(!result.success) return result;
 
 			continue;
@@ -211,9 +211,9 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		// Match numbers
 		else if(
 			is_decimal_digit(ch) ||
-			(ch == '.' && is_decimal_digit(Lexer_peek(tokenizer, 1))) // Error state
+			(ch == '.' && is_decimal_digit(Lexer_peek(lexer, 1))) // Error state
 		) {
-			LexerResult result = __Lexer_tokenizeNumberLiteral(tokenizer);
+			LexerResult result = __Lexer_tokenizeNumberLiteral(lexer);
 			if(!result.success) return result;
 
 			continue;
@@ -221,7 +221,7 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		// Something other
 		else {
 			// Try to match punctuators and operators
-			LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(tokenizer);
+			LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(lexer);
 			if(result.success) continue;
 
 			// Invalid character
@@ -231,10 +231,10 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 					TOKEN_MARKER,
 					TOKEN_CARET,
 					TextRange_construct(
-						tokenizer->currentChar,
-						tokenizer->currentChar + 1,
-						tokenizer->line,
-						tokenizer->column
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
 					),
 					(union TokenValue){0}
 				)
@@ -242,17 +242,17 @@ LexerResult Lexer_tokenize(Lexer *tokenizer, char *source) {
 		}
 
 		// Advance to the next character
-		Lexer_advance(tokenizer);
+		Lexer_advance(lexer);
 	}
 
 	// Create an EOF token
 	TextRange range;
-	TextRange_constructor(&range, tokenizer->currentChar, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+	TextRange_constructor(&range, lexer->currentChar, lexer->currentChar, lexer->line, lexer->column);
 
 	Token *token = Token_alloc(TOKEN_EOF, TOKEN_DEFAULT, range, (union TokenValue){0});
 	assertf(token != NULL);
 
-	Array_push(tokenizer->tokens, token);
+	Array_push(lexer->tokens, token);
 
 	return LexerSuccess();
 }
@@ -278,14 +278,14 @@ char __Lexer_resolveEscapedChar(char ch) {
 }
 
 // TODO: Implement string parsing from specifiaction
-LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
-	char *start = tokenizer->currentChar;
-	char ch = *tokenizer->currentChar;
+LexerResult __Lexer_tokenizeString(Lexer *lexer) {
+	char *start = lexer->currentChar;
+	char ch = *lexer->currentChar;
 
 	assertf(ch == '"' || ch == '\'', "Unexpected character '%s' (expected '\"' or \"'\" at the source stream head)", format_char(ch));
 
 	char quote = ch;
-	ch = Lexer_advance(tokenizer); // Consume the first character
+	ch = Lexer_advance(lexer); // Consume the first character
 
 	String *string = String_alloc("");
 
@@ -300,8 +300,8 @@ LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
 					TextRange_construct(
 						start,
 						start + 1,
-						tokenizer->line,
-						tokenizer->column
+						lexer->line,
+						lexer->column
 					),
 					(union TokenValue){0}
 				)
@@ -310,48 +310,48 @@ LexerResult __Lexer_tokenizeString(Lexer *tokenizer) {
 		// This consumes two characters, so in case of `\<quote>`, both backslash
 		// and the quote are consumed and therefore the loop will not terminate
 		if(ch == '\\') {
-			char escaped = Lexer_advance(tokenizer);
+			char escaped = Lexer_advance(lexer);
 			// TODO: Add support for unicode and hex escapes according to the language specification
 			ch = __Lexer_resolveEscapedChar(escaped);
 		}
 
 		String_appendChar(string, ch);
 
-		ch = Lexer_advance(tokenizer);
+		ch = Lexer_advance(lexer);
 	}
-	// if(ch) tokenizer->currentChar--;
+	// if(ch) lexer->currentChar--;
 
 	// Consume the closing quote
-	Lexer_advance(tokenizer);
+	Lexer_advance(lexer);
 
 	// Create a TextRange view
 	TextRange range;
-	TextRange_constructor(&range, start, tokenizer->currentChar + 1, tokenizer->line, tokenizer->column);
+	TextRange_constructor(&range, start, lexer->currentChar + 1, lexer->line, lexer->column);
 
 	// Create a token
 	Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_STRING, range, (union TokenValue){.string = string});
 	assertf(token != NULL);
 
 	// Add the token to the array
-	Array_push(tokenizer->tokens, token);
+	Array_push(lexer->tokens, token);
 	return LexerSuccess();
 }
 
-LexerResult __Lexer_tokenizeIdentifier(Lexer *tokenizer) {
-	char *start = tokenizer->currentChar;
-	char ch = *tokenizer->currentChar;
+LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
+	char *start = lexer->currentChar;
+	char ch = *lexer->currentChar;
 
 	assertf(is_identifier_start(ch), "Unexpected character '%s' (expected identifier start at the source stream head)", format_char(ch));
 
 	// Match identifier
 	while(is_identifier_part(ch)) {
-		ch = Lexer_advance(tokenizer);
+		ch = Lexer_advance(lexer);
 	}
-	// if(ch) tokenizer->currentChar--; //?
+	// if(ch) lexer->currentChar--; //?
 
 	// Create a TextRange view
 	TextRange range;
-	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+	TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
 
 	// Copy the identifier
 	String *identifier = TextRange_toString(&range);
@@ -385,19 +385,19 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *tokenizer) {
 	assertf(token != NULL);
 
 	// Add the token to the array
-	Array_push(tokenizer->tokens, token);
+	Array_push(lexer->tokens, token);
 	return LexerSuccess();
 }
 
-LexerResult __Lexer_tokenizeNumberLiteral(Lexer *tokenizer) {
-	if(Lexer_compare(tokenizer, "0b")) return __Lexer_tokenizeBinaryLiteral(tokenizer);
-	if(Lexer_compare(tokenizer, "0o")) return __Lexer_tokenizeOctalLiteral(tokenizer);
-	if(Lexer_compare(tokenizer, "0x")) return __Lexer_tokenizeHexadecimalLiteral(tokenizer);
+LexerResult __Lexer_tokenizeNumberLiteral(Lexer *lexer) {
+	if(Lexer_compare(lexer, "0b")) return __Lexer_tokenizeBinaryLiteral(lexer);
+	if(Lexer_compare(lexer, "0o")) return __Lexer_tokenizeOctalLiteral(lexer);
+	if(Lexer_compare(lexer, "0x")) return __Lexer_tokenizeHexadecimalLiteral(lexer);
 
-	return __Lexer_tokenizeDecimalLiteral(tokenizer);
+	return __Lexer_tokenizeDecimalLiteral(lexer);
 }
 
-LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
+LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *lexer, int base) {
 	char *prefix =
 	base == 2 ? "0b" :
 		base == 8 ? "0o" :
@@ -406,12 +406,12 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 
 	assertf(prefix != NULL, "Invalid base '%d'; Allowed bases are 2, 8 and 16", base);
 
-	char *start = tokenizer->currentChar;
+	char *start = lexer->currentChar;
 
 	// Check and consume the prefix
-	assertf(Lexer_match(tokenizer, prefix) != 0, "Expected '%s' at the source stream head", prefix);
+	assertf(Lexer_match(lexer, prefix) != 0, "Expected '%s' at the source stream head", prefix);
 
-	char ch = *tokenizer->currentChar;
+	char ch = *lexer->currentChar;
 	if(!is_base_digit(ch, base)) return LexerError(
 			String_fromFormat(
 				"'%s' is not a valid %s in integer literal", format_char(ch),
@@ -423,24 +423,24 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 				TOKEN_MARKER,
 				TOKEN_CARET,
 				TextRange_construct(
-					tokenizer->currentChar,
-					tokenizer->currentChar + 1,
-					tokenizer->line,
-					tokenizer->column
+					lexer->currentChar,
+					lexer->currentChar + 1,
+					lexer->line,
+					lexer->column
 				),
 				(union TokenValue){0}
 			)
 	);
 
 	// Match number
-	while(is_base_digit(*tokenizer->currentChar, base) || ch == '_') {
-		ch = Lexer_advance(tokenizer);
+	while(is_base_digit(*lexer->currentChar, base) || ch == '_') {
+		ch = Lexer_advance(lexer);
 	}
-	// if(ch) tokenizer->currentChar--; //?
+	// if(ch) lexer->currentChar--; //?
 
 	// Create a TextRange view
 	TextRange range;
-	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+	TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
 
 	// Copy the number
 	String *numberStr = TextRange_toString(&range);
@@ -457,26 +457,26 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *tokenizer, int base) {
 	Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_INTEGER, range, (union TokenValue){.integer = number});
 
 	// Add the token to the array
-	Array_push(tokenizer->tokens, token);
+	Array_push(lexer->tokens, token);
 	return LexerSuccess();
 }
 
-LexerResult __Lexer_tokenizeBinaryLiteral(Lexer *tokenizer) {
-	return __Lexer_tokenizeIntegerBasedLiteral(tokenizer, 2);
+LexerResult __Lexer_tokenizeBinaryLiteral(Lexer *lexer) {
+	return __Lexer_tokenizeIntegerBasedLiteral(lexer, 2);
 }
 
-LexerResult __Lexer_tokenizeOctalLiteral(Lexer *tokenizer) {
-	return __Lexer_tokenizeIntegerBasedLiteral(tokenizer, 8);
+LexerResult __Lexer_tokenizeOctalLiteral(Lexer *lexer) {
+	return __Lexer_tokenizeIntegerBasedLiteral(lexer, 8);
 }
 
-LexerResult __Lexer_tokenizeHexadecimalLiteral(Lexer *tokenizer) {
+LexerResult __Lexer_tokenizeHexadecimalLiteral(Lexer *lexer) {
 	// TODO: Currently not supporting floating point hexadecimal literals
-	return __Lexer_tokenizeIntegerBasedLiteral(tokenizer, 16);
+	return __Lexer_tokenizeIntegerBasedLiteral(lexer, 16);
 }
 
-LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
-	char *start = tokenizer->currentChar;
-	char ch = *tokenizer->currentChar;
+LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
+	char *start = lexer->currentChar;
+	char ch = *lexer->currentChar;
 
 	assertf(is_decimal_digit(ch) || ch == '.', "Unexpected character '%s' (expected decimal digit at the source stream head)", format_char(ch));
 
@@ -501,17 +501,17 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 		// Handle fractional part
 		if(ch == '.') {
 			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
-			if(is_identifier_start(Lexer_peek(tokenizer, 1))) break;     // Accessor (ex. 10.toFixed())
-			if(!is_decimal_digit(Lexer_peek(tokenizer, 1))) return LexerError(
+			if(is_identifier_start(Lexer_peek(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			if(!is_decimal_digit(Lexer_peek(lexer, 1))) return LexerError(
 					String_fromFormat("expected member name following '.'"),
 					Token_alloc(
 						TOKEN_MARKER,
 						TOKEN_CARET,
 						TextRange_construct(
-							tokenizer->currentChar,
-							tokenizer->currentChar + 1,
-							tokenizer->line,
-							tokenizer->column
+							lexer->currentChar,
+							lexer->currentChar + 1,
+							lexer->line,
+							lexer->column
 						),
 						(union TokenValue){0}
 					)
@@ -521,14 +521,14 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 		}
 
 		// Advance to the next character
-		ch = Lexer_advance(tokenizer);
+		ch = Lexer_advance(lexer);
 
 		// Pre-handle exponent
 		if((ch == 'e' || ch == 'E') && !hasExponent) {
 			hasExponent = true;
-			ch = Lexer_advance(tokenizer);  // Consume the exponent character
+			ch = Lexer_advance(lexer);  // Consume the exponent character
 
-			if(ch == '+' || ch == '-') ch = Lexer_advance(tokenizer);       // Consume the sign character if present
+			if(ch == '+' || ch == '-') ch = Lexer_advance(lexer);       // Consume the sign character if present
 
 			// Missing exponent
 			if(!is_decimal_digit(ch)) return LexerError(
@@ -537,10 +537,10 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 						TOKEN_MARKER,
 						TOKEN_CARET,
 						TextRange_construct(
-							tokenizer->currentChar,
-							tokenizer->currentChar + 1,
-							tokenizer->line,
-							tokenizer->column
+							lexer->currentChar,
+							lexer->currentChar + 1,
+							lexer->line,
+							lexer->column
 						),
 						(union TokenValue){0}
 					)
@@ -561,10 +561,10 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 					TOKEN_MARKER,
 					TOKEN_CARET,
 					TextRange_construct(
-						tokenizer->currentChar,
-						tokenizer->currentChar + 1,
-						tokenizer->line,
-						tokenizer->column
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
 					),
 					(union TokenValue){0}
 				)
@@ -582,21 +582,21 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 					TOKEN_MARKER,
 					TOKEN_CARET,
 					TextRange_construct(
-						tokenizer->currentChar,
-						tokenizer->currentChar + 1,
-						tokenizer->line,
-						tokenizer->column
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
 					),
 					(union TokenValue){0}
 				)
 			);
 		}
 	}
-	// if(ch) tokenizer->currentChar--;
+	// if(ch) lexer->currentChar--;
 
 	// Create a TextRange view
 	TextRange range;
-	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+	TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
 
 	// Copy the number
 	String *numberStr = TextRange_toString(&range);
@@ -613,10 +613,10 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 				TOKEN_MARKER,
 				TOKEN_CARET,
 				TextRange_construct(
-					tokenizer->currentChar,
-					tokenizer->currentChar + 1,
-					tokenizer->line,
-					tokenizer->column
+					lexer->currentChar,
+					lexer->currentChar + 1,
+					lexer->line,
+					lexer->column
 				),
 				(union TokenValue){0}
 			)
@@ -636,18 +636,18 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *tokenizer) {
 	String_free(numberStr);
 
 	// Add the token to the array
-	Array_push(tokenizer->tokens, token);
+	Array_push(lexer->tokens, token);
 	return LexerSuccess();
 }
 
 
-LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *tokenizer) {
-	char *start = tokenizer->currentChar;
+LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
+	char *start = lexer->currentChar;
 
 	enum TokenType type = TOKEN_INVALID;
 	enum TokenKind kind = TOKEN_DEFAULT;
 
-	#define match_as(str, _type, _kind) if(Lexer_match(tokenizer, str)) type = _type, kind = _kind
+	#define match_as(str, _type, _kind) if(Lexer_match(lexer, str)) type = _type, kind = _kind
 
 	// Swift operators (sorted by length)
 	match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
@@ -698,26 +698,26 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *tokenizer) {
 
 	// Create a TextRange view
 	TextRange range;
-	TextRange_constructor(&range, start, tokenizer->currentChar, tokenizer->line, tokenizer->column);
+	TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
 
 	// Create a token
 	Token *token = Token_alloc(type, kind, range, (union TokenValue){0});
 
 	// Add the token to the array
-	Array_push(tokenizer->tokens, token);
+	Array_push(lexer->tokens, token);
 	return LexerSuccess();
 }
 
 
-void Lexer_printTokens(Lexer *tokenizer) {
-	if(!tokenizer) return;
+void Lexer_printTokens(Lexer *lexer) {
+	if(!lexer) return;
 
-	if(!tokenizer->tokens->size) {
+	if(!lexer->tokens->size) {
 		printf("No tokens to print\n");
 		return;
 	}
 
-	for(size_t i = 0; i < tokenizer->tokens->size; i++) {
-		Token_print((Token*)Array_get(tokenizer->tokens, i), 0, false);
+	for(size_t i = 0; i < lexer->tokens->size; i++) {
+		Token_print((Token*)Array_get(lexer->tokens, i), 0, false);
 	}
 }
