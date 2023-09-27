@@ -2,6 +2,18 @@
 #include "unit.h"
 #include <stdio.h>
 
+void equals() {
+	String *str = NULL;
+
+	TEST("Simple equals", {
+		str = String_alloc("Hello, World!");
+
+		EXPECT_TRUE(String_equals(str, "Hello, World!"));
+		EXPECT_FALSE(String_equals(str, "Hello!"));
+		EXPECT_FALSE(String_equals(str, "\0"));
+	})
+}
+
 void replaceAll() {
 	String *str;
 
@@ -77,5 +89,152 @@ void replaceAll() {
 		str = String_alloc("TestSomeTestString");
 		String_replaceAll(str, "None", "Something");
 		EXPECT_TRUE(String_equals(str, "TestSomeTestString"));
+	})
+}
+
+void startsWith() {
+	String *str = NULL;
+
+	TEST("Simple startsWith", {
+		str = String_alloc("Hello, World!");
+
+		EXPECT_TRUE(String_startsWith(str, "Hello"));
+		EXPECT_FALSE(String_startsWith(str, "World"));
+		EXPECT_TRUE(String_startsWith(str, "Hello, World!"));
+		EXPECT_FALSE(String_startsWith(str, "Hello, World! "));
+	})
+}
+
+void endsWith() {
+	String *str = NULL;
+
+	TEST("Simple endsWith", {
+		str = String_alloc("Hello, World!");
+
+		EXPECT_TRUE(String_endsWith(str, "World!"));
+		EXPECT_FALSE(String_endsWith(str, "Hello"));
+		EXPECT_TRUE(String_endsWith(str, "Hello, World!"));
+		EXPECT_FALSE(String_endsWith(str, " Hello, World!"));
+	})
+}
+
+
+void indexOf() {
+	String *str = NULL;
+
+	TEST("Simple indexOf", {
+		str = String_alloc("Hello, World!");
+
+		EXPECT_TRUE(String_indexOf(str, "Hello") == 0);
+		EXPECT_TRUE(String_indexOf(str, "World") == 7);
+		EXPECT_TRUE(String_indexOf(str, "Hello, World!") == 0);
+		EXPECT_TRUE(String_indexOf(str, "Hello, World! ") == -1);
+		EXPECT_TRUE(String_indexOf(str, "Empty") == -1);
+	})
+}
+
+void splice() {
+	String *str = NULL;
+	TEST("Simple splice", {
+		str = String_alloc("Hello, World!");
+		String_splice(str, 0, 5, "Goodbye");
+		EXPECT_TRUE(String_equals(str, "Goodbye, World!"));
+	})
+
+	TEST("Splice one", {
+		str = String_alloc("Hello, World!");
+		String_splice(str, 0, 1, "G");
+		EXPECT_TRUE(String_equals(str, "Gello, World!"));
+
+		str = String_alloc("Hello, World!");
+		String_splice(str, 3, 5, "Goodbye");
+		EXPECT_TRUE(String_equals(str, "HelGoodbye, World!"));
+	})
+
+	TEST("Splice prepend", {
+		str = String_alloc("Hello, World!");
+		String_splice(str, 0, 0, "G");
+		EXPECT_TRUE(String_equals(str, "GHello, World!"));
+	})
+
+	TEST("Splice append", {
+		str = String_alloc("Hello, World!");
+		String_splice(str, 13, 13, "G");
+		EXPECT_TRUE(String_equals(str, "Hello, World!G"));
+	})
+
+	TEST("Splice insert", {
+		str = String_alloc("Hello, World!");
+		String_splice(str, 2, 2, "G");
+		EXPECT_TRUE(String_equals(str, "HeGllo, World!"));
+	})
+
+	TEST("Splice out of bounds", {
+		str = String_alloc("Hello, World!");
+		String_splice(str, 20, 14, "G");
+		EXPECT_TRUE(String_equals(str, "Hello, World!G"));
+
+		str = String_alloc("Hello, World!");
+		String_splice(str, 20, 1, "G");
+		EXPECT_TRUE(String_equals(str, "Hello, World!G"));
+
+		str = String_alloc("Hello, World!");
+		String_splice(str, 2, 10000, "G");
+		EXPECT_TRUE(String_equals(str, "HeG"));
+
+		str = String_alloc("Hello, World!");
+		String_splice(str, 13, 9, "Goodbye");
+		EXPECT_TRUE(String_equals(str, "Hello, World!Goodbye"));
+	})
+
+}
+
+void slice() {
+
+	String *str = NULL;
+	String *out = NULL;
+
+	TEST("Simple slice", {
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 0, 5);
+		EXPECT_TRUE(String_equals(out, "Hello"));
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 1, 2);
+		EXPECT_TRUE(String_equals(out, "e"));
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 1, 1);
+		EXPECT_TRUE(String_equals(out, ""));
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 0, 13);
+		EXPECT_TRUE(String_equals(out, "Hello, World!"));
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 0, 12);
+		EXPECT_TRUE(String_equals(out, "Hello, World"));
+	})
+
+	TEST("Slice out of bounds", {
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, -1, 1);
+		EXPECT_TRUE(out == NULL);
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 14, 1);
+		EXPECT_TRUE(out == NULL);
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 14, 15);
+		EXPECT_TRUE(out == NULL);
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 13, 1000);
+		EXPECT_TRUE(out == NULL);
+
+		str = String_alloc("Hello, World!");
+		out = String_slice(str, 12, 1000);
+		EXPECT_TRUE(String_equals(out, "!"));
 	})
 }
