@@ -180,12 +180,12 @@ const ARCHIVE_PATH = path.join(OUTPUT_DIR, "/xlouma00.zip");
 			process.exit(1);
 		}
 
-		fs.writeFileSync(path.join(PROJECT_DIR, "/Makefile"), `#
+		fs.writeFileSync(path.join(PROJECT_DIR, "/Makefile"), `##
 # File: Makefile
 # Author: deploy/deploy.js
 # Date: ${new Date().toISOString().slice(0, 10)}
-# Brief: This file is generated automatically. Do not edit!
-#
+# Brief: This file is generated automatically. Do not edit manually!
+##
 
 COMPILER = ${compilerSettings.COMPILER}
 CFLAGS = ${compilerSettings.CFLAGS}
