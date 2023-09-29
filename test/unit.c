@@ -57,6 +57,7 @@ void unit_register_suit(char *desc) {
 
 	unit_g.suites_count++;
 	unit_g.has_current_suit_failed = false;
+	unit_g.current_test_start_time = 1;
 }
 
 
@@ -93,6 +94,7 @@ void unit_run_test_finish() {
 
 	unit_g.tests_run_total_count++;
 	unit_g.has_current_test_failed = false;
+	unit_g.current_test_start_time = 0;
 }
 
 
@@ -100,6 +102,10 @@ void unit_run_test_suite(char *desc, void (*test)(void)) {
 	unit_register_suit(desc);
 
 	test();
+
+	if(unit_g.current_test_start_time == 1) {
+		print(DARK_GREY "\r    !  Test suite did not run any tests\n" RST);
+	}
 
 	if(unit_g.has_current_suit_failed && !unit_g.has_current_file_failed) {
 		unit_g.files_failed_count++;
