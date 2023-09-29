@@ -2,7 +2,7 @@
 #include "unit.h"
 #include <stdio.h>
 
-DESCRIBE(comment_stripping, "Comment stripping") {
+DESCRIBE(comment_stripping, "Comments stripping") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
 
@@ -133,7 +133,7 @@ DESCRIBE(comment_stripping, "Comment stripping") {
 	});
 }
 
-DESCRIBE(numbers_tokenization, "Number Tokenization") {
+DESCRIBE(number_tokenization, "Number literals tokenization") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
 
