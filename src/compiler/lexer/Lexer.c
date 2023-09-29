@@ -655,11 +655,16 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
 	else match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
 	else match_as("..<", TOKEN_OPERATOR, TOKEN_HALF_OPEN_RANGE);
+	else match_as("===", TOKEN_OPERATOR, TOKEN_IDENTITY);
+	else match_as("!==", TOKEN_OPERATOR, TOKEN_NOT_IDENTITY);
 	else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
 	else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
 	else match_as("&&", TOKEN_OPERATOR, TOKEN_LOG_AND);
 	else match_as("||", TOKEN_OPERATOR, TOKEN_LOG_OR);
 	else match_as("??", TOKEN_OPERATOR, TOKEN_NULL_COALESCING);
+	else match_as("?.", TOKEN_OPERATOR, TOKEN_OPTIONAL_CHAINING);
+	else match_as("==", TOKEN_OPERATOR, TOKEN_EQUALITY);
+	else match_as("!=", TOKEN_OPERATOR, TOKEN_NOT_EQUALITY);
 	else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
 	else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
 	else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
