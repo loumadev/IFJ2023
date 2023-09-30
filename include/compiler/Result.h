@@ -27,6 +27,7 @@ enum Severity {
 
  */
 enum ResultType {
+	RESULT_NO_MATCH = -2,
 	RESULT_ASSERTION = -1,
 	RESULT_SUCCESS = 0,
 	RESULT_ERROR_STATIC_LEXICAL_ANALYSIS = 1,
