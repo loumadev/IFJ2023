@@ -165,7 +165,7 @@ void String_splice(String *string, size_t start, size_t end, char *replacement) 
 
 	if(end > string->length) end = string->length;
 
-  if (start > end) end = start;
+	if(start > end) end = start;
 
 	size_t length = strlen(replacement);
 	size_t newLength = string->length + length - (end - start);
@@ -181,11 +181,11 @@ void String_splice(String *string, size_t start, size_t end, char *replacement) 
 	string->value[string->length] = '\0';
 }
 
-String * String_slice(String *string, size_t start, size_t end) {
+String* String_slice(String *string, size_t start, size_t end) {
 	if(!string) return NULL;
 	if(start > end) return NULL;
-  if(start >= string->length) return NULL;
-  if(end > string->length) end = string->length;
+	if(start >= string->length) return NULL;
+	if(end > string->length) end = string->length;
 
 	size_t length = end - start;
 
@@ -214,7 +214,6 @@ String* String_clone(String *string) {
 
 String* String_fromFormat(char *format, ...) {
 	va_list args;
-	va_start(args, format);
 
 	// Allocate memory for the string
 	String *string = String_alloc(NULL);
@@ -223,16 +222,22 @@ String* String_fromFormat(char *format, ...) {
 	// Resize the string
 	String_resize(string, 128, true);
 
-	// Convert the long to a string
+	// Gather the arguments and format the string
+	va_start(args, format);
 	int length = vsnprintf(string->value, 127, format, args);
+	va_end(args);
+
 	if(length < 0) return NULL;
 
+	// Resize the string if necessary
 	if((size_t)length >= string->capacity) {
 		String_resize(string, length + 1, true);
-		length = vsnprintf(string->value, length + 1, format, args);
-	}
 
-	va_end(args);
+		// Re-gather the arguments and format the string
+		va_start(args, format);
+		length = vsnprintf(string->value, length, format, args);
+		va_end(args);
+	}
 
 	string->length = length;
 	string->capacity = string->length;
