@@ -8,6 +8,7 @@ typedef struct Lexer {
 	Array *tokens;
 	int line;
 	int column;
+	enum WhitespaceType whitespace; // Left whitespace
 } Lexer;
 
 

@@ -57,6 +57,32 @@ enum TokenKind {
 	TOKEN_WHILE, TOKEN_FUNC, TOKEN_RETURN
 };
 
+// xNSLxNSL
+// ^--^^--^
+//    R   L
+enum WhitespaceType {
+	WHITESPACE_NONE = 0,                // No whitespace
+
+	// WHITESPACE_LEFT_LIMIT = 1 << 0,     // BOF or EOF
+	WHITESPACE_LEFT_SPACE = 1 << 1,     // Space, tab, or vertical tab
+	WHITESPACE_LEFT_NEWLINE = 1 << 2,   // Line feed or carriage return
+
+	// WHITESPACE_RIGHT_LIMIT = 1 << 4,    // BOF or EOF
+	WHITESPACE_RIGHT_SPACE = 1 << 5,    // Space, tab, or vertical tab
+	WHITESPACE_RIGHT_NEWLINE = 1 << 6,  // Line feed or carriage return
+
+	WHITESPACE_LEFT = WHITESPACE_LEFT_SPACE | WHITESPACE_LEFT_NEWLINE,
+	WHITESPACE_RIGHT = WHITESPACE_RIGHT_SPACE | WHITESPACE_RIGHT_NEWLINE,
+	WHITESPACE_ANY = WHITESPACE_LEFT | WHITESPACE_RIGHT,
+
+	WHITESPACE_MASK_LEFT = /*WHITESPACE_LEFT_LIMIT |*/ WHITESPACE_LEFT_SPACE | WHITESPACE_LEFT_NEWLINE,
+	WHITESPACE_MASK_RIGHT = /*WHITESPACE_RIGHT_LIMIT |*/ WHITESPACE_RIGHT_SPACE | WHITESPACE_RIGHT_NEWLINE
+};
+
+#define whitespace_both(whitespace) (((whitespace) & WHITESPACE_LEFT) && ((whitespace) & WHITESPACE_RIGHT))
+
+#define right_to_left_whitespace(whitespace) (((whitespace) & WHITESPACE_RIGHT) >> 4)
+#define left_to_right_whitespace(whitespace) (((whitespace) & WHITESPACE_LEFT) << 4)
 
 union TokenValue {
 	double floating;
@@ -69,13 +95,14 @@ union TokenValue {
 typedef struct Token {
 	enum TokenType type;
 	enum TokenKind kind;
+	enum WhitespaceType whitespace;
 	TextRange range;
 	union TokenValue value;
 } Token;
 
 
-void Token_constructor(Token *token, enum TokenType type, enum TokenKind kind, TextRange range, union TokenValue value);
+void Token_constructor(Token *token, enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value);
 void Token_destructor(Token *token);
-Token* Token_alloc(enum TokenType type, enum TokenKind kind, TextRange range, union TokenValue value);
+Token* Token_alloc(enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value);
 void Token_free(Token *token);
 void Token_print(Token *token, unsigned int depth, int isProperty);

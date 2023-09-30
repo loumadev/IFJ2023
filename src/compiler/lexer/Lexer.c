@@ -9,6 +9,12 @@
 
 char __Lexer_resolveEscapedChar(char ch);
 
+LexerResult __Lexer_tokenizeWhitespace(Lexer *lexer);
+LexerResult __Lexer_tokenizeSpace(Lexer *lexer);
+LexerResult __Lexer_tokenizeNewLine(Lexer *lexer);
+LexerResult __Lexer_tokenizeSingleLineComment(Lexer *lexer);
+LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer);
+
 LexerResult __Lexer_tokenizeString(Lexer *lexer);
 LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer);
 LexerResult __Lexer_tokenizeNumberLiteral(Lexer *lexer);
@@ -28,6 +34,7 @@ void Lexer_constructor(Lexer *lexer) {
 	lexer->currentChar = NULL;
 	lexer->line = 1;
 	lexer->column = 1;
+	lexer->whitespace = WHITESPACE_NONE;
 }
 
 void Lexer_destructor(Lexer *lexer) {
@@ -47,6 +54,7 @@ void Lexer_destructor(Lexer *lexer) {
 	lexer->currentChar = NULL;
 	lexer->line = 0;
 	lexer->column = 0;
+	lexer->whitespace = WHITESPACE_NONE;
 }
 
 char Lexer_peek(Lexer *lexer, size_t offset) {
@@ -98,6 +106,15 @@ bool Lexer_isAtEnd(Lexer *lexer) {
 	return lexer->currentChar >= lexer->source + lexer->sourceLength;
 }
 
+#define is_space_like(ch) ((ch) == ' ' || (ch) == '\f' || (ch) == '\t' /*|| (ch) == '\v'*/)
+#define is_newline(ch) ((ch) == '\n' || (ch) == '\r')
+#define is_whitespace(ch) (is_space_like(ch) || is_newline(ch))
+#define is_single_line_comment(lexer) (Lexer_compare(lexer, "//") != 0)
+#define is_multi_line_comment_start(lexer) (Lexer_compare(lexer, "/*") != 0)
+#define is_multi_line_comment_end(lexer) (Lexer_compare(lexer, "*/") != 0)
+#define is_multi_line_comment(lexer) (is_multi_line_comment_start(lexer) || is_multi_line_comment_end(lexer))
+#define is_comment(lexer) (is_single_line_comment(lexer) || is_multi_line_comment(lexer))
+
 #define is_alpha(ch) (((ch) >= 'a' && (ch) <= 'z') || ((ch) >= 'A' && (ch) <= 'Z'))
 #define is_binary_digit(ch) ((ch) == '0' || (ch) == '1')
 #define is_octal_digit(ch) ((ch) >= '0' && (ch) <= '7')
@@ -107,6 +124,162 @@ bool Lexer_isAtEnd(Lexer *lexer) {
 #define is_identifier_start(ch) ((ch) == '_' || is_alpha(ch))
 #define is_identifier_part(ch) (is_identifier_start(ch) || is_decimal_digit(ch))
 
+#define fetch_next_whitespace(lexer) enum WhitespaceType __wh_bit = lexer->whitespace; LexerResult __wh_res = __Lexer_tokenizeWhitespace(lexer); if(!__wh_res.success) return __wh_res; __wh_bit |= left_to_right_whitespace(lexer->whitespace);
+
+// TODO: Move this somewhere else (to some utility file)
+int max(int a, int b) {
+	return a > b ? a : b;
+}
+
+LexerResult __Lexer_tokenizeWhitespace(Lexer *lexer) {
+	if(!lexer) return LexerNoMatch();
+	if(!lexer->currentChar) return LexerNoMatch();
+
+	// enum WhitespaceType prev = lexer->whitespace;       // Save previous ws in case of no match
+
+	lexer->whitespace = WHITESPACE_NONE;                // Prepare ws for matching
+	enum WhitespaceType whitespace = WHITESPACE_NONE;   // Keep track of the matched whitespace
+
+	bool matched = false;
+	bool hasMatch = false;
+	LexerResult res;
+
+	do {
+		matched = false;
+
+		res = __Lexer_tokenizeSpace(lexer);
+		if(!res.success) return res;
+		if(res.type != RESULT_NO_MATCH) whitespace = max(whitespace, lexer->whitespace & WHITESPACE_MASK_LEFT), matched = true;
+		// TODO: Free the results here
+
+		res = __Lexer_tokenizeNewLine(lexer);
+		if(!res.success) return res;
+		if(res.type != RESULT_NO_MATCH) whitespace = max(whitespace, lexer->whitespace & WHITESPACE_MASK_LEFT), matched = true;
+
+		res = __Lexer_tokenizeSingleLineComment(lexer);
+		if(!res.success) return res;
+		if(res.type != RESULT_NO_MATCH) whitespace = max(whitespace, lexer->whitespace & WHITESPACE_MASK_LEFT), matched = true;
+
+		res = __Lexer_tokenizeMultiLineComment(lexer);
+		if(!res.success) return res;
+		if(res.type != RESULT_NO_MATCH) whitespace = max(whitespace, lexer->whitespace & WHITESPACE_MASK_LEFT), matched = true;
+
+		hasMatch |= matched;
+	} while(matched);
+
+	// lexer->whitespace = hasMatch ? whitespace : prev;
+	lexer->whitespace = whitespace;
+
+	return hasMatch ? LexerSuccess() : LexerNoMatch();
+}
+
+LexerResult __Lexer_tokenizeSpace(Lexer *lexer) {
+	if(!lexer) return LexerNoMatch();
+	if(!lexer->currentChar) return LexerNoMatch();
+
+	char ch = *lexer->currentChar;
+
+	if(!is_space_like(ch)) return LexerNoMatch();
+
+	while((ch = *lexer->currentChar) && is_space_like(ch)) {
+		Lexer_advance(lexer);
+	}
+
+	lexer->whitespace = WHITESPACE_LEFT_SPACE;
+
+	return LexerSuccess();
+}
+
+LexerResult __Lexer_tokenizeNewLine(Lexer *lexer) {
+	if(!lexer) return LexerNoMatch();
+	if(!lexer->currentChar) return LexerNoMatch();
+
+	char ch = *lexer->currentChar;
+
+	if(!is_newline(ch)) return LexerNoMatch();
+
+	while((ch = *lexer->currentChar) && is_newline(ch)) {
+		Lexer_advance(lexer);
+	}
+
+	lexer->whitespace = WHITESPACE_LEFT_NEWLINE;
+
+	return LexerSuccess();
+}
+
+LexerResult __Lexer_tokenizeSingleLineComment(Lexer *lexer) {
+	if(!lexer) return LexerNoMatch();
+	if(!lexer->currentChar) return LexerNoMatch();
+
+	if(!is_single_line_comment(lexer)) return LexerNoMatch();
+
+	while(!Lexer_isAtEnd(lexer) && !Lexer_match(lexer, "\n")) {
+		Lexer_advance(lexer);
+	}
+
+	lexer->whitespace = WHITESPACE_LEFT_NEWLINE;
+
+	return LexerSuccess();
+}
+
+LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
+	if(!lexer) return LexerNoMatch();
+	if(!lexer->currentChar) return LexerNoMatch();
+
+	if(!is_multi_line_comment(lexer)) return LexerNoMatch();
+	if(is_multi_line_comment_end(lexer)) return LexerError(
+			String_fromFormat("unexpected end of block comment"),
+			Token_alloc(
+				TOKEN_MARKER,
+				TOKEN_CARET,
+				WHITESPACE_NONE,
+				TextRange_construct(
+					lexer->currentChar,
+					lexer->currentChar + 1,
+					lexer->line,
+					lexer->column
+				),
+				(union TokenValue){0}
+			)
+	);
+
+	enum WhitespaceType whitespace = WHITESPACE_LEFT_SPACE;
+	size_t depth = 0;
+
+	while(!Lexer_isAtEnd(lexer)) {
+		if(Lexer_match(lexer, "/*")) {
+			depth++;
+		} else if(Lexer_match(lexer, "*/")) {
+			depth--;
+
+			if(depth == 0) break;
+		} else {
+			char ch = Lexer_advance(lexer);
+			if(is_newline(ch)) whitespace = WHITESPACE_LEFT_NEWLINE;
+		}
+	}
+
+	// There are still comments left
+	if(depth != 0) return LexerError(
+			String_fromFormat("unterminated '/*' comment"),
+			Token_alloc(
+				TOKEN_MARKER,
+				TOKEN_CARET,
+				WHITESPACE_NONE,
+				TextRange_construct(
+					lexer->currentChar,
+					lexer->currentChar + 1,
+					lexer->line,
+					lexer->column
+				),
+				(union TokenValue){0}
+			)
+	);
+
+	lexer->whitespace = whitespace;
+
+	return LexerSuccess();
+}
 
 LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 	assertf(lexer != NULL);
@@ -133,70 +306,22 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 		}
 
 		// Skip whitespace
-		if(ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
-			Lexer_advance(lexer);
-			continue;
-		}
-		// Skip single-line comments
-		else if(Lexer_match(lexer, "//")) {
-			while(!Lexer_isAtEnd(lexer) && !Lexer_match(lexer, "\n")) {
-				Lexer_advance(lexer);
+		{
+			enum WhitespaceType prev = lexer->whitespace;       // Save previous ws in case of no match
+
+			LexerResult res = __Lexer_tokenizeWhitespace(lexer);
+			if(!res.success) return res;
+
+			// Some whitespace matched
+			if(res.type != RESULT_NO_MATCH) {
+				continue;
 			}
 
-			continue;
+			lexer->whitespace = prev;
 		}
-		// Skip multi-line comments
-		else if(Lexer_match(lexer, "/*")) {
-			size_t depth = 1;
 
-			while(!Lexer_isAtEnd(lexer)) {
-				if(Lexer_match(lexer, "/*")) {
-					depth++;
-				} else if(Lexer_match(lexer, "*/")) {
-					depth--;
-
-					if(depth == 0) break;
-				}
-
-				Lexer_advance(lexer);
-			}
-
-			if(depth == 0) continue;
-
-			// There are still comments left
-			return LexerError(
-				String_fromFormat("unterminated '/*' comment"),
-				Token_alloc(
-					TOKEN_MARKER,
-					TOKEN_CARET,
-					TextRange_construct(
-						lexer->currentChar,
-						lexer->currentChar + 1,
-						lexer->line,
-						lexer->column
-					),
-					(union TokenValue){0}
-				)
-			);
-		} else if(Lexer_match(lexer, "*/")) {
-			// There are no comments to close
-			return LexerError(
-				String_fromFormat("unexpected end of block comment"),
-				Token_alloc(
-					TOKEN_MARKER,
-					TOKEN_CARET,
-					TextRange_construct(
-						lexer->currentChar,
-						lexer->currentChar + 1,
-						lexer->line,
-						lexer->column
-					),
-					(union TokenValue){0}
-				)
-			);
-		}
 		// Match strings
-		else if(ch == '"' || ch == '\'') {
+		if(ch == '"' || ch == '\'') {
 			LexerResult result = __Lexer_tokenizeString(lexer);
 			if(!result.success) return result;
 
@@ -231,6 +356,7 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 				Token_alloc(
 					TOKEN_MARKER,
 					TOKEN_CARET,
+					WHITESPACE_NONE,
 					TextRange_construct(
 						lexer->currentChar,
 						lexer->currentChar + 1,
@@ -250,7 +376,9 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 	TextRange range;
 	TextRange_constructor(&range, lexer->currentChar, lexer->currentChar, lexer->line, lexer->column);
 
-	Token *token = Token_alloc(TOKEN_EOF, TOKEN_DEFAULT, range, (union TokenValue){0});
+	fetch_next_whitespace(lexer);
+
+	Token *token = Token_alloc(TOKEN_EOF, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
 	assertf(token != NULL);
 
 	Array_push(lexer->tokens, token);
@@ -278,6 +406,38 @@ char __Lexer_resolveEscapedChar(char ch) {
 	}
 }
 
+// Swift multiline string literals
+// LexerResult __Lexer_tokenizeMultilineStringLiteral(Lexer *lexer) {
+// 	char *start = lexer->currentChar;
+// 	char ch = *lexer->currentChar;
+
+// 	// Asserts and consumes the string literal start
+// 	assertf(Lexer_match(lexer, "\"\"\""), "Unexpected character '%s' (expected '\"' at the source stream head)", format_char(ch));
+
+// 	// Check and consume the LF
+// 	if(!Lexer_advance(lexer) != '\n') return LexerError(
+// 			String_fromFormat("multi-line string literal content must begin on a new line"),
+// 			Token_alloc(
+// 				TOKEN_MARKER,
+// 				TOKEN_CARET,
+// 				WHITESPACE_NONE,
+// 				TextRange_construct(
+// 					lexer->currentChar,
+// 					lexer->currentChar + 1,
+// 					lexer->line,
+// 					lexer->column
+// 				),
+// 				(union TokenValue){0}
+// 			)
+// 	);
+
+// 	Array *tokens = Array_alloc(1);
+
+// 	// Read the string content
+// 	// TODO: Tokenize the whole string at once (with interpolation), push the tokens into some internal cache and return the first one, then when calling next(), return the next token from the cache until it's empty, then tokenize the input string.
+// 	// TODO: After all the string tokens are collected, process them (remove heading indents)
+// }
+
 // TODO: Implement string parsing from specifiaction
 LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	char *start = lexer->currentChar;
@@ -298,6 +458,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 				Token_alloc(
 					TOKEN_MARKER,
 					TOKEN_CARET,
+					WHITESPACE_NONE,
 					TextRange_construct(
 						start,
 						start + 1,
@@ -329,8 +490,10 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	TextRange range;
 	TextRange_constructor(&range, start, lexer->currentChar + 1, lexer->line, lexer->column);
 
+	fetch_next_whitespace(lexer);
+
 	// Create a token
-	Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_STRING, range, (union TokenValue){.string = string});
+	Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_STRING, __wh_bit, range, (union TokenValue){.string = string});
 	assertf(token != NULL);
 
 	// Add the token to the array
@@ -353,14 +516,6 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
 	// Create a TextRange view
 	TextRange range;
 	TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
-
-	// Copy the identifier
-	String *identifier = TextRange_toString(&range);
-	assertf(identifier != NULL);
-
-	// Set a token value
-	union TokenValue value;
-	value.identifier = identifier;
 
 	// Resolve the identifier
 	union TokenValue value = {0};
@@ -404,8 +559,10 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
 		value.identifier = identifier;
 	}
 
+	fetch_next_whitespace(lexer);
+
 	// Create a token
-	Token *token = Token_alloc(type == TOKEN_INVALID ? kind == TOKEN_DEFAULT ? TOKEN_IDENTIFIER : TOKEN_KEYWORD : type, kind, range, value);
+	Token *token = Token_alloc(type == TOKEN_INVALID ? kind == TOKEN_DEFAULT ? TOKEN_IDENTIFIER : TOKEN_KEYWORD : type, kind, __wh_bit, range, value);
 	assertf(token != NULL);
 
 	// Add the token to the array
@@ -446,6 +603,7 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *lexer, int base) {
 			Token_alloc(
 				TOKEN_MARKER,
 				TOKEN_CARET,
+				WHITESPACE_NONE,
 				TextRange_construct(
 					lexer->currentChar,
 					lexer->currentChar + 1,
@@ -477,8 +635,10 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *lexer, int base) {
 	long number = strtol(numberStr->value + 2, NULL, base);
 	String_free(numberStr);
 
+	fetch_next_whitespace(lexer);
+
 	// Create a token
-	Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_INTEGER, range, (union TokenValue){.integer = number});
+	Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_INTEGER, __wh_bit, range, (union TokenValue){.integer = number});
 
 	// Add the token to the array
 	Array_push(lexer->tokens, token);
@@ -531,6 +691,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 					Token_alloc(
 						TOKEN_MARKER,
 						TOKEN_CARET,
+						WHITESPACE_NONE,
 						TextRange_construct(
 							lexer->currentChar,
 							lexer->currentChar + 1,
@@ -560,6 +721,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 					Token_alloc(
 						TOKEN_MARKER,
 						TOKEN_CARET,
+						WHITESPACE_NONE,
 						TextRange_construct(
 							lexer->currentChar,
 							lexer->currentChar + 1,
@@ -584,6 +746,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 				Token_alloc(
 					TOKEN_MARKER,
 					TOKEN_CARET,
+					WHITESPACE_NONE,
 					TextRange_construct(
 						lexer->currentChar,
 						lexer->currentChar + 1,
@@ -605,6 +768,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 				Token_alloc(
 					TOKEN_MARKER,
 					TOKEN_CARET,
+					WHITESPACE_NONE,
 					TextRange_construct(
 						lexer->currentChar,
 						lexer->currentChar + 1,
@@ -636,6 +800,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 			Token_alloc(
 				TOKEN_MARKER,
 				TOKEN_CARET,
+				WHITESPACE_NONE,
 				TextRange_construct(
 					lexer->currentChar,
 					lexer->currentChar + 1,
@@ -650,10 +815,12 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 	// Remove underscores
 	String_replaceAll(numberStr, "_", "");
 
+	fetch_next_whitespace(lexer);
+
 	// Create a token
 	Token *token = hasDot || hasExponent ?
-		Token_alloc(TOKEN_LITERAL, TOKEN_FLOATING, range, (union TokenValue){.floating = strtod(numberStr->value, NULL)}) :
-		Token_alloc(TOKEN_LITERAL, TOKEN_INTEGER, range, (union TokenValue){.integer = strtol(numberStr->value, NULL, 10)});
+		Token_alloc(TOKEN_LITERAL, TOKEN_FLOATING, __wh_bit, range, (union TokenValue){.floating = strtod(numberStr->value, NULL)}) :
+		Token_alloc(TOKEN_LITERAL, TOKEN_INTEGER, __wh_bit, range, (union TokenValue){.integer = strtol(numberStr->value, NULL, 10)});
 	assertf(token != NULL);
 
 	// Free the string
@@ -729,8 +896,10 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	TextRange range;
 	TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
 
+	fetch_next_whitespace(lexer);
+
 	// Create a token
-	Token *token = Token_alloc(type, kind, range, (union TokenValue){0});
+	Token *token = Token_alloc(type, kind, __wh_bit, range, (union TokenValue){0});
 
 	// Add the token to the array
 	Array_push(lexer->tokens, token);

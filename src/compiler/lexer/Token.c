@@ -2,11 +2,12 @@
 #include "allocator/MemoryAllocator.h"
 #include "inspector.h"
 
-void Token_constructor(Token *token, enum TokenType type, enum TokenKind kind, TextRange range, union TokenValue value) {
+void Token_constructor(Token *token, enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value) {
 	if(!token) return;
 
 	token->type = type;
 	token->kind = kind;
+	token->whitespace = whitespace;
 	token->range = range;
 	token->value = value;
 }
@@ -23,14 +24,15 @@ void Token_destructor(Token *token) {
 	}
 
 	token->type = TOKEN_INVALID;
+	token->whitespace = WHITESPACE_NONE;
 	TextRange_destructor(&token->range);
 }
 
-Token* Token_alloc(enum TokenType type, enum TokenKind kind, TextRange range, union TokenValue value) {
+Token* Token_alloc(enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value) {
 	Token *token = mem_alloc(sizeof(Token));
 	if(!token) return NULL;
 
-	Token_constructor(token, type, kind, range, value);
+	Token_constructor(token, type, kind, whitespace, range, value);
 	return token;
 }
 
@@ -51,6 +53,7 @@ void Token_print(Token *token, unsigned int depth, int isProperty) {
 
 	print_field("type", NUMBER "%d", token->type);
 	print_field("kind", NUMBER "%d", token->kind);
+	print_field("whitespace", NUMBER "%d", token->whitespace);
 
 	print_field("value");
 	if(token->type == TOKEN_EOF) println(POINTER "EOF");
