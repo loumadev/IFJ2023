@@ -37,17 +37,19 @@ enum TokenKind {
 	TOKEN_STAR, TOKEN_PERCENT, TOKEN_LESS, TOKEN_GREATER,
 	TOKEN_PIPE, TOKEN_CARET /*valid marker*/, TOKEN_TILDE /*valid marker*/,
 
-	// Compound assignment operators (+=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=)
+	// Compound assignment operators (+=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=, ==, !=, ===, !==)
 	TOKEN_PLUS_ASSIGN, TOKEN_MINUS_ASSIGN,
 	TOKEN_MULT_ASSIGN, TOKEN_DIV_ASSIGN, TOKEN_MOD_ASSIGN,
 	TOKEN_BIT_AND_ASSIGN, TOKEN_BIT_OR_ASSIGN, TOKEN_BIT_XOR_ASSIGN,
 	TOKEN_LEFT_SHIFT_ASSIGN, TOKEN_RIGHT_SHIFT_ASSIGN,
+	TOKEN_EQUALITY, TOKEN_NOT_EQUALITY,
+	TOKEN_IDENTITY, TOKEN_NOT_IDENTITY,
 
-	// Other compound operators (++, --, <<, >>, &&, ||, ??, ..., ..<)
+	// Other compound operators (++, --, <<, >>, &&, ||, ??, ?., ..., ..<)
 	TOKEN_INCREMENT, TOKEN_DECREMENT,
 	TOKEN_LEFT_SHIFT, TOKEN_RIGHT_SHIFT,
 	TOKEN_LOG_AND, TOKEN_LOG_OR,
-	TOKEN_NULL_COALESCING,
+	TOKEN_NULL_COALESCING, TOKEN_OPTIONAL_CHAINING,
 	TOKEN_RANGE, TOKEN_HALF_OPEN_RANGE,
 
 	// Keywords
