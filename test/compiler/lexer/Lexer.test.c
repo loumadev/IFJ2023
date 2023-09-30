@@ -133,6 +133,465 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 	});
 }
 
+DESCRIBE(whitespace_resolution, "Whitespace resolution") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST_BEGIN("Simple whitespace") {
+		result = Lexer_tokenize(&lexer, "A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == /*WHITESPACE_LEFT_LIMIT*/ WHITESPACE_NONE);
+
+
+		result = Lexer_tokenize(&lexer, " A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_SPACE);
+
+
+		result = Lexer_tokenize(&lexer, "A ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (/*WHITESPACE_LEFT_LIMIT*/ WHITESPACE_NONE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, " A ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "\nA");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "A\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (/*WHITESPACE_LEFT_LIMIT*/ WHITESPACE_NONE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "\nA\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, " A\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "\nA ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+	} TEST_END();
+
+	TEST_BEGIN("Simple comment") {
+		result = Lexer_tokenize(&lexer, "A// comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "A // comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "A\n// comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "// comment\nA");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "// comment\n A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "A/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_SPACE);
+
+
+		result = Lexer_tokenize(&lexer, "A /* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_SPACE);
+
+
+		result = Lexer_tokenize(&lexer, "A/* comment \n comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "A /* comment \n comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 00);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_RIGHT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_SPACE);
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */ A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_SPACE);
+
+
+		result = Lexer_tokenize(&lexer, "/* comment \n comment */A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_NEWLINE);
+
+
+		result = Lexer_tokenize(&lexer, "/* comment \n comment */ A");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == WHITESPACE_LEFT_NEWLINE);
+	} TEST_END();
+
+
+	TEST_BEGIN("Multiple whitespace") {
+		result = Lexer_tokenize(&lexer, "  A  ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "\n\nA\n\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+	} TEST_END();
+
+
+	TEST_BEGIN("Multiple comments") {
+		result = Lexer_tokenize(&lexer, "// comment\nA// comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\n A// comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\nA // comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\n A // comment");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */A/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */A/* comment \n comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment \n comment */A/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment \n comment */A/* comment \n comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */\nA/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */A \n/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+	} TEST_END();
+
+	TEST_BEGIN("Mixed whitespace") {
+		result = Lexer_tokenize(&lexer, " \nA  ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "\n A  ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+
+		result = Lexer_tokenize(&lexer, "  A \n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, " \nA\n ");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+	} TEST_END();
+
+	TEST_BEGIN("Mixed comments") {
+		result = Lexer_tokenize(&lexer, "// comment\nA/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */A// comment\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */\nA// comment\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_RIGHT_NEWLINE | WHITESPACE_LEFT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\nA\n/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_RIGHT_NEWLINE | WHITESPACE_LEFT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\n A /* comment \n comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_RIGHT_NEWLINE | WHITESPACE_LEFT_NEWLINE));
+	} TEST_END();
+
+	TEST_BEGIN("Whitespace in context") {
+		result = Lexer_tokenize(&lexer, "// comment\nA/* comment */B\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\nA/* comment */\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_NONE));
+
+
+		result = Lexer_tokenize(&lexer, "// comment\nA/* comment */\nB\n");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_NEWLINE));
+
+
+		result = Lexer_tokenize(&lexer, "/* comment */A/* comment */B/* comment */");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+
+		result = Lexer_tokenize(&lexer, "A = B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+		EXPECT_TRUE(token->whitespace & WHITESPACE_LEFT);
+		EXPECT_TRUE(token->whitespace & WHITESPACE_RIGHT);
+		EXPECT_TRUE(whitespace_both(token->whitespace));
+
+
+		result = Lexer_tokenize(&lexer, "A =B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_NONE));
+		EXPECT_TRUE(token->whitespace & WHITESPACE_LEFT);
+		EXPECT_FALSE(token->whitespace & WHITESPACE_RIGHT);
+		EXPECT_FALSE(whitespace_both(token->whitespace));
+
+
+		result = Lexer_tokenize(&lexer, "A= B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_NONE | WHITESPACE_RIGHT_SPACE));
+		EXPECT_FALSE(token->whitespace & WHITESPACE_LEFT);
+		EXPECT_TRUE(token->whitespace & WHITESPACE_RIGHT);
+		EXPECT_FALSE(whitespace_both(token->whitespace));
+
+
+		result = Lexer_tokenize(&lexer, "A\n= B");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_NEWLINE | WHITESPACE_RIGHT_SPACE));
+		EXPECT_TRUE(token->whitespace & WHITESPACE_LEFT);
+		EXPECT_TRUE(token->whitespace & WHITESPACE_RIGHT);
+		EXPECT_TRUE(whitespace_both(token->whitespace));
+
+
+		result = Lexer_tokenize(&lexer, "A/**/=\nB");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_NEWLINE));
+		EXPECT_TRUE(token->whitespace & WHITESPACE_LEFT);
+		EXPECT_TRUE(token->whitespace & WHITESPACE_RIGHT);
+		EXPECT_TRUE(whitespace_both(token->whitespace));
+	} TEST_END();
+}
+
 DESCRIBE(number_tokenization, "Number literals tokenization") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
@@ -837,3 +1296,13 @@ DESCRIBE(nil_tokenization, "Nil literal tokenization") {
 	})
 }
 
+DESCRIBE(string_tokenization, "String literals tokenization") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	(void)token;
+	(void)result;
+}
