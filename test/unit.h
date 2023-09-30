@@ -78,11 +78,13 @@ void unit_print_results();
 #define EXPECT_EQUAL_CHAR(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got '%c' != '%c'", a, b))
 #define EXPECT_EQUAL_INT(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got %ld != %ld", a, b))
 #define EXPECT_EQUAL_FLOAT(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got %f != %f", (float)a, (float)b))
+#define EXPECT_EQUAL_PTR(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got %p != %p", a, b))
 
 #define EXPECT_NOT_EQUAL_STRING(a, b) UNIT_EXPECT(strcmp(a, b) != 0, __error("Expected " #a " != " #b ", got \"%s\" == \"%s\"", a, b))
 #define EXPECT_NOT_EQUAL_CHAR(a, b) UNIT_EXPECT(a != b, __error("Expected " #a " != " #b ", got '%c' == '%c'", a, b))
 #define EXPECT_NOT_EQUAL_INT(a, b) UNIT_EXPECT(a != b, __error("Expected " #a " != " #b ", got %ld == %ld", a, b))
 #define EXPECT_NOT_EQUAL_FLOAT(a, b) UNIT_EXPECT(a != b, __error("Expected " #a " != " #b ", got %f == %f", (float)a, (float)b))
+#define EXPECT_NOT_EQUAL_PTR(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " != " #b ", got %p == %p", a, b))
 
 #define EXPECT_GREATER_CHAR(a, b) UNIT_EXPECT(a > b, __error("Expected " #a " > " #b ", got '%c' <= '%c'", a, b))
 #define EXPECT_GREATER_INT(a, b) UNIT_EXPECT(a > b, __error("Expected " #a " > " #b ", got %ld <= %ld", a, b))
