@@ -788,3 +788,52 @@ DESCRIBE(number_tokenization, "Number literals tokenization") {
 		printf(RED "Error: %s\n" RST, result.message->value);
 	}
 }
+
+DESCRIBE(boolean_tokenization, "Boolean literals tokenization") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("True", {
+		result = Lexer_tokenize(&lexer, "true");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_BOOLEAN);
+		EXPECT_TRUE(token->value.boolean);
+	})
+
+	TEST("False", {
+		result = Lexer_tokenize(&lexer, "false");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_BOOLEAN);
+		EXPECT_FALSE(token->value.boolean);
+	})
+}
+
+DESCRIBE(nil_tokenization, "Nil literal tokenization") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Simple Nil", {
+		result = Lexer_tokenize(&lexer, "nil");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_NIL);
+	})
+}
+
