@@ -5,7 +5,7 @@
 #define RESULT_ERROR_MESSAGE_SIZE 255
 
 void Result_constructor(Result *result, enum ResultType type, enum Severity severity, String *message) {
-	result->success = type == RESULT_SUCCESS;
+	result->success = type == RESULT_SUCCESS || type == RESULT_NO_MATCH;
 	result->type = type;
 	result->severity = severity;
 	result->message = message;
