@@ -53,15 +53,15 @@ enum TokenKind {
 	TOKEN_RANGE, TOKEN_HALF_OPEN_RANGE,
 
 	// Keywords
-	TOKEN_AND, TOKEN_CLASS, TOKEN_ELSE, TOKEN_FALSE,
-	TOKEN_FOR, TOKEN_FUN, TOKEN_IF, TOKEN_NULL,
-	TOKEN_RETURN, TOKEN_SUPER, TOKEN_THIS,
-	TOKEN_TRUE, TOKEN_VAR, TOKEN_WHILE
+	TOKEN_IF, TOKEN_ELSE, TOKEN_VAR, TOKEN_LET,
+	TOKEN_WHILE, TOKEN_FUNC, TOKEN_RETURN
 };
+
 
 union TokenValue {
 	double floating;
 	long integer;
+	unsigned int boolean;
 	String *string;
 	String *identifier;
 };

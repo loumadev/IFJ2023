@@ -363,26 +363,49 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
 	value.identifier = identifier;
 
 	// Resolve the identifier
+	union TokenValue value = {0};
+	enum TokenType type = TOKEN_INVALID;
 	enum TokenKind kind = TOKEN_DEFAULT;
 
 	// Look for keywords
-	if(TextRange_compare(&range, "and")) kind = TOKEN_AND;
-	else if(TextRange_compare(&range, "class")) kind = TOKEN_CLASS;
-	else if(TextRange_compare(&range, "else")) kind = TOKEN_ELSE;
-	else if(TextRange_compare(&range, "false")) kind = TOKEN_FALSE;
-	else if(TextRange_compare(&range, "for")) kind = TOKEN_FOR;
-	else if(TextRange_compare(&range, "fun")) kind = TOKEN_FUN;
+	if(TextRange_compare(&range, "true")) type = TOKEN_LITERAL, kind = TOKEN_BOOLEAN, value.boolean = true;
+	else if(TextRange_compare(&range, "false")) type = TOKEN_LITERAL, kind = TOKEN_BOOLEAN, value.boolean = false;
+	else if(TextRange_compare(&range, "nil")) type = TOKEN_LITERAL, kind = TOKEN_NIL;
+
 	else if(TextRange_compare(&range, "if")) kind = TOKEN_IF;
-	else if(TextRange_compare(&range, "null")) kind = TOKEN_NULL;
-	else if(TextRange_compare(&range, "return")) kind = TOKEN_RETURN;
-	else if(TextRange_compare(&range, "super")) kind = TOKEN_SUPER;
-	else if(TextRange_compare(&range, "this")) kind = TOKEN_THIS;
-	else if(TextRange_compare(&range, "true")) kind = TOKEN_TRUE;
+	else if(TextRange_compare(&range, "else")) kind = TOKEN_ELSE;
 	else if(TextRange_compare(&range, "var")) kind = TOKEN_VAR;
+	else if(TextRange_compare(&range, "let")) kind = TOKEN_LET;
 	else if(TextRange_compare(&range, "while")) kind = TOKEN_WHILE;
+	else if(TextRange_compare(&range, "func")) kind = TOKEN_FUNC;
+	else if(TextRange_compare(&range, "return")) kind = TOKEN_RETURN;
+
+	// else if(TextRange_compare(&range, "class")) kind = TOKEN_CLASS;
+	// else if(TextRange_compare(&range, "else")) kind = TOKEN_ELSE;
+	// else if(TextRange_compare(&range, "false")) kind = TOKEN_FALSE;
+	// else if(TextRange_compare(&range, "for")) kind = TOKEN_FOR;
+	// else if(TextRange_compare(&range, "fun")) kind = TOKEN_FUN;
+	// else if(TextRange_compare(&range, "if")) kind = TOKEN_IF;
+	// else if(TextRange_compare(&range, "null")) kind = TOKEN_NULL;
+	// else if(TextRange_compare(&range, "return")) kind = TOKEN_RETURN;
+	// else if(TextRange_compare(&range, "super")) kind = TOKEN_SUPER;
+	// else if(TextRange_compare(&range, "this")) kind = TOKEN_THIS;
+	// else if(TextRange_compare(&range, "true")) kind = TOKEN_TRUE;
+	// else if(TextRange_compare(&range, "var")) kind = TOKEN_VAR;
+	// else if(TextRange_compare(&range, "while")) kind = TOKEN_WHILE;
+
+	// If just a regular keyword (without value) or an identifier encountered, set its value to the identifier string
+	if(type == TOKEN_INVALID) {
+		// Copy the identifier
+		String *identifier = TextRange_toString(&range);
+		assertf(identifier != NULL);
+
+		// Set a token value
+		value.identifier = identifier;
+	}
 
 	// Create a token
-	Token *token = Token_alloc(kind == TOKEN_DEFAULT ? TOKEN_IDENTIFIER : TOKEN_KEYWORD, kind, range, value);
+	Token *token = Token_alloc(type == TOKEN_INVALID ? kind == TOKEN_DEFAULT ? TOKEN_IDENTIFIER : TOKEN_KEYWORD : type, kind, range, value);
 	assertf(token != NULL);
 
 	// Add the token to the array
