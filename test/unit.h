@@ -72,7 +72,7 @@ void unit_print_results();
 #define TEST(name, block) TEST_BEGIN(name) block TEST_END();
 
 #define EXPECT_TRUE(condition) UNIT_EXPECT((condition) != false, __error("Expected true, got false "))
-#define EXPECT_FALSE(condition) UNIT_EXPECT((condition) != true, __error("Expected false, got true "))
+#define EXPECT_FALSE(condition) UNIT_EXPECT((condition) == false, __error("Expected false, got true "))
 
 #define EXPECT_EQUAL_STRING(a, b) UNIT_EXPECT(strcmp(a, b) == 0, __error("Expected " #a " == " #b ", got \"%s\" != \"%s\"", a, b))
 #define EXPECT_EQUAL_CHAR(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got '%c' != '%c'", a, b))
