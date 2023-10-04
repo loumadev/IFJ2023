@@ -23,4 +23,8 @@
 #define __assertf7(A, M, ...) __assertf3(A, M, ## __VA_ARGS__)
 #define __assertf8(A, M, ...) __assertf3(A, M, ## __VA_ARGS__)
 
+#define warnf(M, ...) errno \
+	? fprintf(stderr, YELLOW "[WARN] " M ": %s\n    at%s:%d\n" RESET, ## __VA_ARGS__, strerror(errno), __FILE__, __LINE__) \
+	: fprintf(stderr, YELLOW "[WARN] " M "\n    at %s:%d\n" RESET, ## __VA_ARGS__, __FILE__, __LINE__)
+
 #endif

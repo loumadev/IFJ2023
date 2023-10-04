@@ -31,7 +31,7 @@ void Array_push(Array *array, void *value) {
 	array->data[array->size++] = value;
 }
 
-void * Array_pop(Array *array) {
+void* Array_pop(Array *array) {
 	if(!array) return NULL;
 	if(array->size == 0) return NULL;
 
@@ -51,7 +51,7 @@ int __Array_resolveIndex(Array *array, int index) {
 	return index;
 }
 
-void * Array_get(Array *array, int index) {
+void* Array_get(Array *array, int index) {
 	if(!array) return NULL;
 
 	index = __Array_resolveIndex(array, index);
@@ -103,7 +103,7 @@ void Array_reserve(Array *array, size_t capacity) {
 	}
 }
 
-void * Array_remove(Array *array, int index) {
+void* Array_remove(Array *array, int index) {
 	if(!array) return NULL;
 
 	index = __Array_resolveIndex(array, index);
@@ -126,7 +126,7 @@ void * Array_remove(Array *array, int index) {
 	return value;
 }
 
-Array * Array_alloc(size_t size) {
+Array* Array_alloc(size_t size) {
 	Array *array = mem_alloc(sizeof(Array));
 	if(!array) return NULL;
 

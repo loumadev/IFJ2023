@@ -1306,3 +1306,83 @@ DESCRIBE(string_tokenization, "String literals tokenization") {
 	(void)token;
 	(void)result;
 }
+
+DESCRIBE(nextToken, "Token stream (nextToken)") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	// Token *token;
+
+	TEST_BEGIN("Tokenization of the complex source") {
+		Lexer_setSource(&lexer, "var myVar = myFunc(/* some params */);");
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_KEYWORD);
+		EXPECT_TRUE(result.token->kind == TOKEN_VAR);
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_NONE | WHITESPACE_RIGHT_SPACE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(result.token->value.identifier, "myVar"));
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_OPERATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_EQUAL);
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_RIGHT_SPACE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(result.token->value.identifier, "myFunc"));
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_NONE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_LEFT_PAREN);
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_NONE | WHITESPACE_RIGHT_SPACE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_RIGHT_PAREN);
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_LEFT_SPACE | WHITESPACE_NONE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_SEMICOLON);
+		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_NONE | WHITESPACE_NONE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+	} TEST_END();
+
+	TEST_BEGIN("Next token after EOF") {
+		Lexer_setSource(&lexer, "10");
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 10);
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+	} TEST_END();
+}

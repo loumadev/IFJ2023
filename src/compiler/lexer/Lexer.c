@@ -31,6 +31,7 @@ void Lexer_constructor(Lexer *lexer) {
 	lexer->source = NULL;
 	lexer->sourceLength = 0;
 	lexer->tokens = Array_alloc(2);
+	lexer->currentTokenIndex = 0;
 	lexer->currentChar = NULL;
 	lexer->line = 1;
 	lexer->column = 1;
@@ -52,6 +53,7 @@ void Lexer_destructor(Lexer *lexer) {
 	lexer->source = NULL;
 	lexer->sourceLength = 0;
 	lexer->currentChar = NULL;
+	lexer->currentTokenIndex = 0;
 	lexer->line = 0;
 	lexer->column = 0;
 	lexer->whitespace = WHITESPACE_NONE;
@@ -281,6 +283,136 @@ LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
 	return LexerSuccess();
 }
 
+
+void Lexer_setSource(Lexer *lexer, char *source) {
+	assertf(lexer != NULL);
+
+	lexer->line = 1;
+	lexer->column = 1;
+	lexer->source = source;
+	lexer->sourceLength = strlen(source);
+	lexer->currentChar = lexer->source;
+}
+
+Token* Lexer_getUpcomingToken(Lexer *lexer) {
+	assertf(lexer != NULL);
+
+	Token *token = Array_get(lexer->tokens, lexer->currentTokenIndex);
+	if(!token) return NULL;
+
+	// Move to the next token
+	lexer->currentTokenIndex++;
+
+	return token;
+}
+
+LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
+	assertf(lexer != NULL);
+
+	char ch = *lexer->currentChar;
+
+	// Update line and column counters
+	if(ch == '\n') {
+		lexer->line++;
+		lexer->column = 1;
+	} else {
+		lexer->column++;
+	}
+
+	// Skip whitespace
+	{
+		enum WhitespaceType prev = lexer->whitespace;               // Save previous ws in case of no match
+
+		LexerResult res = __Lexer_tokenizeWhitespace(lexer);
+		if(!res.success) return res;
+
+		// Some whitespace matched
+		if(res.type != RESULT_NO_MATCH) return Lexer_tokenizeNextToken(lexer);
+
+		lexer->whitespace = prev;
+	}
+
+	// EOF
+	if(ch == '\0') {
+		// Create an EOF token
+		TextRange range;
+		TextRange_constructor(&range, lexer->currentChar, lexer->currentChar, lexer->line, lexer->column);
+
+		fetch_next_whitespace(lexer);
+
+		Token *token = Token_alloc(TOKEN_EOF, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+		assertf(token != NULL);
+
+		Array_push(lexer->tokens, token);
+
+		return LexerSuccess();
+	}
+	// Match string literals
+	else if(ch == '"' || ch == '\'') {
+		return __Lexer_tokenizeString(lexer);
+	}
+	// Match identifiers
+	else if(is_identifier_start(ch)) {
+		return __Lexer_tokenizeIdentifier(lexer);
+	}
+	// Match numbers
+	else if(
+		is_decimal_digit(ch) ||
+		(ch == '.' && is_decimal_digit(Lexer_peek(lexer, 1)))         // Error state
+	) {
+		return __Lexer_tokenizeNumberLiteral(lexer);
+	}
+	// Something other
+	else {
+		// Try to match punctuators and operators
+		LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(lexer);
+		if(result.success) return result;
+
+		// Invalid character
+		return LexerError(
+			String_fromFormat("unexpected token '%s'", format_char(ch)),
+			Token_alloc(
+				TOKEN_MARKER,
+				TOKEN_CARET,
+				WHITESPACE_NONE,
+				TextRange_construct(
+					lexer->currentChar,
+					lexer->currentChar + 1,
+					lexer->line,
+					lexer->column
+				),
+				(union TokenValue){0}
+			)
+		);
+	}
+}
+
+LexerResult Lexer_nextToken(Lexer *lexer) {
+	assertf(lexer != NULL);
+	assertf(lexer->source != NULL, "Cannot process the next token: No source set");
+
+	// If there are already processed tokens, return the next one
+	Token *cachedToken = Lexer_getUpcomingToken(lexer);
+	if(cachedToken) {
+		LexerResult result = LexerSuccess();
+		result.token = cachedToken;
+		return result;
+	}
+
+	// Otherwise tokenize the next token
+	LexerResult result = Lexer_tokenizeNextToken(lexer);
+	if(!result.success) return result;
+
+	// Return the result with token
+	result.token = Lexer_getUpcomingToken(lexer);
+	if(!result.token) {
+		warnf("The tokenization resulted in no tokens, trying to tokenize the next one");
+		return Lexer_nextToken(lexer);
+	}
+
+	return result;
+}
+
 LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 	assertf(lexer != NULL);
 
@@ -288,100 +420,17 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 	Lexer_destructor(lexer);
 	Lexer_constructor(lexer);
 
-	lexer->line = 1;
-	lexer->column = 1;
-	lexer->source = source;
-	lexer->sourceLength = strlen(source);
-	lexer->currentChar = lexer->source;
+	// Set the source to tokenize
+	Lexer_setSource(lexer, source);
 
-	char ch;
-	while((ch = *lexer->currentChar)) {
+	// While there are tokens to process
+	LexerResult result = LexerSuccess();
+	while((result = Lexer_nextToken(lexer)).token->type != TOKEN_EOF) {
+		// Exit if something fails
+		if(!result.success) return result;
 
-		// Update line and column counters
-		if(ch == '\n') {
-			lexer->line++;
-			lexer->column = 1;
-		} else {
-			lexer->column++;
-		}
-
-		// Skip whitespace
-		{
-			enum WhitespaceType prev = lexer->whitespace;       // Save previous ws in case of no match
-
-			LexerResult res = __Lexer_tokenizeWhitespace(lexer);
-			if(!res.success) return res;
-
-			// Some whitespace matched
-			if(res.type != RESULT_NO_MATCH) {
-				continue;
-			}
-
-			lexer->whitespace = prev;
-		}
-
-		// Match strings
-		if(ch == '"' || ch == '\'') {
-			LexerResult result = __Lexer_tokenizeString(lexer);
-			if(!result.success) return result;
-
-			continue;
-		}
-		// Match identifiers
-		else if(is_identifier_start(ch)) {
-			LexerResult result = __Lexer_tokenizeIdentifier(lexer);
-			if(!result.success) return result;
-
-			continue;
-		}
-		// Match numbers
-		else if(
-			is_decimal_digit(ch) ||
-			(ch == '.' && is_decimal_digit(Lexer_peek(lexer, 1))) // Error state
-		) {
-			LexerResult result = __Lexer_tokenizeNumberLiteral(lexer);
-			if(!result.success) return result;
-
-			continue;
-		}
-		// Something other
-		else {
-			// Try to match punctuators and operators
-			LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(lexer);
-			if(result.success) continue;
-
-			// Invalid character
-			return LexerError(
-				String_fromFormat("unexpected token '%s'", format_char(ch)),
-				Token_alloc(
-					TOKEN_MARKER,
-					TOKEN_CARET,
-					WHITESPACE_NONE,
-					TextRange_construct(
-						lexer->currentChar,
-						lexer->currentChar + 1,
-						lexer->line,
-						lexer->column
-					),
-					(union TokenValue){0}
-				)
-			);
-		}
-
-		// Advance to the next character
-		Lexer_advance(lexer);
+		// Do nothing, just drain the source stream to get all the tokens
 	}
-
-	// Create an EOF token
-	TextRange range;
-	TextRange_constructor(&range, lexer->currentChar, lexer->currentChar, lexer->line, lexer->column);
-
-	fetch_next_whitespace(lexer);
-
-	Token *token = Token_alloc(TOKEN_EOF, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
-	assertf(token != NULL);
-
-	Array_push(lexer->tokens, token);
 
 	return LexerSuccess();
 }
@@ -864,6 +913,9 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
 	else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
 	else match_as("->", TOKEN_PUNCTUATOR, TOKEN_ARROW);
+	else match_as("=", TOKEN_OPERATOR, TOKEN_EQUAL);
+	else match_as(">", TOKEN_OPERATOR, TOKEN_GREATER);
+	else match_as("<", TOKEN_OPERATOR, TOKEN_LESS);
 	else match_as("+", TOKEN_OPERATOR, TOKEN_PLUS);
 	else match_as("-", TOKEN_OPERATOR, TOKEN_MINUS);
 	else match_as("*", TOKEN_OPERATOR, TOKEN_STAR);
@@ -874,6 +926,8 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
 	else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
 
+	else match_as("(", TOKEN_PUNCTUATOR, TOKEN_LEFT_PAREN);
+	else match_as(")", TOKEN_PUNCTUATOR, TOKEN_RIGHT_PAREN);
 	else match_as("{", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACE);
 	else match_as("}", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACE);
 	else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
