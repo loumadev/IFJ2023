@@ -1386,3 +1386,97 @@ DESCRIBE(nextToken, "Token stream (nextToken)") {
 		EXPECT_TRUE(result.token->type == TOKEN_EOF);
 	} TEST_END();
 }
+
+DESCRIBE(peekToken, "Peeking tokens (peekToken)") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	// Token *token;
+
+	TEST_BEGIN("Tokenization of the complex source") {
+		Lexer_setSource(&lexer, "var myVar = myFunc(/* some params */);");
+
+		//
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_KEYWORD);
+		EXPECT_TRUE(result.token->kind == TOKEN_VAR);
+
+		// var
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_KEYWORD);
+		EXPECT_TRUE(result.token->kind == TOKEN_VAR);
+
+		// var
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(result.token->value.identifier, "myVar"));
+
+		// var myVar
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(result.token->value.identifier, "myVar"));
+
+		// var myVar
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_KEYWORD);
+		EXPECT_TRUE(result.token->kind == TOKEN_VAR);
+
+		// var myVar
+
+		result = Lexer_peekToken(&lexer, -2);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token == NULL);
+
+		// var myVar
+
+		result = Lexer_peekToken(&lexer, 2);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(result.token->value.identifier, "myFunc"));
+
+		// var myVar = myFunc
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_OPERATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_EQUAL);
+
+		// var myVar = myFunc
+
+		result = Lexer_peekToken(&lexer, 3);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_SEMICOLON);
+
+		// var myVar = myFunc();
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(result.token->kind == TOKEN_RIGHT_PAREN);
+
+		// var myVar = myFunc();
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		// var myVar = myFunc();
+
+		result = Lexer_peekToken(&lexer, 2);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+	} TEST_END();
+}

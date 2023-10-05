@@ -31,7 +31,7 @@ void Lexer_constructor(Lexer *lexer) {
 	lexer->source = NULL;
 	lexer->sourceLength = 0;
 	lexer->tokens = Array_alloc(2);
-	lexer->currentTokenIndex = 0;
+	lexer->currentTokenIndex = -1;
 	lexer->currentChar = NULL;
 	lexer->line = 1;
 	lexer->column = 1;
@@ -53,13 +53,13 @@ void Lexer_destructor(Lexer *lexer) {
 	lexer->source = NULL;
 	lexer->sourceLength = 0;
 	lexer->currentChar = NULL;
-	lexer->currentTokenIndex = 0;
+	lexer->currentTokenIndex = -1;
 	lexer->line = 0;
 	lexer->column = 0;
 	lexer->whitespace = WHITESPACE_NONE;
 }
 
-char Lexer_peek(Lexer *lexer, size_t offset) {
+char Lexer_peekChar(Lexer *lexer, size_t offset) {
 	if(!lexer) return '\0';
 	if(!lexer->currentChar) return '\0';
 	if(lexer->currentChar + offset >= lexer->source + lexer->sourceLength) return '\0';
@@ -297,7 +297,7 @@ void Lexer_setSource(Lexer *lexer, char *source) {
 Token* Lexer_getUpcomingToken(Lexer *lexer) {
 	assertf(lexer != NULL);
 
-	Token *token = Array_get(lexer->tokens, lexer->currentTokenIndex);
+	Token *token = Array_get(lexer->tokens, lexer->currentTokenIndex + 1);
 	if(!token) return NULL;
 
 	// Move to the next token
@@ -358,7 +358,7 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 	// Match numbers
 	else if(
 		is_decimal_digit(ch) ||
-		(ch == '.' && is_decimal_digit(Lexer_peek(lexer, 1)))         // Error state
+		(ch == '.' && is_decimal_digit(Lexer_peekChar(lexer, 1)))         // Error state
 	) {
 		return __Lexer_tokenizeNumberLiteral(lexer);
 	}
@@ -410,6 +410,50 @@ LexerResult Lexer_nextToken(Lexer *lexer) {
 		return Lexer_nextToken(lexer);
 	}
 
+	return result;
+}
+
+LexerResult Lexer_peekToken(Lexer *lexer, int offset) {
+	assertf(lexer != NULL);
+
+	int index = lexer->currentTokenIndex + offset;
+
+	// If there are no tokens yet, move the index to the first one
+	if(lexer->currentTokenIndex == -1) index++;
+
+	// Peeking before the start of the token stream
+	if(index < 0) {
+		LexerResult result = LexerSuccess();
+		result.token = NULL;
+		return result;
+	}
+
+	// Peeking before the end of the token stream
+	if(offset < 0) {
+		LexerResult result = LexerSuccess();
+		result.token = Array_get(lexer->tokens, index);
+		return result;
+	}
+
+	// Peeking at the end of the token stream (or after the token stream)
+	Token *token = Array_get(lexer->tokens, index);
+	if(token) {
+		LexerResult result = LexerSuccess();
+		result.token = token;
+		return result;
+	}
+
+	// Peeking after the end of the token stream
+	LexerResult result = LexerSuccess();
+	while((result = Lexer_nextToken(lexer)).token->type != TOKEN_EOF) {
+		// Exit if something fails
+		if(!result.success) return result;
+
+		// If the target token is found, return it
+		if(lexer->currentTokenIndex == index) return result;
+	}
+
+	// This will be always an EOF token
 	return result;
 }
 
@@ -734,8 +778,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 		// Handle fractional part
 		if(ch == '.') {
 			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
-			if(is_identifier_start(Lexer_peek(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
-			if(!is_decimal_digit(Lexer_peek(lexer, 1))) return LexerError(
+			if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
 					String_fromFormat("expected member name following '.'"),
 					Token_alloc(
 						TOKEN_MARKER,

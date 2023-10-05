@@ -6,7 +6,7 @@ typedef struct Lexer {
 	size_t sourceLength;
 	char *currentChar;
 	Array *tokens;
-	size_t currentTokenIndex;
+	int currentTokenIndex;
 	int line;
 	int column;
 	enum WhitespaceType whitespace; // Left whitespace
@@ -17,6 +17,7 @@ void Lexer_constructor(Lexer *lexer);
 void Lexer_destructor(Lexer *lexer);
 void Lexer_setSource(Lexer *lexer, char *source);
 LexerResult Lexer_nextToken(Lexer *lexer);
+LexerResult Lexer_peekToken(Lexer *lexer, int offset);
 LexerResult Lexer_tokenize(Lexer *lexer, char *source);
 
 void Lexer_printTokens(Lexer *lexer);
