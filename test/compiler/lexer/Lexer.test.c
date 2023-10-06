@@ -7,7 +7,6 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 	Lexer_constructor(&lexer);
 
 	LexerResult result;
-	// Token *token;
 
 	TEST_BEGIN("Single line comment") {
 		result = Lexer_tokenize(&lexer, "A // comment");
@@ -1312,7 +1311,6 @@ DESCRIBE(nextToken, "Token stream (nextToken)") {
 	Lexer_constructor(&lexer);
 
 	LexerResult result;
-	// Token *token;
 
 	TEST_BEGIN("Tokenization of the complex source") {
 		Lexer_setSource(&lexer, "var myVar = myFunc(/* some params */);");
@@ -1392,7 +1390,6 @@ DESCRIBE(peekToken, "Peeking tokens (peekToken)") {
 	Lexer_constructor(&lexer);
 
 	LexerResult result;
-	// Token *token;
 
 	TEST_BEGIN("Tokenization of the complex source") {
 		Lexer_setSource(&lexer, "var myVar = myFunc(/* some params */);");
