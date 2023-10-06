@@ -231,17 +231,20 @@ LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
 	if(!is_multi_line_comment(lexer)) return LexerNoMatch();
 	if(is_multi_line_comment_end(lexer)) return LexerError(
 			String_fromFormat("unexpected end of block comment"),
-			Token_alloc(
-				TOKEN_MARKER,
-				TOKEN_CARET,
-				WHITESPACE_NONE,
-				TextRange_construct(
-					lexer->currentChar,
-					lexer->currentChar + 1,
-					lexer->line,
-					lexer->column
-				),
-				(union TokenValue){0}
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
 			)
 	);
 
@@ -264,17 +267,20 @@ LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
 	// There are still comments left
 	if(depth != 0) return LexerError(
 			String_fromFormat("unterminated '/*' comment"),
-			Token_alloc(
-				TOKEN_MARKER,
-				TOKEN_CARET,
-				WHITESPACE_NONE,
-				TextRange_construct(
-					lexer->currentChar,
-					lexer->currentChar + 1,
-					lexer->line,
-					lexer->column
-				),
-				(union TokenValue){0}
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
 			)
 	);
 
@@ -371,17 +377,20 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 		// Invalid character
 		return LexerError(
 			String_fromFormat("unexpected token '%s'", format_char(ch)),
-			Token_alloc(
-				TOKEN_MARKER,
-				TOKEN_CARET,
-				WHITESPACE_NONE,
-				TextRange_construct(
-					lexer->currentChar,
-					lexer->currentChar + 1,
-					lexer->line,
-					lexer->column
-				),
-				(union TokenValue){0}
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
 			)
 		);
 	}
@@ -445,13 +454,13 @@ LexerResult Lexer_peekToken(Lexer *lexer, int offset) {
 
 	// Peeking after the end of the token stream
 	LexerResult result = LexerSuccess();
-	while((result = Lexer_nextToken(lexer)).token->type != TOKEN_EOF) {
-		// Exit if something fails
-		if(!result.success) return result;
-
+	while((result = Lexer_nextToken(lexer)).token && result.token->type != TOKEN_EOF) {
 		// If the target token is found, return it
 		if(lexer->currentTokenIndex == index) return result;
 	}
+
+	// Exit if something fails
+	if(!result.success) return result;
 
 	// This will be always an EOF token
 	return result;
@@ -469,12 +478,12 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 
 	// While there are tokens to process
 	LexerResult result = LexerSuccess();
-	while((result = Lexer_nextToken(lexer)).token->type != TOKEN_EOF) {
-		// Exit if something fails
-		if(!result.success) return result;
-
+	while((result = Lexer_nextToken(lexer)).token && result.token->type != TOKEN_EOF) {
 		// Do nothing, just drain the source stream to get all the tokens
 	}
+
+	// Exit if something fails
+	if(!result.success) return result;
 
 	return LexerSuccess();
 }
@@ -548,17 +557,20 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 		// Handle unterminated string literals
 		if(ch == '\0') return LexerError(
 				String_fromFormat("unterminated string literal"),
-				Token_alloc(
-					TOKEN_MARKER,
-					TOKEN_CARET,
-					WHITESPACE_NONE,
-					TextRange_construct(
-						start,
-						start + 1,
-						lexer->line,
-						lexer->column
-					),
-					(union TokenValue){0}
+				Array_fromArgs(
+					1,
+					Token_alloc(
+						TOKEN_MARKER,
+						TOKEN_CARET,
+						WHITESPACE_NONE,
+						TextRange_construct(
+							start,
+							start + 1,
+							lexer->line,
+							lexer->column
+						),
+						(union TokenValue){0}
+					)
 				)
 		);
 
@@ -693,17 +705,20 @@ LexerResult __Lexer_tokenizeIntegerBasedLiteral(Lexer *lexer, int base) {
 					base == 8 ? "octal digit (0-7)" :
 						base == 16 ? "hexadecimal digit (0-9, a-f)" : "digit"
 			),
-			Token_alloc(
-				TOKEN_MARKER,
-				TOKEN_CARET,
-				WHITESPACE_NONE,
-				TextRange_construct(
-					lexer->currentChar,
-					lexer->currentChar + 1,
-					lexer->line,
-					lexer->column
-				),
-				(union TokenValue){0}
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
 			)
 	);
 
@@ -781,17 +796,20 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 			if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
 			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
 					String_fromFormat("expected member name following '.'"),
-					Token_alloc(
-						TOKEN_MARKER,
-						TOKEN_CARET,
-						WHITESPACE_NONE,
-						TextRange_construct(
-							lexer->currentChar,
-							lexer->currentChar + 1,
-							lexer->line,
-							lexer->column
-						),
-						(union TokenValue){0}
+					Array_fromArgs(
+						1,
+						Token_alloc(
+							TOKEN_MARKER,
+							TOKEN_CARET,
+							WHITESPACE_NONE,
+							TextRange_construct(
+								lexer->currentChar,
+								lexer->currentChar + 1,
+								lexer->line,
+								lexer->column
+							),
+							(union TokenValue){0}
+						)
 					)
 			);
 
@@ -811,17 +829,20 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 			// Missing exponent
 			if(!is_decimal_digit(ch)) return LexerError(
 					String_fromFormat("expected a digit in floating point exponent"),
-					Token_alloc(
-						TOKEN_MARKER,
-						TOKEN_CARET,
-						WHITESPACE_NONE,
-						TextRange_construct(
-							lexer->currentChar,
-							lexer->currentChar + 1,
-							lexer->line,
-							lexer->column
-						),
-						(union TokenValue){0}
+					Array_fromArgs(
+						1,
+						Token_alloc(
+							TOKEN_MARKER,
+							TOKEN_CARET,
+							WHITESPACE_NONE,
+							TextRange_construct(
+								lexer->currentChar,
+								lexer->currentChar + 1,
+								lexer->line,
+								lexer->column
+							),
+							(union TokenValue){0}
+						)
 					)
 			);
 		}
@@ -836,17 +857,20 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 					"'%s' is not a valid character in floating point exponent",
 					format_char(ch)
 				),
-				Token_alloc(
-					TOKEN_MARKER,
-					TOKEN_CARET,
-					WHITESPACE_NONE,
-					TextRange_construct(
-						lexer->currentChar,
-						lexer->currentChar + 1,
-						lexer->line,
-						lexer->column
-					),
-					(union TokenValue){0}
+				Array_fromArgs(
+					1,
+					Token_alloc(
+						TOKEN_MARKER,
+						TOKEN_CARET,
+						WHITESPACE_NONE,
+						TextRange_construct(
+							lexer->currentChar,
+							lexer->currentChar + 1,
+							lexer->line,
+							lexer->column
+						),
+						(union TokenValue){0}
+					)
 				)
 			);
 		}
@@ -858,17 +882,20 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 					"'%s' is not a valid digit in integer literal",
 					format_char(ch)
 				),
-				Token_alloc(
-					TOKEN_MARKER,
-					TOKEN_CARET,
-					WHITESPACE_NONE,
-					TextRange_construct(
-						lexer->currentChar,
-						lexer->currentChar + 1,
-						lexer->line,
-						lexer->column
-					),
-					(union TokenValue){0}
+				Array_fromArgs(
+					1,
+					Token_alloc(
+						TOKEN_MARKER,
+						TOKEN_CARET,
+						WHITESPACE_NONE,
+						TextRange_construct(
+							lexer->currentChar,
+							lexer->currentChar + 1,
+							lexer->line,
+							lexer->column
+						),
+						(union TokenValue){0}
+					)
 				)
 			);
 		}
@@ -890,17 +917,20 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 				"'%s' is not a valid floating point literal; it must be written '0%s'",
 				numberStr->value, numberStr->value
 			),
-			Token_alloc(
-				TOKEN_MARKER,
-				TOKEN_CARET,
-				WHITESPACE_NONE,
-				TextRange_construct(
-					lexer->currentChar,
-					lexer->currentChar + 1,
-					lexer->line,
-					lexer->column
-				),
-				(union TokenValue){0}
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
 			)
 		);
 	}
