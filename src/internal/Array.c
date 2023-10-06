@@ -1,4 +1,7 @@
 #include "internal/Array.h"
+
+#include <stdarg.h>
+
 #include "allocator/MemoryAllocator.h"
 #include "inspector.h"
 
@@ -125,6 +128,24 @@ void* Array_remove(Array *array, int index) {
 
 	return value;
 }
+
+Array* Array_fromArgs(int count, ...) {
+	Array *array = Array_alloc(count);
+	if(!array) return NULL;
+
+	va_list args;
+	va_start(args, count);
+
+	for(int i = 0; i < count; i++) {
+		void *value = va_arg(args, void*);
+		Array_push(array, value);
+	}
+
+	va_end(args);
+
+	return array;
+}
+
 
 Array* Array_alloc(size_t size) {
 	Array *array = mem_alloc(sizeof(Array));
