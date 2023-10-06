@@ -98,6 +98,16 @@ void Array_reserve(Array *array, size_t capacity);
 void* Array_remove(Array *array, int index);
 
 /**
+ * Creates a new array instance and pushes the given values to it.
+ *
+ * @param count Number of values to push to the array.
+ * @param ... The values to push to the array.
+ * @return A pointer to the newly allocated array.
+ */
+Array* Array_fromArgs(int count, ...);
+
+
+/**
  * Prints value of the array in a compact format (content of the array).
  *
  * @param array The array to print.
