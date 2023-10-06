@@ -38,7 +38,6 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
 	} TEST_END();
 
-
 	TEST_BEGIN("Multiline comment") {
 		result = Lexer_tokenize(&lexer, "A /* comment */");
 		EXPECT_TRUE(result.success);
@@ -77,7 +76,6 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
 	} TEST_END();
 
-
 	TEST_BEGIN("Nested multiline comment") {
 		result = Lexer_tokenize(&lexer, "A /* comment /* nested1 */ */");
 		EXPECT_TRUE(result.success);
@@ -103,7 +101,6 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 3);
 	} TEST_END();
-
 
 	TEST("Invalid use of multiline comment", {
 		result = Lexer_tokenize(&lexer, "A /* comment");
