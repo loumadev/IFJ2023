@@ -344,3 +344,51 @@ DESCRIBE(clear, "Array_clear") {
 		EXPECT_EQUAL_PTR(Array_get(arr, 0), NULL);
 	})
 }
+
+DESCRIBE(Array_fromArgs, "Array_fromArgs") {
+	Array *arr = NULL;
+
+	TEST("Create array from arguments", {
+		int num1 = 10;
+		int num2 = 20;
+		int num3 = 30;
+
+		arr = Array_fromArgs(3, &num1, &num2, &num3);
+
+		EXPECT_EQUAL_INT(arr->size, 3);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 0)), 10);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 1)), 20);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 2)), 30);
+	});
+
+	TEST("Create array from arguments with NULL values", {
+		int num1 = 10;
+		int num2 = 20;
+		int num3 = 30;
+
+		arr = Array_fromArgs(5, &num1, NULL, &num2, NULL, &num3);
+
+		EXPECT_EQUAL_INT(arr->size, 5);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 0)), 10);
+		EXPECT_EQUAL_PTR(Array_get(arr, 1), NULL);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 2)), 20);
+		EXPECT_EQUAL_PTR(Array_get(arr, 3), NULL);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 4)), 30);
+	})
+
+	TEST("Create array from arguments with none values", {
+		arr = Array_fromArgs(0);
+
+		EXPECT_EQUAL_INT(arr->size, 0);
+		EXPECT_EQUAL_PTR(Array_get(arr, 0), NULL);
+	})
+
+	TEST("Create array from arguments with single value", {
+		int num = 10;
+
+		arr = Array_fromArgs(1, &num);
+
+		EXPECT_EQUAL_INT(arr->size, 1);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 0)), 10);
+	})
+}
