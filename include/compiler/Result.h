@@ -2,6 +2,9 @@
 #include "internal/String.h"
 #include "internal/Array.h"
 
+#ifndef PARSER_H
+#define PARSER_H
+
 enum Severity {
 	SEVERITY_NONE = 0,
 	SEVERITY_ERROR,
@@ -27,6 +30,7 @@ enum Severity {
 
  */
 enum ResultType {
+	RESULT_INVALID = -3,
 	RESULT_NO_MATCH = -2,
 	RESULT_ASSERTION = -1,
 	RESULT_SUCCESS = 0,
@@ -48,7 +52,13 @@ typedef struct Result {
 	// More properties added by subclasses
 } Result;
 
-void Result_constructor(Result *result, enum ResultType type, enum Severity severity, String *message);
+void Result_constructor(
+	Result *result,
+	enum ResultType type,
+	enum Severity severity,
+	String *message,
+	Array *markers
+);
 void Result_destructor(Result *result);
 
-Result Result_addMarkers(Result *result, ...);
+#endif

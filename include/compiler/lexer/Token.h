@@ -1,6 +1,9 @@
 #include "internal/String.h"
 #include "internal/TextRange.h"
 
+#ifndef TOKEN_H
+#define TOKEN_H
+
 enum TokenType {
 	TOKEN_INVALID = 0,
 	TOKEN_EOF = 1,
@@ -106,3 +109,5 @@ void Token_destructor(Token *token);
 Token* Token_alloc(enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value);
 void Token_free(Token *token);
 void Token_print(Token *token, unsigned int depth, int isProperty);
+
+#endif
