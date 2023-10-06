@@ -146,6 +146,22 @@ DESCRIBE(push, "Array_push") {
 		EXPECT_EQUAL_PTR(Array_get(arr, 0), NULL);
 	})
 
+	TEST("Push to empty array", {
+		int num = 10;
+
+		arr = Array_alloc(0);
+		Array_push(arr, &num);
+
+		EXPECT_EQUAL_INT(arr->size, 1);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 0)), 10);
+
+		Array_push(arr, &num);
+
+		EXPECT_EQUAL_INT(arr->size, 2);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 0)), 10);
+		EXPECT_EQUAL_INT(*((int*)Array_get(arr, 1)), 10);
+	})
+
 	TEST("Push to full array", {
 		int num = 10;
 

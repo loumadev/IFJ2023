@@ -28,7 +28,7 @@ void Array_push(Array *array, void *value) {
 
 	// If size exceeds capacity, resize the array to fit more elements
 	if(array->size >= array->capacity) {
-		Array_resize(array, array->capacity << 1);
+		Array_resize(array, (array->capacity ? array->capacity : 1) << 1);
 	}
 
 	array->data[array->size++] = value;
