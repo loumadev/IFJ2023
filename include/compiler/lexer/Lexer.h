@@ -1,6 +1,9 @@
 #include "internal/Array.h"
 #include "compiler/lexer/LexerResult.h"
 
+#ifndef LEXER_H
+#define LEXER_H
+
 typedef struct Lexer {
 	char *source;
 	size_t sourceLength;
@@ -22,3 +25,5 @@ LexerResult Lexer_peekToken(Lexer *lexer, int offset);
 LexerResult Lexer_tokenize(Lexer *lexer, char *source);
 
 void Lexer_printTokens(Lexer *lexer);
+
+#endif
