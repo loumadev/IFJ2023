@@ -68,3 +68,17 @@ void Token_print(Token *token, unsigned int depth, int isProperty) {
 
 	print_type_end();
 }
+
+char* Token_toString(Token *token) {
+	if(!token) {
+		return "null";
+	}
+
+	if(token->type == TOKEN_EOF) return "EOF";
+	else if(token->type == TOKEN_IDENTIFIER) return token->value.identifier->value;
+	else if(token->kind == TOKEN_STRING) return token->value.string->value;
+	else if(token->kind == TOKEN_INTEGER) return String_fromLong(token->value.integer)->value;
+	else if(token->kind == TOKEN_FLOATING) return String_fromDouble(token->value.floating)->value;
+
+	return "unknown";
+}

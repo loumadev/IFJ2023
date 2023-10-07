@@ -109,5 +109,6 @@ void Token_destructor(Token *token);
 Token* Token_alloc(enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value);
 void Token_free(Token *token);
 void Token_print(Token *token, unsigned int depth, int isProperty);
+char* Token_toString(Token *token);
 
 #endif
