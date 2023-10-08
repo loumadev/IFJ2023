@@ -9,4 +9,7 @@ deploy/output/
 # Dependencies
 #vendor/
 
+# Macos extra files 
+.DS_Store
+
 test/test_main.c
