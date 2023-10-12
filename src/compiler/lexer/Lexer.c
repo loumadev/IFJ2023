@@ -293,6 +293,9 @@ LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
 void Lexer_setSource(Lexer *lexer, char *source) {
 	assertf(lexer != NULL);
 
+	Lexer_destructor(lexer);
+	Lexer_constructor(lexer);
+
 	lexer->line = 1;
 	lexer->column = 1;
 	lexer->source = source;
@@ -452,12 +455,17 @@ LexerResult Lexer_peekToken(Lexer *lexer, int offset) {
 		return result;
 	}
 
+	// Save current index for backtracking (since peeking should not consume the tokens)
+	size_t backtrack = lexer->currentTokenIndex;
+
 	// Peeking after the end of the token stream
 	LexerResult result = LexerSuccess();
 	while((result = Lexer_nextToken(lexer)).token && result.token->type != TOKEN_EOF) {
 		// If the target token is found, return it
-		if(lexer->currentTokenIndex == index) return result;
+		if(lexer->currentTokenIndex == index) return (lexer->currentTokenIndex = backtrack), result;
 	}
+
+	lexer->currentTokenIndex = backtrack;
 
 	// Exit if something fails
 	if(!result.success) return result;
