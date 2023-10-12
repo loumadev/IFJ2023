@@ -1388,6 +1388,196 @@ DESCRIBE(peekToken, "Peeking tokens (peekToken)") {
 
 	LexerResult result;
 
+	TEST_BEGIN("Combination of nextToken and peekToken") {
+		Lexer_setSource(&lexer, "1 2 3 4 5 6 7 8");
+
+		//
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 1);
+
+		// 1
+		// ^
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 1);
+
+		// 1
+		// ^
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 2);
+
+		// 1 2
+		// ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 2);
+
+		// 1 2
+		//   ^
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 1);
+
+		// 1 2
+		//   ^
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 2);
+
+		// 1 2
+		//   ^
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 3);
+
+		// 1 2 3
+		//   ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 3);
+
+		// 1 2 3
+		//     ^
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 3);
+
+		// 1 2 3
+		//     ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 4);
+
+		// 1 2 3 4
+		//       ^
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 3);
+
+		// 1 2 3 4
+		//       ^
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 4);
+
+		// 1 2 3 4
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 5);
+
+		// 1 2 3 4 5
+		//         ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 6);
+
+		// 1 2 3 4 5 6
+		//           ^
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 5);
+
+		// 1 2 3 4 5 6
+		//           ^
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 6);
+
+		// 1 2 3 4 5 6
+		//		     ^
+
+		result = Lexer_peekToken(&lexer, 2);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 8);
+
+		// 1 2 3 4 5 6 7 8
+		//		     ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 7);
+
+		// 1 2 3 4 5 6 7 8
+		//		       ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 8);
+
+		// 1 2 3 4 5 6 7 8
+		//		         ^
+
+		result = Lexer_peekToken(&lexer, -1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+		EXPECT_TRUE(result.token->kind == TOKEN_INTEGER);
+		EXPECT_EQUAL_INT(result.token->value.integer, 7);
+
+		// 1 2 3 4 5 6 7 8
+		//		         ^
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+	} TEST_END();
+
 	TEST_BEGIN("Tokenization of the complex source") {
 		Lexer_setSource(&lexer, "var myVar = myFunc(/* some params */);");
 
