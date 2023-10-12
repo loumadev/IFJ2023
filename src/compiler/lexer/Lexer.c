@@ -293,6 +293,9 @@ LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
 void Lexer_setSource(Lexer *lexer, char *source) {
 	assertf(lexer != NULL);
 
+	Lexer_destructor(lexer);
+	Lexer_constructor(lexer);
+
 	lexer->line = 1;
 	lexer->column = 1;
 	lexer->source = source;
