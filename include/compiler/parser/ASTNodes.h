@@ -16,6 +16,7 @@ enum ASTNodeType {
 	NODE_EXPRESSION_STATEMENT,
 	NODE_RETURN_STATEMENT,
 	NODE_PARAMETER,
+	NODE_PARAMETER_LIST,
 	NODE_FUNCTION_DECLARATION,
 	NODE_ARGUMENT,
 	NODE_FUNCTION_CALL
@@ -77,6 +78,11 @@ typedef struct ParameterASTNode {
 	bool isLabeless;
 } ParameterASTNode;
 
+typedef struct ParameterListASTNode {
+	enum ASTNodeType _type;
+	Array /*<ParameterASTNode>*/ *parameters;
+} ParameterListASTNode;
+
 typedef struct ArgumentASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *expression;
@@ -86,7 +92,7 @@ typedef struct ArgumentASTNode {
 typedef struct FunctionDeclarationASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	Array /*<ParameterASTNode>*/ *parameters;
+	ParameterListASTNode *parameterList;
 	TypeReferenceASTNode *returnType;
 	BlockASTNode *body;
 } FunctionDeclarationASTNode;
@@ -102,23 +108,24 @@ typedef struct FunctionCallASTNode {
 
 /* Constructors for AST nodes */
 
-ProgramASTNode* new_ProgramASTNode(BlockASTNode *block);
-BlockASTNode* new_BlockASTNode(Array *statements);
-IdentifierASTNode* new_IdentifierASTNode(String *name);
-TypeReferenceASTNode* new_TypeReferenceASTNode(IdentifierASTNode *id, bool isNullable);
-VariableDeclarationASTNode* new_VariableDeclarationASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
-ReturnStatementASTNode* new_ReturnStatementASTNode(ExpressionASTNode *expression);
-ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalName, bool isLabeless);
-ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
-FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, Array *parameters, TypeReferenceASTNode *returnType, BlockASTNode *body);
-FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, Array *arguments);
+ProgramASTNode * new_ProgramASTNode(BlockASTNode *block);
+BlockASTNode * new_BlockASTNode(Array *statements);
+IdentifierASTNode * new_IdentifierASTNode(String *name);
+TypeReferenceASTNode * new_TypeReferenceASTNode(IdentifierASTNode *id, bool isNullable);
+VariableDeclarationASTNode * new_VariableDeclarationASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
+ReturnStatementASTNode * new_ReturnStatementASTNode(ExpressionASTNode *expression);
+ParameterASTNode * new_ParameterASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalName, bool isLabeless);
+ParameterListASTNode * new_ParameterListASTNode(Array *parameters);
+ArgumentASTNode * new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
+FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
+FunctionCallASTNode * new_FunctionCallASTNode(IdentifierASTNode *id, Array *arguments);
 
 // TODO: Add more AST node constructors
 
 
 /* Other public functions */
 
-ASTNode* ASTNode_alloc(size_t size, enum ASTNodeType type);
+ASTNode * ASTNode_alloc(size_t size, enum ASTNodeType type);
 void ASTNode_free(ASTNode *node);
 
 void ASTNode_print(ASTNode *node);
