@@ -9,7 +9,11 @@ deploy/output/
 # Dependencies
 #vendor/
 
-# Macos extra files 
+# Macos extra files
 .DS_Store
+
+# Neovim compile database
+compile_commands.json
+.cache
 
 test/test_main.c
