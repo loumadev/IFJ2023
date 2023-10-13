@@ -4,8 +4,10 @@
 #include "compiler/lexer/Lexer.h"
 #include "compiler/lexer/Token.h"
 
+// TODO: Symbol table management
 typedef struct Parser {
 	Lexer *lexer;
+	// SymbolTable *symbolTable;
 } Parser;
 
 void Parser_constructor(Parser *parser);

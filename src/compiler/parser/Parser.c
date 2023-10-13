@@ -14,11 +14,15 @@ ParserResult __Parser_parseProgram(Parser *parser);
 ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces);
 ParserResult __Parser_parseStatement(Parser *parser);
 ParserResult __Parser_parseExpression(Parser *parser);
-
+ParserResult __Parser_parseFuncStatement(Parser *parser);
+ParserResult __Parser_parseTypeReference(Parser *parser);
+ParserResult __Parser_parseParameter(Parser *parser);
+ParserResult __Parser_parseParameterList(Parser *parser);
 
 /* Definitions of public functions */
 
 void Parser_constructor(Parser *parser) {
+	// TODO: Symbol table management
 	parser->lexer = NULL;
 }
 
@@ -67,7 +71,7 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 
 		if(result.token->kind != TOKEN_LEFT_BRACE) {
 			return ParserError(
-				String_fromFormat("Expected '{' in block body, but got '%s'", Token_toString(result.token)),
+				String_fromFormat("expected '{' in block body, but got '%s'", Token_toString(result.token)),
 				Array_fromArgs(1, result.token)
 			);
 		}
@@ -90,7 +94,7 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 
 		if(result.token->kind != TOKEN_RIGHT_BRACE) {
 			return ParserError(
-				String_fromFormat("Expected '}' in block body, but got '%s'", Token_toString(result.token)),
+				String_fromFormat("expected '}' in block body, but got '%s'", Token_toString(result.token)),
 				Array_fromArgs(1, result.token)
 			);
 		}
@@ -103,7 +107,14 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 ParserResult __Parser_parseStatement(Parser *parser) {
 	assertf(parser != NULL);
 
-	// TODO: Add logic for parsing statements (using recursive descent)
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->kind == TOKEN_FUNC) {
+		ParserResult funcResult = __Parser_parseFuncStatement(parser);
+		if(!funcResult.success) return funcResult;
+	}
+
 	return ParserNoMatch();
 }
 
@@ -114,11 +125,203 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	return ParserNoMatch();
 }
 
-// TODO: Add more functions to parse the rest of the language
+ParserResult __Parser_parseTypeReference(Parser *parser) {
+	// TODO: Add logic to output correct error messages
+	assertf(parser != NULL);
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	LexerResult peek;
+	int nullable = false;
+
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->type != TOKEN_IDENTIFIER) {
+		return ParserError(
+			String_fromFormat("expected type reference in function declaration"),
+			Array_fromArgs(1, result.token));
+	}
+
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(result);
 
 
+	// nullable type
+	if(peek.token->kind == TOKEN_QUESTION) {
+		nullable = true;
+		// Skip the '?' token
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(result);
 
-/* How to walk/traverse parsed AST or decide what kind of node the ASTNode pointer refers to in general? */
+	}
+
+	IdentifierASTNode *paramTypeId = new_IdentifierASTNode(result.token->value.string);
+	TypeReferenceASTNode *paramType = new_TypeReferenceASTNode(paramTypeId, nullable);
+	return ParserSuccess(paramType);
+}
+
+
+ParserResult __Parser_parseParameter(Parser *parser) {
+	// TODO: Add logic to output correct error messages
+	// TODO: Add expression parsing
+	assertf(parser != NULL);
+
+	bool isLabeless = false;
+	IdentifierASTNode *paramLocalId = NULL;
+	IdentifierASTNode *paramExternalId = NULL;
+	ExpressionASTNode *initializer = NULL;
+	LexerResult peek;
+	LexerResult result = Lexer_nextToken(parser->lexer);
+
+	if(!result.success) return LexerToParserError(result);
+
+	// parameter name
+	if(result.token->type != TOKEN_IDENTIFIER) {
+		return ParserError(
+			String_fromFormat("expected identifier in function declaration"),
+			Array_fromArgs(1, result.token));
+	}
+
+	// labelless parameter
+	if(String_equals(result.token->value.string, "_")) {
+		isLabeless = true;
+	}
+
+	paramLocalId = new_IdentifierASTNode(result.token->value.string);
+
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	// second parameter name exists
+	if(peek.token->type == TOKEN_IDENTIFIER) {
+		LexerResult result = Lexer_nextToken(parser->lexer);
+		if(!result.success) return LexerToParserError(result);
+
+		// external name is first and local second
+		paramExternalId = paramLocalId;
+		paramLocalId = new_IdentifierASTNode(result.token->value.string);
+	}
+
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->kind != TOKEN_COLON) {
+		return ParserError(
+			String_fromFormat("expected ':' in function declaration"),
+			Array_fromArgs(1, result.token));
+	}
+
+	// check for Type
+
+	ParserResult typeResult = __Parser_parseTypeReference(parser);
+	if(!typeResult.success) return typeResult;
+
+
+	// check for initializer
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	if(peek.token->kind == TOKEN_EQUAL) {
+		// TODO: Add expression parsing
+		//     : Add constructor for ExpressionASTNode
+		//     : Expression until , or )
+		initializer = NULL;
+	}
+
+	ParameterASTNode *paramNode = new_ParameterASTNode(paramLocalId, (TypeReferenceASTNode*)typeResult.node, initializer, paramExternalId, isLabeless);
+	return ParserSuccess(paramNode);
+}
+
+
+ParserResult __Parser_parseParameterList(Parser *parser) {
+	assertf(parser != NULL);
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->kind != TOKEN_LEFT_PAREN) {
+		return ParserError(
+			String_fromFormat(
+				"expected '(' in argument list of function declaration"),
+			Array_fromArgs(1, result.token));
+	}
+
+	// parser parameter-list
+	Array *parameters = Array_alloc(0);
+	while(true) {
+		ParserResult paramResult = __Parser_parseParameter(parser);
+		if(!paramResult.success) return paramResult;
+
+		Array_push(parameters, (ParameterASTNode*)paramResult.node);
+
+		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+
+
+		if(!peek.success) return LexerToParserError(result);
+
+		if(peek.token->kind == TOKEN_COMMA) {
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+
+		}
+
+		peek = Lexer_peekToken(parser->lexer, 1);
+		if(peek.token->kind == TOKEN_RIGHT_PAREN) {
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+			break;
+		}
+	}
+	ParameterListASTNode *parameterList = new_ParameterListASTNode(parameters);
+
+	return ParserSuccess(parameterList);
+
+}
+
+ParserResult __Parser_parseFuncStatement(Parser *parser) {
+	// TODO: Symbol table management
+
+	assertf(parser != NULL);
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	LexerResult peek;
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->type != TOKEN_IDENTIFIER) {
+		return ParserError(
+			String_fromFormat("expected identifier in function declaration"),
+			Array_fromArgs(1, result.token));
+	}
+
+	IdentifierASTNode *funcId = new_IdentifierASTNode(result.token->value.string);
+
+	ParserResult parameterListResult = __Parser_parseParameterList(parser);
+	if(!parameterListResult.success) return parameterListResult;
+
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	TypeReferenceASTNode *returnType = NULL;
+	if(peek.token->kind == TOKEN_ARROW) {
+		// Skip the '->' token
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(result);
+
+		ParserResult returnTypeResult = __Parser_parseTypeReference(parser);
+		if(!returnTypeResult.success) return returnTypeResult;
+		returnType = (TypeReferenceASTNode*)returnTypeResult.node;
+	} else {
+		// Void return type
+		returnType = NULL;
+	}
+
+	ParserResult blockResult = __Parser_parseBlock(parser, true);
+	// if(!blockResult.success) return blockResult;
+
+	FunctionDeclarationASTNode *func = new_FunctionDeclarationASTNode(funcId, (ParameterListASTNode*)parameterListResult.node, returnType, (BlockASTNode*)blockResult.node);
+	return ParserSuccess(func);
+}
+
+/* How to walk/traverse parsed AST or decide what kind of node the ASTNode
+ * pointer refers to in general? */
 
 // void myFunc(ASTNode *node) {
 // 	switch(node->type) {
