@@ -109,7 +109,7 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 ) {
 	prepare_node_of(FunctionDeclarationASTNode, NODE_FUNCTION_DECLARATION)
 	node->id = id;
-	node->parameterList= parameterList;
+	node->parameterList = parameterList;
 	node->returnType = returnType;
 	node->body = block;
 	return node;
