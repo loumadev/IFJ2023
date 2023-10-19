@@ -4,34 +4,70 @@ IFJ23
 
 ## base
 
-assignment-expression → `=` expression<br>
-
-
 type-annotation → `:` type<br>
-type → `String` | `Int` | `Double`<br>
+//type → `String` | `Int` | `Double`<br>
+type → identifier // Built-in types will be resolved at semantic analysis<br>
 
-code-block → `{`statements?`}`<br>
+code-block → `{` statements? `}`<br>
+
+## literals
+
+literal → numeric-literal | string-literal | boolean-literal | nil-literal<br>
+
+? numeric-literal → `-`? integer-literal | `-`? floating-point-literal // Should this be included? Number literals are defined by FSM diagram<br>
+boolean-literal → `true` | `false`<br>
+nil-literal → `nil`<br>
 
 ## expressions
 
-expression → TODO
+expression → TODO<br>
+
+// This is probably wrong (swift parses `a = b` as a `BinaryExpression`, but we want to be more explic, so this would be parsed as `AssignmentExpression`), so it needs rework; it's just to show the `function-call-expression` rule (this way the function call can appear anywhere in the expression (`myFunc(otherFunc(10))`, `myFunc() + otherFunc(10) * 8`, `a = myFunc() * -1`, ...))
+
+expression → prefix-expression infix-expressions?<br>
+expression-list → expression | expression `,` expression-list<br>
+
+prefix-expression → prefix-operator? postfix-expression<br>
+
+infix-expression → infix-operator prefix-expression<br>
+infix-expression → assignment-operator prefix-expression<br>
+infix-expression → conditional-operator prefix-expression<br>
+? infix-expression → type-casting-operator // Are we gonna support explicit type casting?<br>
+infix-expressions → infix-expression infix-expressions?<br>
+
+postfix-expression → primary-expression<br>
+postfix-expression → postfix-expression postfix-operator<br>
+postfix-expression → function-call-expression<br>
+
+primary-expression → identifier<br>
+primary-expression → literal-expression<br>
+primary-expression → parenthesized-expression<br>
+
+assignment-operator → `=`<br>
+
+assignment-expression → `=` expression<br>
+
+conditional-operator → `?` expression `:`<br>
+
+parenthesized-expression → `(` expression `)`<br>
+
+literal-expression → literal<br>
 
 ## statements
 
 statement → function-declaration<br>
-statement → function-call<br>
 statement → variable-declaration<br>
-statement → variable-assignmen<br>
 statement → if-statement<br>
 statement → while-statement<br>
 statement → return-statement<br>
-statement → expression<br>
+statement → expression-statement<br>
+
+expression-statement → expression<br>
 
 ## function declaration
 
-function-declaration → function-head function-name function-signature function-body?<br>
+function-declaration → `func` function-name function-signature function-body?<br>
 
-function-head → func<br>
 function-name → identifier<br>
 
 function-signature → parameter-clause function-result?<br>
@@ -44,50 +80,43 @@ parameter → external-parameter-name? local-parameter-name type-annotation<br>
 external-parameter-name → identifier<br>
 local-parameter-name → identifier<br>
 
-### ? not in the project specification ?<br>
-parameter → external-parameter-name? local-parameter-name type-annotation default-argument-clause?<br>
-default-argument-clause → `=` expression<br>
+### ? not in the project specification ? // Ik, but it's nice to have the initializers :)<br>
+parameter → external-parameter-name? local-parameter-name type-annotation initializer?<br>
+initializer → `=` expression<br>
 
 ## function call
 
-argument-name identifier<br>
-argument-signature<br>
+function-call-expression → function-name argument-clause<br>
 
-argument → argument-name`:` expression<br>
+argument-clause → `(` `)` | `(` argument-list `)`<br>
+argument-list → argument | argument `,` argument-list<br>
+
+argument → argument-name `:` expression<br>
 argument → expression<br>
 
-argument-list → argument | argument , argument-list<br>
-argument-clause → `(` `)` | `(` argument-list `)`<br>
-
-function-call → function-name argument-clause<br>
-
-## function call (assignment) ?expression?
-TODO
-
-id = název_funkce(seznam_vstupních_parametrů)<br>
-let id = název_funkce(seznam_vstupních_parametrů)<br>
+argument-name → identifier<br>
 
 ## variable declaration
-variable-declaration → variable-head variable-name type-annotation assignment-expression?<br>
-variable-head → let | var<br>
+variable-declaration → variable-head variable-declaration-list?<br>
+variable-head → `let` | `var`<br>
 variable-name → identifier<br>
 
-## variable assignment
- variable-assignment → variable-name assignment-expression?<br>
- variable-name → identifier<br>
+variable-declaration-list → variable-declarator | variable-declarator `,` variable-declaration-list<br>
+variable-declarator → pattern initializer?<br>
+pattern → variable-name type-annotation?<br>
 
 ## if statement
 
-condition → expression<br>
-condition → let variable-name<br>
+condition → expression | optional-binding-condition<br>
+optional-binding-condition → `let` pattern initializer? | `var` pattern initializer?
 
-if-statement → if condition code-block else-clause<br>
-else-clause → else code-block<br>
+if-statement → `if` condition code-block else-clause?<br>
+else-clause → `else` code-block | `else` if-statement<br>
 
 ## while statement
 
-while-statement → while condition code-block<br>
+while-statement → `while` condition code-block<br>
 
 ## return statement
 
-return-statement → return expression?<br>
+return-statement → `return` expression?<br>
