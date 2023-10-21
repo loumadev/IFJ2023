@@ -93,17 +93,7 @@ ParameterListASTNode * new_ParameterListASTNode(
 	return node;
 }
 
-ArgumentASTNode* new_ArgumentASTNode(
-	ExpressionASTNode *expression,
-	IdentifierASTNode *label
-) {
-	prepare_node_of(ArgumentASTNode, NODE_ARGUMENT)
-	node->label = label;
-	node->expression = expression;
-	return node;
-}
-
-FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
+FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(
 	IdentifierASTNode *id,
 	ParameterListASTNode *parameterList,
 	TypeReferenceASTNode *returnType,
@@ -117,12 +107,34 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 	return node;
 }
 
-FunctionCallASTNode* new_FunctionCallASTNode(
-	IdentifierASTNode *id,
+ArgumentASTNode * new_ArgumentASTNode(
+	ExpressionASTNode *expression,
+	IdentifierASTNode *label
+) {
+	prepare_node_of(ArgumentASTNode, NODE_ARGUMENT)
+	node->label = label;
+	node->expression = expression;
+	return node;
+}
+
+ArgumentListASTNode * new_ArgumentListASTNode(
 	Array *arguments
+) {
+	prepare_node_of(ArgumentListASTNode, NODE_ARGUMENT_LIST)
+	node->arguments = arguments;
+	return node;
+}
+
+FunctionCallASTNode * new_FunctionCallASTNode(
+	IdentifierASTNode *id,
+	ArgumentListASTNode *argumentList
 ) {
 	prepare_node_of(FunctionCallASTNode, NODE_FUNCTION_CALL)
 	node->id = id;
+	node->argumentList = argumentList;
+	return node;
+}
+
 PatternASTNode * new_PatternASTNode(
 	IdentifierASTNode *name,
 	TypeReferenceASTNode *type

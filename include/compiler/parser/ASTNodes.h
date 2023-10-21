@@ -19,6 +19,8 @@ enum ASTNodeType {
 	NODE_PARAMETER_LIST,
 	NODE_FUNCTION_DECLARATION,
 	NODE_ARGUMENT,
+	NODE_ARGUMENT_LIST,
+	NODE_FUNCTION_CALL,
 	NODE_IF_STATEMENT,
 	NODE_ELSE_CLAUSE,
 	NODE_PATTERN,
@@ -89,12 +91,6 @@ typedef struct ParameterListASTNode {
 	Array /*<ParameterASTNode>*/ *parameters;
 } ParameterListASTNode;
 
-typedef struct ArgumentASTNode {
-	enum ASTNodeType _type;
-	ExpressionASTNode *expression;
-	IdentifierASTNode *label;
-} ArgumentASTNode;
-
 typedef struct FunctionDeclarationASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
@@ -103,10 +99,21 @@ typedef struct FunctionDeclarationASTNode {
 	BlockASTNode *body;
 } FunctionDeclarationASTNode;
 
+typedef struct ArgumentASTNode {
+	enum ASTNodeType _type;
+	ExpressionASTNode *expression;
+	IdentifierASTNode *label;
+} ArgumentASTNode;
+
+typedef struct ArgumentListASTNode {
+	enum ASTNodeType _type;
+	Array /*<ArgumentASTNode>*/ *arguments;
+} ArgumentListASTNode;
+
 typedef struct FunctionCallASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	Array /*<ArgumentASTNode>*/ *arguments;
+	ArgumentListASTNode* argumentList;
 } FunctionCallASTNode;
 
 typedef struct PatternASTNode {
@@ -162,6 +169,9 @@ ReturnStatementASTNode * new_ReturnStatementASTNode(ExpressionASTNode *expressio
 ParameterASTNode * new_ParameterASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalName, bool isLabeless);
 ParameterListASTNode * new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
+ArgumentASTNode * new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
+ArgumentListASTNode * new_ArgumentListASTNode(Array * arguments);
+FunctionCallASTNode * new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
 PatternASTNode * new_PatternASTNode(IdentifierASTNode *name, TypeReferenceASTNode *type);
 OptionalBindingConditionASTNode * new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
 ConditionASTNode * new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);

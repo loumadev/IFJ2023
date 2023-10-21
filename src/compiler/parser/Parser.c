@@ -25,6 +25,9 @@ ParserResult __Parser_parseElseClause(Parser *parser);
 ParserResult __Parser_parseIfStatement(Parser *parser);
 ParserResult __Parser_parseWhileStatement(Parser *parser);
 ParserResult __Parser_parseReturnStatement(Parser *parser);
+ParserResult __Parser_parseArgument(Parser *parser);
+ParserResult __Parser_parseArgumentList(Parser *parser);
+ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
 
 /* Definitions of public functions */
 
@@ -140,6 +143,18 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 		ParserResult returnResult = __Parser_parseReturnStatement(parser);
 		if(!returnResult.success) return returnResult;
 		return ParserSuccess(returnResult.node);
+	}
+
+	if(peek.token->type == TOKEN_IDENTIFIER) {
+		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+		if(!peek.success) return LexerToParserError(peek);
+
+		// function call
+		if(peek.token->kind == TOKEN_LEFT_PAREN) {
+			ParserResult functionCallResult = __Parser_parseFunctionCallExpression(parser);
+			if(!functionCallResult.success) return functionCallResult;
+			return ParserSuccess(functionCallResult.node);
+		}
 	}
 	return ParserNoMatch();
 }
@@ -567,6 +582,89 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 	ReturnStatementASTNode *returnStatement = new_ReturnStatementASTNode((ExpressionASTNode*)expression);
 
 	return ParserSuccess(returnStatement);
+}
+
+ParserResult __Parser_parseArgument(Parser *parser) {
+	assertf(parser != NULL);
+
+	IdentifierASTNode *argumentLabel = NULL;
+	ExpressionASTNode *expression = NULL;
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	// labeled argument
+	if(result.token->type == TOKEN_IDENTIFIER && peek.token->kind == TOKEN_COLON) {
+		argumentLabel = new_IdentifierASTNode(result.token->value.string);
+		// Skip the ':' token
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(result);
+	}
+
+	ParserResult expressionResult = __Parser_parseExpression(parser);
+	if(!expressionResult.success) return expressionResult;
+	expression = (ExpressionASTNode*)expressionResult.node;
+
+	ArgumentASTNode *argument = new_ArgumentASTNode(expression, argumentLabel);
+
+	return ParserSuccess(argument);
+}
+
+ParserResult __Parser_parseArgumentList(Parser *parser) {
+	assertf(parser != NULL);
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	// parse argument-list
+	Array *arguments = Array_alloc(0);
+	while(true) {
+		ParserResult argumentResult = __Parser_parseArgument(parser);
+		if(!argumentResult.success) return argumentResult;
+
+		Array_push(arguments, (ArgumentASTNode*)argumentResult.node);
+
+		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+
+		if(!peek.success) return LexerToParserError(result);
+
+		if(peek.token->kind == TOKEN_COMMA) {
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+
+		}
+
+		peek = Lexer_peekToken(parser->lexer, 1);
+		if(peek.token->kind == TOKEN_RIGHT_PAREN) {
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+			break;
+		}
+	}
+	ArgumentListASTNode *argumentList = new_ArgumentListASTNode(arguments);
+
+	return ParserSuccess(argumentList);
+
+}
+
+ParserResult __Parser_parseFunctionCallExpression(Parser *parser) {
+	assertf(parser != NULL);
+
+	// identifier
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	IdentifierASTNode *funcId = new_IdentifierASTNode(result.token->value.string);
+
+	ParserResult argumentListResult = __Parser_parseArgumentList(parser);
+	if(!argumentListResult.success) return argumentListResult;
+
+	FunctionCallASTNode *fuctionCallExpression = new_FunctionCallASTNode(funcId, (ArgumentListASTNode*)argumentListResult.node);
+
+	return ParserSuccess(fuctionCallExpression);
 }
 /* How to walk/traverse parsed AST or decide what kind of node the ASTNode
  * pointer refers to in general? */
