@@ -24,6 +24,7 @@ ParserResult __Parser_parseCondition(Parser *parser);
 ParserResult __Parser_parseElseClause(Parser *parser);
 ParserResult __Parser_parseIfStatement(Parser *parser);
 ParserResult __Parser_parseWhileStatement(Parser *parser);
+ParserResult __Parser_parseReturnStatement(Parser *parser);
 
 /* Definitions of public functions */
 
@@ -133,6 +134,12 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 		ParserResult whileResult = __Parser_parseWhileStatement(parser);
 		if(!whileResult.success) return whileResult;
 		return ParserSuccess(whileResult.node);
+	}
+
+	if(peek.token->kind == TOKEN_RETURN) {
+		ParserResult returnResult = __Parser_parseReturnStatement(parser);
+		if(!returnResult.success) return returnResult;
+		return ParserSuccess(returnResult.node);
 	}
 	return ParserNoMatch();
 }
@@ -536,6 +543,30 @@ ParserResult __Parser_parseWhileStatement(Parser *parser) {
 	WhileStatementASTNode *whileStatement = new_WhileStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node);
 
 	return ParserSuccess(whileStatement);
+}
+
+ParserResult __Parser_parseReturnStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	// skip return keyword
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	ExpressionASTNode *expression = NULL;
+
+	if(peek.token->type != TOKEN_EOF) {
+		ParserResult expressionResult = __Parser_parseExpression(parser);
+		if(!expressionResult.success) return expressionResult;
+		expression = (ExpressionASTNode*)expressionResult.node;
+	}
+
+	ReturnStatementASTNode *returnStatement = new_ReturnStatementASTNode((ExpressionASTNode*)expression);
+
+	return ParserSuccess(returnStatement);
 }
 /* How to walk/traverse parsed AST or decide what kind of node the ASTNode
  * pointer refers to in general? */
