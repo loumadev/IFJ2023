@@ -23,6 +23,7 @@ ParserResult __Parser_parseOptionalBindingCondition(Parser *parser);
 ParserResult __Parser_parseCondition(Parser *parser);
 ParserResult __Parser_parseElseClause(Parser *parser);
 ParserResult __Parser_parseIfStatement(Parser *parser);
+ParserResult __Parser_parseWhileStatement(Parser *parser);
 
 /* Definitions of public functions */
 
@@ -128,6 +129,11 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 		return ParserSuccess(ifResult.node);
 	}
 
+	if(peek.token->kind == TOKEN_WHILE) {
+		ParserResult whileResult = __Parser_parseWhileStatement(parser);
+		if(!whileResult.success) return whileResult;
+		return ParserSuccess(whileResult.node);
+	}
 	return ParserNoMatch();
 }
 
@@ -496,6 +502,40 @@ ParserResult __Parser_parseIfStatement(Parser *parser) {
 	IfStatementASTNode *ifStatement = new_IfStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node, (ElseClauseASTNode*)elseClause);
 
 	return ParserSuccess(ifStatement);
+}
+
+ParserResult __Parser_parseWhileStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	// skip while keyword
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	// look more into this
+	if(peek.token->kind == TOKEN_LEFT_BRACE) {
+		return ParserError(
+			String_fromFormat("missing condition in 'while' statement"),
+			Array_fromArgs(1, peek.token));
+	}
+
+	if(peek.token->type == TOKEN_EOF) {
+		return ParserError(
+			String_fromFormat("expected expression, var, or let in 'while' condition"),
+			Array_fromArgs(1, peek.token));
+	}
+
+	ParserResult conditionResult = __Parser_parseCondition(parser);
+	if(!conditionResult.success) return conditionResult;
+
+	ParserResult blockResult = __Parser_parseBlock(parser, true);
+	if(!blockResult.success) return blockResult;
+
+	WhileStatementASTNode *whileStatement = new_WhileStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node);
+
+	return ParserSuccess(whileStatement);
 }
 /* How to walk/traverse parsed AST or decide what kind of node the ASTNode
  * pointer refers to in general? */

@@ -178,6 +178,15 @@ IfStatementASTNode * new_IfStatementASTNode(
 	node->elseClause = elseClause;
 	return node;
 }
+
+
+WhileStatementASTNode * new_WhileStatementASTNode(
+	ConditionASTNode *condition,
+	BlockASTNode *body
+) {
+	prepare_node_of(WhileStatementASTNode, NODE_WHILE_STATEMENT)
+	node->condition = condition;
+	node->body = body;
 	return node;
 }
 
