@@ -76,12 +76,10 @@ function-body → code-block<br>
 
 parameter-clause → `(` `)` | `(` parameter-list `)`<br>
 parameter-list → parameter | parameter `,` parameter-list<br>
-parameter → external-parameter-name? local-parameter-name type-annotation<br>
+parameter → external-parameter-name? local-parameter-name type-annotation initializer?<br>
 external-parameter-name → identifier<br>
 local-parameter-name → identifier<br>
 
-### ? not in the project specification ? // Ik, but it's nice to have the initializers :)<br>
-parameter → external-parameter-name? local-parameter-name type-annotation initializer?<br>
 initializer → `=` expression<br>
 
 ## function call
