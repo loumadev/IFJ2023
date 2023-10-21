@@ -19,7 +19,11 @@ enum ASTNodeType {
 	NODE_PARAMETER_LIST,
 	NODE_FUNCTION_DECLARATION,
 	NODE_ARGUMENT,
-	NODE_FUNCTION_CALL
+	NODE_IF_STATEMENT,
+	NODE_ELSE_CLAUSE,
+	NODE_PATTERN,
+	NODE_CONDITION,
+	NODE_OPTIONAL_BINDING_CONDITION,
 };
 
 
@@ -57,6 +61,7 @@ typedef struct VariableDeclarationASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
 	TypeReferenceASTNode *type;
+    bool isConstant;
 } VariableDeclarationASTNode;
 
 typedef struct ExpressionStatementASTNode {
@@ -103,6 +108,39 @@ typedef struct FunctionCallASTNode {
 	Array /*<ArgumentASTNode>*/ *arguments;
 } FunctionCallASTNode;
 
+typedef struct PatternASTNode {
+	enum ASTNodeType _type;
+	IdentifierASTNode *name;
+	TypeReferenceASTNode *type;
+} PatternASTNode;
+
+typedef struct OptionalBindingConditionASTNode {
+	enum ASTNodeType _type;
+	PatternASTNode *pattern;
+	ExpressionASTNode *initializer;
+    bool isConstant;
+} OptionalBindingConditionASTNode;
+
+typedef struct ConditionASTNode {
+	enum ASTNodeType _type;
+	ExpressionASTNode *expression;
+	OptionalBindingConditionASTNode *optionalBindingCondition;
+} ConditionASTNode;
+
+typedef struct ElseClauseASTNode {
+	enum ASTNodeType _type;
+	struct IfStatementASTNode *ifStatement;
+	BlockASTNode *body;
+	bool isElseIf;
+} ElseClauseASTNode;
+
+typedef struct IfStatementASTNode {
+	enum ASTNodeType _type;
+	ConditionASTNode *condition;
+	BlockASTNode *body;
+	ElseClauseASTNode *elseClause;
+} IfStatementASTNode;
+
 // TODO: Add more AST nodes
 
 
@@ -112,13 +150,16 @@ ProgramASTNode * new_ProgramASTNode(BlockASTNode *block);
 BlockASTNode * new_BlockASTNode(Array *statements);
 IdentifierASTNode * new_IdentifierASTNode(String *name);
 TypeReferenceASTNode * new_TypeReferenceASTNode(IdentifierASTNode *id, bool isNullable);
-VariableDeclarationASTNode * new_VariableDeclarationASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
+VariableDeclarationASTNode * new_VariableDeclarationASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, bool isConstant);
 ReturnStatementASTNode * new_ReturnStatementASTNode(ExpressionASTNode *expression);
 ParameterASTNode * new_ParameterASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalName, bool isLabeless);
 ParameterListASTNode * new_ParameterListASTNode(Array *parameters);
-ArgumentASTNode * new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
-FunctionCallASTNode * new_FunctionCallASTNode(IdentifierASTNode *id, Array *arguments);
+PatternASTNode * new_PatternASTNode(IdentifierASTNode *name, TypeReferenceASTNode *type);
+OptionalBindingConditionASTNode * new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
+ConditionASTNode * new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);
+ElseClauseASTNode * new_ElseClauseASTNode(IfStatementASTNode *ifStatement, BlockASTNode *body, bool isElseIf);
+IfStatementASTNode * new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ElseClauseASTNode *elseClause);
 
 // TODO: Add more AST node constructors
 

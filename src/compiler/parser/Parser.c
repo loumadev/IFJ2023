@@ -14,10 +14,15 @@ ParserResult __Parser_parseProgram(Parser *parser);
 ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces);
 ParserResult __Parser_parseStatement(Parser *parser);
 ParserResult __Parser_parseExpression(Parser *parser);
-ParserResult __Parser_parseFuncStatement(Parser *parser);
 ParserResult __Parser_parseTypeReference(Parser *parser);
 ParserResult __Parser_parseParameter(Parser *parser);
 ParserResult __Parser_parseParameterList(Parser *parser);
+ParserResult __Parser_parseFuncStatement(Parser *parser);
+ParserResult __Parser_parsePattern(Parser *parser);
+ParserResult __Parser_parseOptionalBindingCondition(Parser *parser);
+ParserResult __Parser_parseCondition(Parser *parser);
+ParserResult __Parser_parseElseClause(Parser *parser);
+ParserResult __Parser_parseIfStatement(Parser *parser);
 
 /* Definitions of public functions */
 
@@ -64,6 +69,7 @@ ParserResult __Parser_parseProgram(Parser *parser) {
 ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 	assertf(parser != NULL);
 
+
 	// Check for left brace
 	if(requireBraces) {
 		LexerResult result = Lexer_nextToken(parser->lexer);
@@ -107,12 +113,19 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 ParserResult __Parser_parseStatement(Parser *parser) {
 	assertf(parser != NULL);
 
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
+	LexerResult peek = Lexer_peekToken(parser->lexer, 0);
+	if(!peek.success) return LexerToParserError(peek);
 
-	if(result.token->kind == TOKEN_FUNC) {
+	if(peek.token->kind == TOKEN_FUNC) {
 		ParserResult funcResult = __Parser_parseFuncStatement(parser);
 		if(!funcResult.success) return funcResult;
+		return ParserSuccess(funcResult.node);
+	}
+
+	if(peek.token->kind == TOKEN_IF) {
+		ParserResult ifResult = __Parser_parseIfStatement(parser);
+		if(!ifResult.success) return ifResult;
+		return ParserSuccess(ifResult.node);
 	}
 
 	return ParserNoMatch();
@@ -158,7 +171,6 @@ ParserResult __Parser_parseTypeReference(Parser *parser) {
 	TypeReferenceASTNode *paramType = new_TypeReferenceASTNode(paramTypeId, nullable);
 	return ParserSuccess(paramType);
 }
-
 
 ParserResult __Parser_parseParameter(Parser *parser) {
 	// TODO: Add logic to output correct error messages
@@ -231,7 +243,6 @@ ParserResult __Parser_parseParameter(Parser *parser) {
 	return ParserSuccess(paramNode);
 }
 
-
 ParserResult __Parser_parseParameterList(Parser *parser) {
 	assertf(parser != NULL);
 
@@ -279,9 +290,13 @@ ParserResult __Parser_parseParameterList(Parser *parser) {
 
 ParserResult __Parser_parseFuncStatement(Parser *parser) {
 	// TODO: Symbol table management
-
 	assertf(parser != NULL);
+
+	// skip func keyword
 	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	result = Lexer_nextToken(parser->lexer);
 	LexerResult peek;
 	if(!result.success) return LexerToParserError(result);
 
@@ -314,12 +329,174 @@ ParserResult __Parser_parseFuncStatement(Parser *parser) {
 	}
 
 	ParserResult blockResult = __Parser_parseBlock(parser, true);
-	// if(!blockResult.success) return blockResult;
+	if(!blockResult.success) return blockResult;
 
 	FunctionDeclarationASTNode *func = new_FunctionDeclarationASTNode(funcId, (ParameterListASTNode*)parameterListResult.node, returnType, (BlockASTNode*)blockResult.node);
 	return ParserSuccess(func);
 }
 
+ParserResult __Parser_parsePattern(Parser *parser) {
+	assertf(parser != NULL);
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->type != TOKEN_IDENTIFIER) {
+		return ParserError(
+			String_fromFormat("expected pattern"),
+			Array_fromArgs(1, result.token));
+	}
+
+	IdentifierASTNode *patternName = new_IdentifierASTNode(result.token->value.string);
+	TypeReferenceASTNode *type = NULL;
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	if(peek.token->kind == TOKEN_COLON) {
+		ParserResult typeResult = __Parser_parseTypeReference(parser);
+		if(!typeResult.success) return typeResult;
+		type = (TypeReferenceASTNode*)typeResult.node;
+	}
+
+	PatternASTNode *pattern = new_PatternASTNode(patternName, type);
+
+	return ParserSuccess(pattern);
+}
+
+ParserResult __Parser_parseOptionalBindingCondition(Parser *parser) {
+	assertf(parser != NULL);
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	bool isConstant = result.token->kind == TOKEN_LET;
+
+	ParserResult patternResult = __Parser_parsePattern(parser);
+	if(!patternResult.success) return patternResult;
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	ExpressionASTNode *initializer = NULL;
+
+	if(peek.token->kind == TOKEN_EQUAL) {
+
+		// Skip the '=' token
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(result);
+
+		ParserResult initializerResult = __Parser_parseExpression(parser);
+		if(!initializerResult.success) return initializerResult;
+		initializer = (ExpressionASTNode*)initializerResult.node;
+	}
+
+	OptionalBindingConditionASTNode *bindingCondition = new_OptionalBindingConditionASTNode((PatternASTNode*)patternResult.node, (ExpressionASTNode*)initializer, isConstant);
+
+	return ParserSuccess(bindingCondition);
+}
+
+ParserResult __Parser_parseCondition(Parser *parser) {
+	assertf(parser != NULL);
+
+	ExpressionASTNode *expression = NULL;
+	OptionalBindingConditionASTNode *bindingCondition = NULL;
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	if(peek.token->kind == TOKEN_LET || peek.token->kind == TOKEN_VAR) {
+		ParserResult bindingConditionResult = __Parser_parseOptionalBindingCondition(parser);
+		if(!bindingConditionResult.success) return bindingConditionResult;
+		bindingCondition = (OptionalBindingConditionASTNode*)bindingConditionResult.node;
+	} else {
+		ParserResult expressionResult = __Parser_parseExpression(parser);
+		if(!expressionResult.success) return expressionResult;
+
+		expression = (ExpressionASTNode*)expressionResult.node;
+	}
+
+	ConditionASTNode *condition = new_ConditionASTNode(expression, bindingCondition);
+
+	return ParserSuccess(condition);
+}
+
+ParserResult __Parser_parseElseClause(Parser *parser) {
+	assertf(parser != NULL);
+
+	// skip else keyword
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	IfStatementASTNode *ifStatement = NULL;
+	bool isElseIf = false;
+	BlockASTNode *body = NULL;
+
+	if(peek.token->kind == TOKEN_IF) {
+		ParserResult ifStatementResult = __Parser_parseIfStatement(parser);
+		if(!ifStatementResult.success) return ifStatementResult;
+		ifStatement = (IfStatementASTNode*)ifStatementResult.node;
+		isElseIf = true;
+	} else {
+		ParserResult blockResult = __Parser_parseBlock(parser, true);
+		if(!blockResult.success) return blockResult;
+		body = (BlockASTNode*)blockResult.node;
+	}
+
+	ElseClauseASTNode *elseClause = new_ElseClauseASTNode(ifStatement, body, isElseIf);
+
+	return ParserSuccess(elseClause);
+}
+
+ParserResult __Parser_parseIfStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	// skip if keyword
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	// look more into this
+	if(peek.token->kind == TOKEN_LEFT_BRACE) {
+		return ParserError(
+			String_fromFormat("missing condition in 'if' statement"),
+			Array_fromArgs(1, peek.token));
+	}
+
+
+	if(peek.token->kind == TOKEN_ELSE || peek.token->type == TOKEN_EOF) {
+		return ParserError(
+			String_fromFormat("expected expression, var, or let in 'if' condition"),
+			Array_fromArgs(1, peek.token));
+	}
+
+	ParserResult conditionResult = __Parser_parseCondition(parser);
+	if(!conditionResult.success) return conditionResult;
+
+	ParserResult blockResult = __Parser_parseBlock(parser, true);
+	if(!blockResult.success) return blockResult;
+
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	ElseClauseASTNode *elseClause = NULL;
+
+	if(peek.token->kind == TOKEN_ELSE) {
+		ParserResult elseClauseResult = __Parser_parseElseClause(parser);
+		if(!elseClauseResult.success) return elseClauseResult;
+		elseClause = (ElseClauseASTNode*)elseClauseResult.node;
+	}
+
+	IfStatementASTNode *ifStatement = new_IfStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node, (ElseClauseASTNode*)elseClause);
+
+	return ParserSuccess(ifStatement);
+}
 /* How to walk/traverse parsed AST or decide what kind of node the ASTNode
  * pointer refers to in general? */
 
