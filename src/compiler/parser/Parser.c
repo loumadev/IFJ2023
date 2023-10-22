@@ -25,6 +25,9 @@ ParserResult __Parser_parseElseClause(Parser *parser);
 ParserResult __Parser_parseIfStatement(Parser *parser);
 ParserResult __Parser_parseWhileStatement(Parser *parser);
 ParserResult __Parser_parseReturnStatement(Parser *parser);
+ParserResult __Parser_parseVariableDeclarator(Parser *parser);
+ParserResult __Parser_parseVariableDeclarationList(Parser *parser);
+ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser);
 ParserResult __Parser_parseArgument(Parser *parser);
 ParserResult __Parser_parseArgumentList(Parser *parser);
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
@@ -145,17 +148,12 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 		return ParserSuccess(returnResult.node);
 	}
 
-	if(peek.token->type == TOKEN_IDENTIFIER) {
-		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
-		if(!peek.success) return LexerToParserError(peek);
-
-		// function call
-		if(peek.token->kind == TOKEN_LEFT_PAREN) {
-			ParserResult functionCallResult = __Parser_parseFunctionCallExpression(parser);
-			if(!functionCallResult.success) return functionCallResult;
-			return ParserSuccess(functionCallResult.node);
-		}
+	if(peek.token->kind == TOKEN_LET || peek.token->kind == TOKEN_VAR) {
+		ParserResult variableDeclarationResult = __Parser_parseVariableDeclarationStatement(parser);
+		if(!variableDeclarationResult.success) return variableDeclarationResult;
+		return ParserSuccess(variableDeclarationResult.node);
 	}
+
 	return ParserNoMatch();
 }
 
@@ -582,6 +580,78 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 	ReturnStatementASTNode *returnStatement = new_ReturnStatementASTNode((ExpressionASTNode*)expression);
 
 	return ParserSuccess(returnStatement);
+}
+
+
+ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
+	assertf(parser != NULL);
+
+	ParserResult patternResult = __Parser_parsePattern(parser);
+	if(!patternResult.success) return patternResult;
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	ExpressionASTNode *initializer = NULL;
+
+	if(peek.token->kind == TOKEN_EQUAL) {
+		ParserResult initializerResult = __Parser_parseExpression(parser);
+		if(!initializerResult.success) return initializerResult;
+		initializer = initializerResult.node;
+	}
+
+	VariableDeclaratorASTNode *variableDeclarator = new_VariableDeclaratorASTNode((PatternASTNode*)patternResult.node, (ExpressionASTNode*)initializer);
+
+	return ParserSuccess(variableDeclarator);
+}
+
+ParserResult __Parser_parseVariableDeclarationList(Parser *parser) {
+	assertf(parser != NULL);
+	LexerResult peek;
+	LexerResult result;
+
+
+	Array *declarators = Array_alloc(0);
+	while(true) {
+		ParserResult declaratorResult = __Parser_parseVariableDeclarator(parser);
+		if(!declaratorResult.success) return declaratorResult;
+
+		Array_push(declarators, (VariableDeclaratorASTNode*)declaratorResult.node);
+
+		peek = Lexer_peekToken(parser->lexer, 1);
+
+		if(peek.token->kind == TOKEN_COMMA) {
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+
+		}
+
+		peek = Lexer_peekToken(parser->lexer, 1);
+		if(peek.token->type == TOKEN_EOF) {
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+			break;
+		}
+	}
+
+	VariableDeclarationListASTNode *variableDeclarationList = new_VariableDeclarationListASTNode(declarators);
+
+	return ParserSuccess(variableDeclarationList);
+}
+
+ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	// let/var
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+	bool isConstant = result.token->kind == TOKEN_LET;
+
+	ParserResult declarationList = __Parser_parseVariableDeclarationList(parser);
+	if(!declarationList.success) return declarationList;
+
+	VariableDeclarationASTNode *variableDeclaration = new_VariableDeclarationASTNode((VariableDeclarationListASTNode*)declarationList.node, isConstant);
+	return ParserSuccess(variableDeclaration);
 }
 
 ParserResult __Parser_parseArgument(Parser *parser) {

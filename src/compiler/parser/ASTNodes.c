@@ -41,17 +41,34 @@ TypeReferenceASTNode * new_TypeReferenceASTNode(
 	return node;
 }
 
+VariableDeclaratorASTNode * new_VariableDeclaratorASTNode(
+	PatternASTNode *pattern,
+	ExpressionASTNode *initializer
+) {
+	prepare_node_of(VariableDeclaratorASTNode, NODE_VARIABLE_DECLARATOR)
+	node->pattern = pattern;
+	node->initializer = initializer;
+	return node;
+}
+
+VariableDeclarationListASTNode * new_VariableDeclarationListASTNode(
+	Array *declarators
+) {
+	prepare_node_of(VariableDeclarationListASTNode, NODE_VARIABLE_DECLARATION_LIST)
+	node->declarators = declarators;
+	return node;
+}
+
 VariableDeclarationASTNode * new_VariableDeclarationASTNode(
-	IdentifierASTNode *id,
-	TypeReferenceASTNode *type,
+	VariableDeclarationListASTNode *declaratorList,
 	bool isConstant
 ) {
 	prepare_node_of(VariableDeclarationASTNode, NODE_VARIABLE_DECLARATION)
-	node->id = id;
-	node->type = type;
+	node->declaratorList = declaratorList;
 	node->isConstant = isConstant;
 	return node;
 }
+
 
 ExpressionStatementASTNode * new_ExpressionStatementASTNode(
 	ExpressionASTNode *expression

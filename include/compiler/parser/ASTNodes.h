@@ -13,6 +13,8 @@ enum ASTNodeType {
 	NODE_IDENTIFIER,
 	NODE_TYPE_REFERENCE,
 	NODE_VARIABLE_DECLARATION,
+	NODE_VARIABLE_DECLARATION_LIST,
+	NODE_VARIABLE_DECLARATOR,
 	NODE_EXPRESSION_STATEMENT,
 	NODE_RETURN_STATEMENT,
 	NODE_PARAMETER,
@@ -26,7 +28,7 @@ enum ASTNodeType {
 	NODE_PATTERN,
 	NODE_CONDITION,
 	NODE_OPTIONAL_BINDING_CONDITION,
-	NODE_WHILE_STATEMENT,
+	NODE_WHILE_STATEMENT
 };
 
 
@@ -60,11 +62,21 @@ typedef struct TypeReferenceASTNode {
 	bool isNullable;
 } TypeReferenceASTNode;
 
+typedef struct VariableDeclaratorASTNode {
+	enum ASTNodeType _type;
+	struct PatternASTNode *pattern;
+	ExpressionASTNode *initializer;
+} VariableDeclaratorASTNode;
+
+typedef struct VariableDeclarationListASTNode {
+	enum ASTNodeType _type;
+	Array /*<VariableDeclaratorASTNode>*/ *declarators;
+} VariableDeclarationListASTNode;
+
 typedef struct VariableDeclarationASTNode {
 	enum ASTNodeType _type;
-	IdentifierASTNode *id;
-	TypeReferenceASTNode *type;
-    bool isConstant;
+	VariableDeclarationListASTNode *declaratorList;
+	bool isConstant;
 } VariableDeclarationASTNode;
 
 typedef struct ExpressionStatementASTNode {
@@ -113,7 +125,7 @@ typedef struct ArgumentListASTNode {
 typedef struct FunctionCallASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	ArgumentListASTNode* argumentList;
+	ArgumentListASTNode *argumentList;
 } FunctionCallASTNode;
 
 typedef struct PatternASTNode {
@@ -126,7 +138,7 @@ typedef struct OptionalBindingConditionASTNode {
 	enum ASTNodeType _type;
 	PatternASTNode *pattern;
 	ExpressionASTNode *initializer;
-    bool isConstant;
+	bool isConstant;
 } OptionalBindingConditionASTNode;
 
 typedef struct ConditionASTNode {
@@ -164,13 +176,15 @@ ProgramASTNode * new_ProgramASTNode(BlockASTNode *block);
 BlockASTNode * new_BlockASTNode(Array *statements);
 IdentifierASTNode * new_IdentifierASTNode(String *name);
 TypeReferenceASTNode * new_TypeReferenceASTNode(IdentifierASTNode *id, bool isNullable);
-VariableDeclarationASTNode * new_VariableDeclarationASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, bool isConstant);
+VariableDeclarationASTNode * new_VariableDeclarationASTNode(VariableDeclarationListASTNode *declaratorList, bool isConstant);
+VariableDeclaratorASTNode * new_VariableDeclaratorASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer);
+VariableDeclarationListASTNode * new_VariableDeclarationListASTNode(Array *declarators);
 ReturnStatementASTNode * new_ReturnStatementASTNode(ExpressionASTNode *expression);
 ParameterASTNode * new_ParameterASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalName, bool isLabeless);
 ParameterListASTNode * new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 ArgumentASTNode * new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
-ArgumentListASTNode * new_ArgumentListASTNode(Array * arguments);
+ArgumentListASTNode * new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode * new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
 PatternASTNode * new_PatternASTNode(IdentifierASTNode *name, TypeReferenceASTNode *type);
 OptionalBindingConditionASTNode * new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
