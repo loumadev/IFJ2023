@@ -986,6 +986,8 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	// else match_as("?.", TOKEN_OPERATOR, TOKEN_OPTIONAL_CHAINING);
 	else match_as("==", TOKEN_OPERATOR, TOKEN_EQUALITY);
 	else match_as("!=", TOKEN_OPERATOR, TOKEN_NOT_EQUALITY);
+	else match_as(">=", TOKEN_OPERATOR, TOKEN_GREATER_EQUAL);
+	else match_as("<=", TOKEN_OPERATOR, TOKEN_LESS_EQUAL);
 	else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
 	else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
 	else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
