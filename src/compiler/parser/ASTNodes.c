@@ -83,6 +83,14 @@ ParameterASTNode* new_ParameterASTNode(
 	return node;
 }
 
+ParameterListASTNode* new_ParameterListASTNode(
+	Array *parameters
+) {
+	prepare_node_of(ParameterListASTNode, NODE_PARAMETER_LIST)
+	node->parameters = parameters;
+	return node;
+}
+
 ArgumentASTNode* new_ArgumentASTNode(
 	ExpressionASTNode *expression,
 	IdentifierASTNode *label
@@ -95,13 +103,13 @@ ArgumentASTNode* new_ArgumentASTNode(
 
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 	IdentifierASTNode *id,
-	Array *parameters,
+	ParameterListASTNode *parameterList,
 	TypeReferenceASTNode *returnType,
 	BlockASTNode *block
 ) {
 	prepare_node_of(FunctionDeclarationASTNode, NODE_FUNCTION_DECLARATION)
 	node->id = id;
-	node->parameters = parameters;
+	node->parameterList = parameterList;
 	node->returnType = returnType;
 	node->body = block;
 	return node;
