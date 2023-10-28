@@ -28,7 +28,8 @@ enum ASTNodeType {
 	NODE_PATTERN,
 	NODE_CONDITION,
 	NODE_OPTIONAL_BINDING_CONDITION,
-	NODE_WHILE_STATEMENT
+	NODE_WHILE_STATEMENT,
+	NODE_ASSIGNMENT_STATEMENT
 };
 
 
@@ -167,6 +168,12 @@ typedef struct WhileStatementASTNode {
 	BlockASTNode *body;
 } WhileStatementASTNode;
 
+typedef struct AssignmentStatementASTNode {
+	enum ASTNodeType _type;
+	IdentifierASTNode *id;
+	ExpressionASTNode *assignment;
+} AssignmentStatementASTNode;
+
 // TODO: Add more AST nodes
 
 
@@ -192,6 +199,7 @@ ConditionASTNode * new_ConditionASTNode(ExpressionASTNode *expression, OptionalB
 ElseClauseASTNode * new_ElseClauseASTNode(IfStatementASTNode *ifStatement, BlockASTNode *body, bool isElseIf);
 IfStatementASTNode * new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ElseClauseASTNode *elseClause);
 WhileStatementASTNode * new_WhileStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body);
+AssignmentStatementASTNode * new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *assignment);
 
 // TODO: Add more AST node constructors
 

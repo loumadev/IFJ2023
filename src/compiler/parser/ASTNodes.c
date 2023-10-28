@@ -208,7 +208,6 @@ IfStatementASTNode * new_IfStatementASTNode(
 	return node;
 }
 
-
 WhileStatementASTNode * new_WhileStatementASTNode(
 	ConditionASTNode *condition,
 	BlockASTNode *body
@@ -216,6 +215,16 @@ WhileStatementASTNode * new_WhileStatementASTNode(
 	prepare_node_of(WhileStatementASTNode, NODE_WHILE_STATEMENT)
 	node->condition = condition;
 	node->body = body;
+	return node;
+}
+
+AssignmentStatementASTNode * new_AssignmentStatementASTNode(
+	IdentifierASTNode *id,
+	ExpressionASTNode *assignment
+) {
+	prepare_node_of(AssignmentStatementASTNode, NODE_ASSIGNMENT_STATEMENT)
+	node->id = id;
+	node->assignment = assignment;
 	return node;
 }
 

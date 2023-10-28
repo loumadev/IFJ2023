@@ -94,7 +94,12 @@ argument → expression<br>
 
 argument-name → identifier<br>
 
+## assigment statement
+
+assignment-statement → variable-name assignment-expression<br>
+
 ## variable declaration
+
 variable-declaration → variable-head variable-declaration-list?<br>
 variable-head → `let` | `var`<br>
 variable-name → identifier<br>

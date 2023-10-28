@@ -31,6 +31,7 @@ ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser);
 ParserResult __Parser_parseArgument(Parser *parser);
 ParserResult __Parser_parseArgumentList(Parser *parser);
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
+ParserResult __Parser_parseAssignmentStatement(Parser *parser);
 
 /* Definitions of public functions */
 
@@ -152,6 +153,16 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 		ParserResult variableDeclarationResult = __Parser_parseVariableDeclarationStatement(parser);
 		if(!variableDeclarationResult.success) return variableDeclarationResult;
 		return ParserSuccess(variableDeclarationResult.node);
+	}
+
+	if(peek.token->type == TOKEN_IDENTIFIER) {
+		LexerResult tmp = Lexer_peekToken(parser->lexer, 1);
+		if(!tmp.success) return LexerToParserError(tmp);
+		if(tmp.token->kind == TOKEN_EQUAL) {
+			ParserResult assignmentStatementResult = __Parser_parseAssignmentStatement(parser);
+			if(!assignmentStatementResult.success) return assignmentStatementResult;
+			return ParserSuccess(assignmentStatementResult.node);
+		}
 	}
 
 	return ParserNoMatch();
@@ -735,6 +746,25 @@ ParserResult __Parser_parseFunctionCallExpression(Parser *parser) {
 	FunctionCallASTNode *fuctionCallExpression = new_FunctionCallASTNode(funcId, (ArgumentListASTNode*)argumentListResult.node);
 
 	return ParserSuccess(fuctionCallExpression);
+}
+
+ParserResult __Parser_parseAssignmentStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	// identifier
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+	IdentifierASTNode *variableId = new_IdentifierASTNode(result.token->value.string);
+
+	// skip '='
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	ParserResult assignmentResult = __Parser_parseExpression(parser);
+	if(!assignmentResult.success) return assignmentResult;
+
+	AssignmentStatementASTNode *assignmentStatement = new_AssignmentStatementASTNode(variableId, (ExpressionASTNode*)assignmentResult.node);
+	return ParserSuccess(assignmentStatement);
 }
 /* How to walk/traverse parsed AST or decide what kind of node the ASTNode
  * pointer refers to in general? */
