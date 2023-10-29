@@ -2,6 +2,7 @@
 
 #include "internal/Array.h"
 #include "internal/String.h"
+#include "compiler/lexer/Token.h"
 
 #ifndef ASTNode_H
 #define ASTNode_H
@@ -19,7 +20,26 @@ enum ASTNodeType {
 	NODE_PARAMETER_LIST,
 	NODE_FUNCTION_DECLARATION,
 	NODE_ARGUMENT,
-	NODE_FUNCTION_CALL
+	NODE_FUNCTION_CALL,
+	NODE_BINARY_EXPRESSION,
+	NODE_UNARY_EXPRESSION,
+	NODE_LITERAL_EXPRESSION
+};
+
+enum OperatorType{
+	OPERATOR_DEFAULT = 0,
+	OPERATOR_PLUS,
+	OPERATOR_MINUS,
+	OPERATOR_STAR,
+	OPERATOR_SLASH,
+	OPERATOR_EXCLAMATION,
+	OPERATOR_NULL_COALESCING,
+	OPERATOR_EQUAL,
+	OPERATOR_NOT_EQUAL,
+	OPERATOR_LESS,
+	OPERATOR_GREATER,
+	OPERATOR_LESS_EQUAL,
+	OPERATOR_GREATER_EQUAL
 };
 
 
@@ -103,6 +123,33 @@ typedef struct FunctionCallASTNode {
 	Array /*<ArgumentASTNode>*/ *arguments;
 } FunctionCallASTNode;
 
+//typedef struct ExpressionASTNode {
+//	enum ASTNodeType _type;
+//	BinaryExpressionASTNode *BExpression;
+//	UnaryExpressionASTNode *UExpression;
+//	LiteralExpressionASTNode *LExpression;
+//	IdentifierASTNode *IExpression;
+//} ExpressionASTNode;
+
+typedef struct BinaryExpressionASTNode {
+	enum ASTNodeType _type;
+	ExpressionASTNode *left;
+	ExpressionASTNode *right;
+	enum OperatorType operator;
+} BinaryExpressionASTNode;
+
+typedef struct UnaryExpressionASTNode {
+	enum ASTNodeType _type;
+	ExpressionASTNode *argument;
+	enum OperatorType operator;
+	//bool IsPrefix;  
+
+} UnaryExpressionASTNode;
+
+typedef struct LiteralExpressionASTNode {
+	enum ASTNodeType _type;
+	union TokenValue value;
+} LiteralExpressionASTNode;
 // TODO: Add more AST nodes
 
 
@@ -119,6 +166,9 @@ ParameterListASTNode * new_ParameterListASTNode(Array *parameters);
 ArgumentASTNode * new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 FunctionCallASTNode * new_FunctionCallASTNode(IdentifierASTNode *id, Array *arguments);
+BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, enum OperatorType operator);
+UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, enum OperatorType operator /*, bool IsPrefix*/);
+LiteralExpressionASTNode* new_LiteralExpressionASTNode(union TokenValue value);
 
 // TODO: Add more AST node constructors
 

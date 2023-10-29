@@ -1,4 +1,5 @@
 #include "compiler/lexer/Token.h"
+#include "compiler/parser/ASTNodes.h"
 
 #ifndef EXPRESSIONS_H
 #define EXPRESSIONS_H
@@ -32,6 +33,7 @@ typedef enum {
 typedef struct StackItem {
 	Token *token;
 	StackItemType Stype;
+	ExpressionASTNode *node;
 } StackItem;
 
 #endif

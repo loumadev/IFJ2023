@@ -9,7 +9,8 @@
 #include "compiler/parser/Expressions.h"
 #include "compiler/lexer/Token.h"
 #include "internal/Array.h"
-#include "allocator/MemoryAllocator.c"
+#include "allocator/MemoryAllocator.h"
+#include "compiler/parser/ASTNodes.h"
 
 #define TAB_SIZE 9
 #define STACK_SIZE 20
@@ -63,7 +64,7 @@ int Expr_getPrecTbIndex(Token *token){
         case TOKEN_DEFAULT:
             if(token->type == TOKEN_IDENTIFIER){
                 return I_ID;
-            }  //else?
+            }  //else error
         case TOKEN_STRING:
         case TOKEN_INTEGER:
         case TOKEN_FLOATING:
@@ -76,46 +77,113 @@ int Expr_getPrecTbIndex(Token *token){
 }
 
 StackItem Expr_getTopTerminal(Array *stack){
-    StackItem *top;
+    StackItem *top = NULL;
     for(int i = 0; i < stack->size; i++){
         if((top = Array_get(stack, stack->size - i))->Stype == S_TERMINAL){
-            return top;
+            return *top;
         }
     }
-    // else error ?
+    //else error
 }
 
-bool Expr_typecheck(Array *stack){
-    
+void Expr_pushAfterTopTerminal(Array *stack){
+    StackItem *stopReduction = mem_alloc(sizeof(StackItem));
+    stopReduction->token = NULL;
+    stopReduction->Stype = S_STOP;
+    stopReduction->node = NULL;
+    for(int i = 0; i < stack->size; i++){
+        if (((StackItem *)Array_get(stack, stack->size - i))->Stype == S_TERMINAL) {
+            Array_push(stack, stopReduction);
+        }
+    }
 }
 
-StackItem Expr_performReduction(Array *stack){
+StackItem *Expr_performReduction(Array *stack){
+
+    // E -> i
+    if(stack->size == 0){
+        StackItem *id = Array_get(stack, 0);
+        
+        if(id->token->type = TOKEN_LITERAL){
+            LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(id->token->value);
+            id->node = (ExpressionASTNode*) literalE;
+            id->Stype = S_NONTERMINAL;
+            return id; 
+        }
+        if(id->token->type = TOKEN_IDENTIFIER){
+            IdentifierASTNode *identifierE = new_IdentifierASTNode(id->token->value.string); //string or identifier?
+            id->node = (ExpressionASTNode*) identifierE;
+            id->Stype = S_NONTERMINAL;
+            return id;
+        }
+    }
+
+    // E -> E!
+    if(stack->size == 1){
+        StackItem *operator = Array_get(stack, 1);
+        StackItem *argument = Array_get(stack, 0);
+        if(operator->token->type == TOKEN_EXCLAMATION){
+            UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_EXCLAMATION);
+            operator->node = (ExpressionASTNode*) unaryE;
+            operator->Stype = S_NONTERMINAL;
+            return operator;
+        }
+    }
+
+    // Binary operations and parentheses
     if (stack->size == 2){
         StackItem *operator = Array_get(stack, 1);
+        StackItem *leftOperand = Array_get(stack, 0);
+        StackItem *rightOperand = Array_get(stack, 2);
+
+        // E -> (E)
+        if(operator->Stype == S_NONTERMINAL && leftOperand->token->kind == TOKEN_LEFT_PAREN && rightOperand->token->kind == TOKEN_RIGHT_PAREN){
+            return operator;
+        }
+  
+        enum OperatorType operatorType = 0;
         switch (operator->token->kind){
             case TOKEN_PLUS:
+                operatorType = OPERATOR_PLUS;
+                break;
             case TOKEN_MINUS:
+                operatorType = OPERATOR_MINUS;
+                break;
             case TOKEN_STAR:
+                operatorType = OPERATOR_STAR;
+                break;
             case TOKEN_SLASH:
-                if(;){//call typecheck
-                    ;//call make operation
-                }
-                else return NULL;
-
+                operatorType = OPERATOR_SLASH;
+                break;
             case TOKEN_EQUALITY:
+                operatorType = OPERATOR_EQUAL;
+                break;
             case TOKEN_NOT_EQUALITY:
+                operatorType = OPERATOR_NOT_EQUAL;
+                break;
             case TOKEN_LESS:
+                operatorType = OPERATOR_LESS;
+                break;
             case TOKEN_GREATER:
+                operatorType = OPERATOR_GREATER;
+                break;
             case TOKEN_LESS_EQUAL:
-            case TOKEN_GREATER_EQUAL:    
-                if(;){//call typecheck
-                    ;//call make operation
-                }
-                else return NULL;
-            
-            
+                operatorType = OPERATOR_LESS_EQUAL;
+                break;
+            case TOKEN_GREATER_EQUAL:
+                operatorType = OPERATOR_GREATER_EQUAL;
+                break;  
+            case TOKEN_NULL_COALESCING:
+                operatorType = OPERATOR_NULL_COALESCING;
+                break;  
             default:
                 break;
+        }
+        if(operatorType){
+            BinaryExpressionASTNode *binaryE = new_BinaryExpressionASTNode(leftOperand->node, rightOperand->node, operatorType);
+            operator->node = (ExpressionASTNode*) binaryE;
+            operator->Stype = S_NONTERMINAL;
+            return operator;
         }
         
     }
@@ -128,9 +196,9 @@ ParserResult __Parser_parseExpression(Parser *parser) {
     Array *reduceStack = Array_alloc(STACK_SIZE);
     Token *token = NULL;
     StackItem *bottom = mem_alloc(sizeof(StackItem));
-    StackItem *stopReduction = mem_alloc(sizeof(StackItem));
-    stopReduction->Stype = S_STOP;
+    
     bottom->Stype = S_BOTTOM;
+    bottom->node = NULL;
     Array_push(stack, bottom);
 
     LexerResult current = Lexer_nextToken(parser->lexer);
@@ -138,25 +206,29 @@ ParserResult __Parser_parseExpression(Parser *parser) {
     while(true){
 
         if(!current.success) return LexerToParserError(current);
-        int operation = precedence_table[Expr_getPrecTbIndex(Expr_getTopTerminal(stack).token)][Expr_getPrecTbIndex(current.token)];
-
+        enum PrecTableRelation operation = precedence_table[Expr_getPrecTbIndex(Expr_getTopTerminal(stack).token)][Expr_getPrecTbIndex(current.token)];
+        if(((StackItem*)Array_get(stack, stack->size))->Stype = S_NONTERMINAL && stack->size == 1 && operation == R){
+            StackItem *finalExpression = Array_get(stack, stack->size);
+            return ParserSuccess(finalExpression->node);
+        } //TODO: when to end
         switch(operation){
             case S: 
                 StackItem *token = mem_alloc(sizeof(StackItem));
                 token->Stype = S_TERMINAL;
                 token->token = current.token; 
-                Array_push(stack, stopReduction);
+                token->node = NULL;
+                Expr_pushAfterTopTerminal(stack);
                 Array_push(stack, token);
                 current = Lexer_nextToken(parser->lexer); //better check first with peekToken
                 break;
             case R: 
                 while((token = Array_pop(stack))->Stype != S_STOP){
-                    if(token->kind != S_STOP){
+                    if(token->Stype != S_STOP){
                         Array_push(reduceStack, token);
                     }
                 }
-                //perform reduction
-                //push result on stack (nonterminal)
+                // Perform reduction and push result on stack (nonterminal)
+                Array_push(stack, Expr_performReduction(reduceStack));
                 break;
             case E: 
                 StackItem *token = mem_alloc(sizeof(StackItem));
@@ -165,7 +237,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
                 Array_push(stack, token);
                 break;
             case X:
-                //call error 
+                //call LexerToParserError 
                 break;
             default:
                 break;

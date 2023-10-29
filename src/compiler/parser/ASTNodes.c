@@ -125,6 +125,38 @@ FunctionCallASTNode* new_FunctionCallASTNode(
 	return node;
 }
 
+BinaryExpressionASTNode* new_BinaryExpressionASTNode( 
+	ExpressionASTNode *left, 
+	ExpressionASTNode *right, 
+	enum OperatorType operator
+){
+		prepare_node_of(BinaryExpressionASTNode, NODE_BINARY_EXPRESSION)
+		node->left = left;
+		node->right = right;
+		node->operator = operator;
+		return node;
+}
+
+UnaryExpressionASTNode* new_UnaryExpressionASTNode( 
+	ExpressionASTNode *argument, 
+	enum OperatorType operator
+	//bool IsPrefix
+){
+		prepare_node_of(UnaryExpressionASTNode, NODE_UNARY_EXPRESSION)
+		node->argument = argument;
+		node->operator = operator;
+		//node->IsPrefix = IsPrefix;
+		return node;
+}
+
+LiteralExpressionASTNode* new_LiteralExpressionASTNode(
+	union TokenValue value
+){
+	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
+	node->value = value;
+	return node;
+}
+
 // TODO: Add more ASTNode constructors
 
 
