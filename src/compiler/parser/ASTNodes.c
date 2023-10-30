@@ -151,7 +151,7 @@ UnaryExpressionASTNode* new_UnaryExpressionASTNode(
 
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(
 	union TokenValue value
-){
+) {
 	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
 	node->value = value;
 	return node;
