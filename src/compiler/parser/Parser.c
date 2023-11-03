@@ -118,12 +118,12 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 	return ParserNoMatch();
 }
 
-ParserResult __Parser_parseExpression(Parser *parser) {
-	assertf(parser != NULL);
+//ParserResult __Parser_parseExpression(Parser *parser) {
+//	assertf(parser != NULL);
 
 	// TODO: Add logic for parsing expressions (using LL(1) parsing)
-	return ParserNoMatch();
-}
+//	return ParserNoMatch();
+//}
 
 ParserResult __Parser_parseTypeReference(Parser *parser) {
 	// TODO: Add logic to output correct error messages

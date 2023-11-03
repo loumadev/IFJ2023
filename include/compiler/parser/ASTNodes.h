@@ -30,9 +30,9 @@ enum OperatorType{
 	OPERATOR_DEFAULT = 0,
 	OPERATOR_PLUS,
 	OPERATOR_MINUS,
-	OPERATOR_STAR,
-	OPERATOR_SLASH,
-	OPERATOR_EXCLAMATION,
+	OPERATOR_MUL,
+	OPERATOR_DIV,
+	OPERATOR_UNWRAP,
 	OPERATOR_NULL_COALESCING,
 	OPERATOR_EQUAL,
 	OPERATOR_NOT_EQUAL,
@@ -142,7 +142,7 @@ typedef struct UnaryExpressionASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *argument;
 	enum OperatorType operator;
-	//bool IsPrefix;  
+	//bool isPrefix;  
 
 } UnaryExpressionASTNode;
 
@@ -167,7 +167,7 @@ ArgumentASTNode * new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierA
 FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 FunctionCallASTNode * new_FunctionCallASTNode(IdentifierASTNode *id, Array *arguments);
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, enum OperatorType operator);
-UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, enum OperatorType operator /*, bool IsPrefix*/);
+UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, enum OperatorType operator /*, bool isPrefix*/);
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(union TokenValue value);
 
 // TODO: Add more AST node constructors

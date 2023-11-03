@@ -12,9 +12,9 @@ enum PrecTableRelation {
 };
 
 enum PrecTableIndex {
-	I_PLUS_MINUS,
-	I_MUL_DIV,
-	I_EXCL_OP,
+	I_ADDITIVE,
+	I_MULTIPLICATIVE,
+	I_UNWRAP_OP,
 	I_NIL_COALES,
 	I_REL_OP,
 	I_ID,
@@ -35,6 +35,8 @@ typedef struct StackItem {
 	StackItemType Stype;
 	ExpressionASTNode *node;
 } StackItem;
+
+StackItem Expr_getTopTerminal(Array *stack);
 
 #endif
 

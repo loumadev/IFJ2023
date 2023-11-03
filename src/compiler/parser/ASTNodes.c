@@ -140,12 +140,12 @@ BinaryExpressionASTNode* new_BinaryExpressionASTNode(
 UnaryExpressionASTNode* new_UnaryExpressionASTNode( 
 	ExpressionASTNode *argument, 
 	enum OperatorType operator
-	//bool IsPrefix
+	//bool isPrefix
 ){
 		prepare_node_of(UnaryExpressionASTNode, NODE_UNARY_EXPRESSION)
 		node->argument = argument;
 		node->operator = operator;
-		//node->IsPrefix = IsPrefix;
+		//node->isPrefix = isPrefix;
 		return node;
 }
 
