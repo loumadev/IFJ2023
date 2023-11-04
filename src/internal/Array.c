@@ -66,6 +66,7 @@ void Array_set(Array *array, int index, void *value) {
 	if(!array) return;
 
 	index = __Array_resolveIndex(array, index);
+
 	// If size is not enough to fit the index, resize the array
 	if((size_t)index >= array->size) {
 		Array_resize(array, array->capacity + (index - array->size) + 1);
@@ -73,6 +74,28 @@ void Array_set(Array *array, int index, void *value) {
 	}
 
 	array->data[index] = value;
+}
+
+void Array_insert(Array *array, int index, void *value) {
+	if(!array) return;
+
+	index = __Array_resolveIndex(array, index);
+
+	// If the target index is past the end of the array, just set it
+	if((size_t)index >= array->size) {
+		Array_set(array, index, value);
+		return;
+	}
+
+	Array_reserve(array, array->size + 1);
+
+	// Shift all elements after index, one to the right
+	for(size_t i = array->size; i > (size_t)index; i--) {
+		array->data[i] = array->data[i - 1];
+	}
+
+	array->data[index] = value;
+	array->size++;
 }
 
 void Array_clear(Array *array) {
@@ -126,6 +149,60 @@ void* Array_remove(Array *array, int index) {
 	}
 
 	return value;
+}
+
+Array* Array_slice(Array *array, int start, int end) {
+	if(!array) return NULL;
+
+	start = __Array_resolveIndex(array, start);
+	end = __Array_resolveIndex(array, end);
+
+	if(start < 0) start = 0;
+	if((size_t)end > array->size) end = array->size;
+
+	// Return an empty array if there is nothing to extract
+	if(end <= start) return Array_alloc(0);
+
+	Array *newArray = Array_alloc(end - start);
+
+	for(int i = start; i < end; i++) {
+		Array_push(newArray, array->data[i]);
+	}
+
+	return newArray;
+}
+
+Array* Array_splice(Array *array, int start, int end) {
+	if(!array) return NULL;
+
+	start = __Array_resolveIndex(array, start);
+	end = __Array_resolveIndex(array, end);
+
+	if(start < 0) start = 0;
+	if((size_t)end > array->size) end = array->size;
+
+	// Return an empty array if there is nothing to extract
+	if(end <= start) return Array_alloc(0);
+
+	Array *newArray = Array_alloc(end - start);
+
+	for(int i = start; i < end; i++) {
+		Array_push(newArray, array->data[i]);
+	}
+
+	// Shift all elements after end, to the left
+	for(size_t i = end; i < array->size; i++) {
+		array->data[i - (end - start)] = array->data[i];
+	}
+
+	array->size -= end - start;
+
+	// Resize the array if necessary to save memory
+	if(array->size <= array->capacity >> 2) {
+		Array_resize(array, array->capacity >> 1);
+	}
+
+	return newArray;
 }
 
 Array* Array_fromArgs(int count, ...) {

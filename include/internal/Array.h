@@ -59,6 +59,15 @@ void* Array_get(Array *array, int index);
 void Array_set(Array *array, int index, void *value);
 
 /**
+ * Inserts the given value at the given index in the array.
+ *
+ * @param array The array to insert the element in.
+ * @param index The index of the element where to insert the new element.
+ * @param value The new value to insert into the array.
+ */
+void Array_insert(Array *array, int index, void *value);
+
+/**
  * Removes all elements from the array.
  *
  * This function sets the size of the array to 0, but does not deallocate the memory used by the array.
@@ -96,6 +105,26 @@ void Array_reserve(Array *array, size_t capacity);
  * @return A pointer to the removed element, or NULL if the index is out of bounds.
  */
 void* Array_remove(Array *array, int index);
+
+/**
+ * Slices the array from the given start index to the given end index.
+ *
+ * @param array The array to slice.
+ * @param start The start index of the slice.
+ * @param end The end index of the slice.
+ * @return A pointer to the newly allocated array containing the slice.
+ */
+Array* Array_slice(Array *array, int start, int end);
+
+/**
+ * Splices the array from the given start index to the given end index.
+ *
+ * @param array The array to splice.
+ * @param start The start index of the splice.
+ * @param end The end index of the splice.
+ * @return A pointer to the newly allocated array containing the splice.
+ */
+Array* Array_splice(Array *array, int start, int end);
 
 /**
  * Creates a new array instance and pushes the given values to it.
