@@ -193,6 +193,8 @@ void HashMap_clear(HashMap *map) {
 			mem_free(entry);
 			entry = next;
 		}
+
+		map->entries[i] = NULL;
 	}
 
 	map->size = 0;
