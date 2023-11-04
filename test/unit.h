@@ -74,6 +74,9 @@ void unit_print_results();
 #define EXPECT_TRUE(condition) UNIT_EXPECT((condition) != false, __error("Expected true, got false "))
 #define EXPECT_FALSE(condition) UNIT_EXPECT((condition) == false, __error("Expected false, got true "))
 
+#define EXPECT_NULL(value) UNIT_EXPECT((value) == NULL, __error("Expected NULL, got %p", value))
+#define EXPECT_NOT_NULL(value) UNIT_EXPECT((value) != NULL, __error("Expected not NULL, got NULL"))
+
 #define EXPECT_EQUAL_STRING(a, b) UNIT_EXPECT(strcmp(a, b) == 0, __error("Expected " #a " == " #b ", got \"%s\" != \"%s\"", a, b))
 #define EXPECT_EQUAL_CHAR(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got '%c' != '%c'", a, b))
 #define EXPECT_EQUAL_INT(a, b) UNIT_EXPECT(a == b, __error("Expected " #a " == " #b ", got %ld != %ld", a, b))
