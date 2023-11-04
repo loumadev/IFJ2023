@@ -50,7 +50,6 @@ uint32_t HashMap_hash(char *key) {
 	return hash;
 }
 
-// Private
 void HashMap_resize(HashMap *map, size_t capacity) {
 	if(!map) return;
 

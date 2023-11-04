@@ -38,6 +38,13 @@ void HashMap_constructor(HashMap *map);
 void HashMap_destructor(HashMap *map);
 
 /**
+ * Resizes the HashMap to the given capacity.
+ *
+ * @param map The HashMap instance to resize.
+ */
+void HashMap_resize(HashMap *map, size_t capacity);
+
+/**
  * Associates the specified value with the specified key in this map.
  *
  * @param map The HashMap instance to add the key-value pair to.
