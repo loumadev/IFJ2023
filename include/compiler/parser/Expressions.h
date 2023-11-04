@@ -37,6 +37,7 @@ typedef struct StackItem {
 } StackItem;
 
 StackItem Expr_getTopTerminal(Array *stack);
+StackItem *Expr_performReduction(Array *stack);
 
 #endif
 

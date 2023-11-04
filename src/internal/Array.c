@@ -25,7 +25,6 @@ void Array_destructor(Array *array) {
 
 void Array_push(Array *array, void *value) {
 	if(!array) return;
-	printf("here");
 	// If size exceeds capacity, resize the array to fit more elements
 	if(array->size >= array->capacity) {
 		Array_resize(array, (array->capacity ? array->capacity : 1) << 1);

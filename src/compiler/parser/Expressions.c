@@ -80,11 +80,10 @@ int Expr_getPrecTbIndex(Token *token) {
 StackItem Expr_getTopTerminal(Array *stack) {
 	StackItem *top = NULL;
 	for(size_t i = 0; i < stack->size; i++) {
-		if((top = Array_get(stack, stack->size - i - 1))->Stype == (S_TERMINAL || S_BOTTOM)) {
+		if((top = Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL || top->Stype == S_BOTTOM) {
 			return *top;
 		}
 	}
-	//else error
 	return *top;
 }
 
@@ -94,8 +93,9 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 	stopReduction->Stype = S_STOP;
 	stopReduction->node = NULL;
 	for(size_t i = 0; i < stack->size; i++) {
-		if(((StackItem *)Array_get(stack, stack->size - i))->Stype == S_TERMINAL) {
+		if(((StackItem *)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL) {
 			Array_push(stack, stopReduction);
+			return;
 		}
 	}
 }
@@ -103,37 +103,42 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 StackItem *Expr_performReduction(Array *stack) {
 
 	// E -> i
-	if(stack->size == 0) {
+	if(stack->size == 1) {
 		StackItem *id = Array_get(stack, 0);
 
-		if(id->token->type == TOKEN_LITERAL) {
-			LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(id->token->value);
-			id->node = (ExpressionASTNode*)literalE;
-			id->Stype = S_NONTERMINAL;
-			return id;
+		if(id->Stype == S_TERMINAL){
+			if(id->token->type == TOKEN_LITERAL) {
+				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(id->token->value);
+				id->node = (ExpressionASTNode*)literalE;
+				id->Stype = S_NONTERMINAL;
+				return id;
+			}
+			if(id->token->type == TOKEN_IDENTIFIER) {
+				IdentifierASTNode *identifierE = new_IdentifierASTNode(id->token->value.string); //string or identifier?
+				id->node = (ExpressionASTNode*)identifierE;
+				id->Stype = S_NONTERMINAL;
+				return id;
+			}
 		}
-		if(id->token->type == TOKEN_IDENTIFIER) {
-			IdentifierASTNode *identifierE = new_IdentifierASTNode(id->token->value.string); //string or identifier?
-			id->node = (ExpressionASTNode*)identifierE;
-			id->Stype = S_NONTERMINAL;
-			return id;
-		}
+		//two operators consecutively
+		else {return NULL;} //TODO: check for null in main
 	}
 
 	// E -> E!
-	if(stack->size == 1) {
+	if(stack->size == 2) {
 		StackItem *operator = Array_get(stack, 1);
 		StackItem *argument = Array_get(stack, 0);
-		if(operator->token->kind == TOKEN_EXCLAMATION) {
+		if(operator->token->kind == TOKEN_EXCLAMATION && argument->Stype == S_NONTERMINAL) {
 			UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_UNWRAP);
 			operator->node = (ExpressionASTNode*)unaryE;
 			operator->Stype = S_NONTERMINAL;
 			return operator;
 		}
+		else {return NULL;}
 	}
 
 	// Binary operations and parentheses
-	if(stack->size == 2) {
+	if(stack->size == 3) {
 		StackItem *operator = Array_get(stack, 1);
 		StackItem *leftOperand = Array_get(stack, 0);
 		StackItem *rightOperand = Array_get(stack, 2);
