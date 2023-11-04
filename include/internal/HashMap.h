@@ -101,7 +101,7 @@ Array* HashMap_values(HashMap *map);
  * @param map The HashMap instance to iterate over.
  * @param callback The action to be performed for each entry.
  */
-void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value));
+void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value, size_t index));
 
 /**
  * Allocates memory for a new HashMap instance.

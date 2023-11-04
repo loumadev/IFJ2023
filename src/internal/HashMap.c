@@ -237,16 +237,18 @@ Array* HashMap_values(HashMap *map) {
 	return values;
 }
 
-void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value)) {
+void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value, size_t index)) {
 	if(!map) return;
 	if(!callback) return;
+
+	size_t index = 0;
 
 	for(size_t i = 0; i < map->capacity; i++) {
 		HashMapEntry *entry = map->entries[i];
 		if(!entry) continue;
 
 		while(entry) {
-			callback(entry->key, entry->value);
+			callback(entry->key, entry->value, index++);
 			entry = entry->next;
 		}
 	}
