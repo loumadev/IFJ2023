@@ -9,22 +9,17 @@ void HashMap_constructor(HashMap *map) {
 
 	map->size = 0;
 	map->capacity = HASHMAP_DEFAULT_CAPACITY;
-	map->entries = mem_calloc(map->capacity, sizeof(HashMapEntry*));
+	map->entries = mem_calloc(map->capacity, sizeof(HashMapEntry));
 }
 
 void HashMap_destructor(HashMap *map) {
 	if(!map) return;
 
 	for(size_t i = 0; i < map->size; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
 
-		while(entry) {
-			HashMapEntry *next = entry->next;
-			String_free(entry->key);
-			mem_free(entry);
-			entry = next;
-		}
+		String_free(entry.key);
 	}
 
 	mem_free(map->entries);
@@ -34,10 +29,10 @@ void HashMap_destructor(HashMap *map) {
 }
 
 // Private
-uint32_t HashMap_hash(char *key) {
+uint32_t HashMap_hash(char *key, size_t capacity) {
 	uint32_t hash = 0;
 
-	for(size_t i = 0; i < strlen(key); i++) {
+	for(size_t i = 0; key[i] != '\0'; i++) {
 		hash += key[i];
 		hash += (hash << 10);
 		hash ^= (hash >> 6);
@@ -47,36 +42,41 @@ uint32_t HashMap_hash(char *key) {
 	hash ^= (hash >> 11);
 	hash += (hash << 15);
 
-	return hash;
+	return hash % capacity;
 }
 
-void HashMap_resize(HashMap *map, size_t capacity) {
+// Private
+void HashMap_resize(HashMap *map, size_t new_capacity) {
 	if(!map) return;
 
 	// Create a new array of entries
-	HashMapEntry **entries = mem_calloc(capacity, sizeof(HashMapEntry*));
-	if(!entries) return;
+	HashMapEntry *new_entries = mem_calloc(new_capacity, sizeof(HashMapEntry));
+	if(!new_entries) return;
 
-	// Rehash all entries
+	// Rehash and copy existing entries
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
 
-		// Rehash all entries in the bucket
-		while(entry) {
-			HashMapEntry *next = entry->next;
-			uint32_t index = HashMap_hash(entry->key->value) % capacity;
+		// Skip empty and deleted entries
+		if(!entry.key) continue;
+		if(entry.deleted) continue;
 
-			entry->next = entries[index];
-			entries[index] = entry;
-			entry = next;
+		// Rehash the key
+		size_t index = HashMap_hash(entry.key->value, new_capacity);
+
+		// Linear probing
+		while(new_entries[index].key) {
+			index = (index + 1) % new_capacity;
 		}
+
+		new_entries[index].key = entry.key;
+		new_entries[index].value = entry.value;
 	}
 
-	// mem_free the old entries and set the new ones
+	// Free the old entries and set the new ones
 	mem_free(map->entries);
-	map->entries = entries;
-	map->capacity = capacity;
+	map->entries = new_entries;
+	map->capacity = new_capacity;
 }
 
 void HashMap_set(HashMap *map, char *key, void *value) {
@@ -88,40 +88,31 @@ void HashMap_set(HashMap *map, char *key, void *value) {
 		HashMap_resize(map, map->capacity * HASHMAP_RESIZE_FACTOR);
 	}
 
-	// Get the bucket index
-	uint32_t index = HashMap_hash(key) % map->capacity;
-	HashMapEntry *entry = map->entries[index];
+	// Get the initial index
+	size_t index = HashMap_hash(key, map->capacity);
+	HashMapEntry entry = map->entries[index];
 
-	// If there is an entry with the same key, set it
-	HashMapEntry *lastEntry = NULL; // Cache the last entry for later use
-	while(entry) {
-		if(String_equals(entry->key, key)) {
-			entry->value = value;
+	// Find an empty or deleted slot
+	while(entry.key && !entry.deleted) {
+		// Update already existing entry
+		if(String_equals(entry.key, key)) {
+			entry.value = value;
+			map->entries[index] = entry;
+
 			return;
 		}
 
-		lastEntry = entry;
-		entry = entry->next;
+		// Linear probing
+		index = (index + 1) % map->capacity;
+		entry = map->entries[index];
 	}
 
 	// Create a new entry
-	HashMapEntry *newEntry = mem_alloc(sizeof(HashMapEntry));
-	if(!newEntry) return;
+	entry.key = String_alloc(key);
+	entry.value = value;
+	entry.deleted = 0;
 
-	// Create a new string for the key
-	String *newKey = String_alloc(key);
-	if(!newKey) return;
-
-	// Setup the new entry
-	newEntry->key = newKey;
-	newEntry->value = value;
-	newEntry->next = NULL;
-
-	// Add the new entry to the bucket
-	if(!lastEntry) map->entries[index] = newEntry;
-	else lastEntry->next = newEntry;
-
-	// Increase the size
+	map->entries[index] = entry;
 	map->size++;
 }
 
@@ -129,72 +120,71 @@ void* HashMap_get(HashMap *map, char *key) {
 	if(!map) return NULL;
 	if(!key) return NULL;
 
-	// Get the bucket index
-	uint32_t index = HashMap_hash(key) % map->capacity;
-	HashMapEntry *entry = map->entries[index];
+	// Get the initial index
+	size_t index = HashMap_hash(key, map->capacity);
+	HashMapEntry entry = map->entries[index];
 
-	// Find the entry with the same key
-	while(entry) {
-		if(String_equals(entry->key, key)) {
-			return entry->value;
+	// Search for the key
+	while(entry.key) {
+		if(!entry.deleted && String_equals(entry.key, key)) {
+			return entry.value;
 		}
 
-		entry = entry->next;
+		index = (index + 1) % map->capacity; // Linear probing
+		entry = map->entries[index];
 	}
 
 	return NULL;
-}
-
-bool HashMap_has(HashMap *map, char *key) {
-	return HashMap_get(map, key) != NULL;
 }
 
 void HashMap_remove(HashMap *map, char *key) {
 	if(!map) return;
 	if(!key) return;
 
-	// Get the bucket index
-	uint32_t index = HashMap_hash(key) % map->capacity;
-	HashMapEntry *entry = map->entries[index];
+	// Get the initial index
+	size_t index = HashMap_hash(key, map->capacity);
+	HashMapEntry entry = map->entries[index];
 
-	// Find the entry with the same key
-	HashMapEntry *lastEntry = NULL; // Cache the last entry for later use
-	while(entry) {
-		if(String_equals(entry->key, key)) {
-			// Remove the entry from the bucket
-			if(!lastEntry) map->entries[index] = entry->next;
-			else lastEntry->next = entry->next;
+	// Search for the key
+	while(entry.key) {
+		if(!entry.deleted && String_equals(entry.key, key)) {
+			// Mark the entry as deleted
+			String_free(entry.key);
 
-			// mem_free the entry
-			String_free(entry->key);
-			mem_free(entry);
+			entry.key = NULL;
+			entry.value = NULL;
+			entry.deleted = 1;
 
-			// Decrease the size
+			map->entries[index] = entry;
 			map->size--;
 
 			return;
 		}
 
-		lastEntry = entry;
-		entry = entry->next;
+		// Linear probing
+		index = (index + 1) % map->capacity;
+		entry = map->entries[index];
 	}
+}
+
+bool HashMap_has(HashMap *map, char *key) {
+	return HashMap_get(map, key) != NULL;
 }
 
 void HashMap_clear(HashMap *map) {
 	if(!map) return;
 
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
 
-		while(entry) {
-			HashMapEntry *next = entry->next;
-			String_free(entry->key);
-			mem_free(entry);
-			entry = next;
-		}
+		String_free(entry.key);
 
-		map->entries[i] = NULL;
+		entry.key = NULL;
+		entry.value = NULL;
+		entry.deleted = 0;
+
+		map->entries[i] = entry;
 	}
 
 	map->size = 0;
@@ -207,13 +197,11 @@ Array* HashMap_keys(HashMap *map) {
 	if(!keys) return NULL;
 
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
+		if(!entry.key) continue;
 
-		while(entry) {
-			Array_push(keys, entry->key);
-			entry = entry->next;
-		}
+		Array_push(keys, entry.key);
 	}
 
 	return keys;
@@ -226,13 +214,11 @@ Array* HashMap_values(HashMap *map) {
 	if(!values) return NULL;
 
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
+		if(!entry.key) continue;
 
-		while(entry) {
-			Array_push(values, entry->value);
-			entry = entry->next;
-		}
+		Array_push(values, entry.value);
 	}
 
 	return values;
@@ -245,13 +231,10 @@ void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value, si
 	size_t index = 0;
 
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
 
-		while(entry) {
-			callback(entry->key, entry->value, index++);
-			entry = entry->next;
-		}
+		callback(entry.key, entry.value, index++);
 	}
 }
 
@@ -281,16 +264,12 @@ void HashMap_print_compact(HashMap *map) {
 	print_type_begin("HashMap");
 
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
 
-		while(entry) {
-			print_formatted_field("%s", entry->key->value);
-			if(entry->value) print_pointer_field(entry->value);
-			else print_null_field();
-
-			entry = entry->next;
-		}
+		print_formatted_field("%s", entry.key->value);
+		if(entry.value) print_pointer_field(entry.value);
+		else print_null_field();
 	}
 
 	print_type_end();
@@ -314,30 +293,26 @@ void HashMap_print(HashMap *map, unsigned int depth, int isProperty) {
 	(void)index;
 
 	for(size_t i = 0; i < map->capacity; i++) {
-		HashMapEntry *entry = map->entries[i];
-		if(!entry) continue;
+		HashMapEntry entry = map->entries[i];
+		if(entry.deleted) continue;
 
-		while(entry) {
-			#ifdef HASHMAP_PRINT_COMPACT
-			print_formatted_field("%s", entry->key->value);
-			if(entry->value) print_pointer_field(entry->value);
-			else print_null_field();
-			#else
-			print_formatted_field("%zu", index++);
-			print_obj_begin(1);
+		#ifdef HASHMAP_PRINT_COMPACT
+		print_formatted_field("%s", entry.key->value);
+		if(entry.value) print_pointer_field(entry.value);
+		else print_null_field();
+		#else
+		print_formatted_field("%zu", index++);
+		print_obj_begin(1);
 
-			print_field("key");
-			String_print(entry->key, depth, 1);
+		print_field("key");
+		String_print(entry->key, depth, 1);
 
-			print_field("value");
-			if(entry->value) print_pointer_field(entry->value);
-			else print_null_field();
+		print_field("value");
+		if(entry->value) print_pointer_field(entry->value);
+		else print_null_field();
 
-			print_obj_end();
-			#endif
-
-			entry = entry->next;
-		}
+		print_obj_end();
+		#endif
 	}
 
 	print_obj_end();

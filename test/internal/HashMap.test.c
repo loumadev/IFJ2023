@@ -9,7 +9,10 @@ DESCRIBE(map_alloc, "HashMap_alloc/HashMap_resize") {
 		map = HashMap_alloc();
 
 		for(size_t i = 0; i < map->capacity; i++) {
-			EXPECT_NULL(map->entries[i]);
+			HashMapEntry entry = map->entries[i];
+			EXPECT_NULL(entry.key);
+			EXPECT_NULL(entry.value);
+			EXPECT_EQUAL_INT(entry.deleted, 0);
 		}
 	})
 
@@ -17,19 +20,26 @@ DESCRIBE(map_alloc, "HashMap_alloc/HashMap_resize") {
 		map = HashMap_alloc();
 
 		for(size_t i = 0; i < map->capacity; i++) {
-			EXPECT_NULL(map->entries[i]);
+			HashMapEntry entry = map->entries[i];
+			EXPECT_NULL(entry.key);
+			EXPECT_NULL(entry.value);
+			EXPECT_EQUAL_INT(entry.deleted, 0);
 		}
 
 		HashMap_resize(map, 100);
 
 		for(size_t i = 0; i < map->capacity; i++) {
-			EXPECT_NULL(map->entries[i]);
+			HashMapEntry entry = map->entries[i];
+			EXPECT_NULL(entry.key);
+			EXPECT_NULL(entry.value);
+			EXPECT_EQUAL_INT(entry.deleted, 0);
 		}
 	})
 }
 
 DESCRIBE(map_set_get, "HashMap_set/HashMap_get") {
 	HashMap *map = NULL;
+	int *value = NULL;
 
 	TEST("Get value from an empty map", {
 		map = HashMap_alloc();
@@ -39,7 +49,7 @@ DESCRIBE(map_set_get, "HashMap_set/HashMap_get") {
 		EXPECT_NULL(HashMap_get(map, "key123456789"));
 	})
 
-	TEST("Set and get a value", {
+	TEST_BEGIN("Set and get a value") {
 		map = HashMap_alloc();
 
 		int num1 = 10;
@@ -47,19 +57,31 @@ DESCRIBE(map_set_get, "HashMap_set/HashMap_get") {
 		int num3 = 20;
 
 		HashMap_set(map, "key1", &num1);
-		EXPECT_EQUAL_INT(*((int*)HashMap_get(map, "key1")), num1);
+
+		value = HashMap_get(map, "key1");
+		EXPECT_NOT_NULL(value);
+		EXPECT_EQUAL_INT(*value, num1);
 
 		HashMap_set(map, "key2", &num2);
 		HashMap_set(map, "key3", &num3);
-		EXPECT_EQUAL_INT(*((int*)HashMap_get(map, "key2")), num2);
-		EXPECT_EQUAL_INT(*((int*)HashMap_get(map, "key3")), num3);
 
-		EXPECT_EQUAL_INT(*((int*)HashMap_get(map, "key1")), num1);
+		value = HashMap_get(map, "key2");
+		EXPECT_NOT_NULL(value);
+		EXPECT_EQUAL_INT(*value, num2);
+
+		value = HashMap_get(map, "key3");
+		EXPECT_NOT_NULL(value);
+		EXPECT_EQUAL_INT(*value, num3);
+
+		value = HashMap_get(map, "key1");
+		EXPECT_NOT_NULL(value);
+		EXPECT_EQUAL_INT(*value, num1);
+
 		EXPECT_NULL(HashMap_get(map, "key4"));
 		EXPECT_NULL(HashMap_get(map, "key5"));
-	})
+	} TEST_END();
 
-	TEST("Set and get a value with the same key", {
+	TEST_BEGIN("Set and get a value with the same key") {
 		map = HashMap_alloc();
 
 		int num1 = 10;
@@ -70,8 +92,10 @@ DESCRIBE(map_set_get, "HashMap_set/HashMap_get") {
 		HashMap_set(map, "key1", &num2);
 		HashMap_set(map, "key1", &num3);
 
-		EXPECT_EQUAL_INT(*((int*)HashMap_get(map, "key1")), num3);
-	})
+		value = HashMap_get(map, "key1");
+		EXPECT_NOT_NULL(value);
+		EXPECT_EQUAL_INT(*value, num3);
+	} TEST_END();
 }
 
 DESCRIBE(map_has, "HashMap_has") {
@@ -235,7 +259,7 @@ DESCRIBE(map_clear, "HashMap_clear") {
 DESCRIBE(map_keys, "HashMap_keys") {
 	HashMap *map = NULL;
 
-	TEST("Get keys from a map", {
+	TEST_BEGIN("Get keys from a map") {
 		map = HashMap_alloc();
 
 		int num1 = 10;
@@ -251,7 +275,7 @@ DESCRIBE(map_keys, "HashMap_keys") {
 		EXPECT_TRUE(String_equals((String*)Array_get(keys, 0), "key1"));
 		EXPECT_TRUE(String_equals((String*)Array_get(keys, 1), "key2"));
 		EXPECT_TRUE(String_equals((String*)Array_get(keys, 2), "key3"));
-	})
+	} TEST_END();
 
 	TEST("Get keys from an empty map", {
 		map = HashMap_alloc();

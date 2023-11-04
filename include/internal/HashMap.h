@@ -11,17 +11,17 @@
 #define HASHMAP_LOAD_FACTOR 0.75
 #define HASHMAP_RESIZE_FACTOR 2
 
-typedef struct HashMapEntry {
-	String *key;
-	void *value;
-	struct HashMapEntry *next;
-} HashMapEntry;
-
 typedef struct HashMap {
 	size_t size;
 	size_t capacity;
-	struct HashMapEntry **entries;
+	struct HashMapEntry *entries;
 } HashMap;
+
+typedef struct HashMapEntry {
+	String *key;
+	void *value;
+	int deleted; // Flag to mark deleted entries
+} HashMapEntry;
 
 /**
  * Initializes a new HashMap instance.
