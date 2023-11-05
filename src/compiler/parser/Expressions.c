@@ -17,7 +17,7 @@
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] =    //[stack top terminal][input token]
 {
-	// +-|*/| ! |??|r |i |( |) |$
+  // +-|*/| ! |??|r |i |( |) |$
 	{R, S, S, R, R, S, S, R, R}, // +-
 	{R, R, S, R, R, S, S, R, R}, // */
 	{R, R, R, R, R, S, S, R, R}, // !
@@ -93,8 +93,8 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 	stopReduction->Stype = S_STOP;
 	stopReduction->node = NULL;
 	for(size_t i = 0; i < stack->size; i++) {
-		if(((StackItem *)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL) {
-			Array_push(stack, stopReduction);
+		if (((StackItem *)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL || ((StackItem *)Array_get(stack, stack->size - i - 1))->Stype == S_BOTTOM) {
+			Array_insert(stack, (int)stack->size - i, stopReduction);
 			return;
 		}
 	}
@@ -104,7 +104,8 @@ StackItem *Expr_performReduction(Array *stack) {
 
 	// E -> i
 	if(stack->size == 1) {
-		StackItem *id = Array_get(stack, 0);
+		//StackItem *id = Array_get(stack, 0);
+		StackItem *id = Array_pop(stack);
 
 		if(id->Stype == S_TERMINAL){
 			if(id->token->type == TOKEN_LITERAL) {
@@ -126,8 +127,11 @@ StackItem *Expr_performReduction(Array *stack) {
 
 	// E -> E!
 	if(stack->size == 2) {
-		StackItem *operator = Array_get(stack, 1);
-		StackItem *argument = Array_get(stack, 0);
+		//StackItem *operator = Array_get(stack, 1);
+		//StackItem *argument = Array_get(stack, 0);
+		StackItem *operator = Array_pop(stack);
+		StackItem *argument = Array_pop(stack);
+
 		if(operator->token->kind == TOKEN_EXCLAMATION && argument->Stype == S_NONTERMINAL) {
 			UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_UNWRAP);
 			operator->node = (ExpressionASTNode*)unaryE;
@@ -139,9 +143,12 @@ StackItem *Expr_performReduction(Array *stack) {
 
 	// Binary operations and parentheses
 	if(stack->size == 3) {
-		StackItem *operator = Array_get(stack, 1);
-		StackItem *leftOperand = Array_get(stack, 0);
-		StackItem *rightOperand = Array_get(stack, 2);
+		//StackItem *operator = Array_get(stack, 1);
+		//StackItem *leftOperand = Array_get(stack, 0);
+		//StackItem *rightOperand = Array_get(stack, 2);
+		StackItem *rightOperand = Array_pop(stack);
+		StackItem *operator = Array_pop(stack);
+		StackItem *leftOperand = Array_pop(stack);
 
 		// E -> (E)
 		if(operator->Stype == S_NONTERMINAL && leftOperand->token->kind == TOKEN_LEFT_PAREN && rightOperand->token->kind == TOKEN_RIGHT_PAREN) {
@@ -149,6 +156,7 @@ StackItem *Expr_performReduction(Array *stack) {
 		}
 
 		enum OperatorType operatorType = 0;
+		if(leftOperand->Stype == S_NONTERMINAL && rightOperand->Stype == S_NONTERMINAL)
 		switch(operator->token->kind) {
 			case TOKEN_PLUS:
 				operatorType = OPERATOR_PLUS;
@@ -192,9 +200,8 @@ StackItem *Expr_performReduction(Array *stack) {
 			operator->Stype = S_NONTERMINAL;
 			return operator;
 		}
-
 	}
-	return NULL; //maybe
+	return NULL; 
 }
 
 ParserResult __Parser_parseExpression(Parser *parser) {
@@ -215,7 +222,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 		if(!current.success) return LexerToParserError(current);
 		enum PrecTableRelation operation = precedence_table[Expr_getPrecTbIndex(Expr_getTopTerminal(stack).token)][Expr_getPrecTbIndex(current.token)];
-		if(((StackItem*)Array_get(stack, stack->size))->Stype == S_NONTERMINAL && stack->size == 1 && operation == R) {
+		if(((StackItem*)Array_get(stack, stack->size - 1))->Stype == S_NONTERMINAL && stack->size == 2 && operation == X) {
 			StackItem *finalExpression = Array_get(stack, stack->size);
 			return ParserSuccess(finalExpression->node);
 		} //TODO: when to end
@@ -238,7 +245,12 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 					}
 				}
 				// Perform reduction and push result on stack (nonterminal)
-				Array_push(stack, Expr_performReduction(reduceStack));
+				if(reduceToken == Expr_performReduction(reduceStack)){
+					Array_push(stack, reduceToken);
+				}
+				else{
+					return ParserError(String_fromFormat("TODO"), NULL);
+					}
 				break;
 			case E:
 				equalsToken->Stype = S_TERMINAL;
@@ -246,8 +258,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				Array_push(stack, equalsToken);
 				break;
 			case X:
-				//call LexerToParserError
-				break;
+				return ParserError(String_fromFormat("TODO"), NULL);
 			default:
 				break;
 
