@@ -204,6 +204,8 @@ StackItem *Expr_performReduction(Array *stack) {
 	return NULL; 
 }
 
+// TODO: function to determine whether to end or not
+
 ParserResult __Parser_parseExpression(Parser *parser) {
 	assertf(parser != NULL);
 
