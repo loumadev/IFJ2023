@@ -11,17 +11,17 @@
 #define HASHMAP_LOAD_FACTOR 0.75
 #define HASHMAP_RESIZE_FACTOR 2
 
-typedef struct HashMapEntry {
-	String *key;
-	void *value;
-	struct HashMapEntry *next;
-} HashMapEntry;
-
 typedef struct HashMap {
 	size_t size;
 	size_t capacity;
-	struct HashMapEntry **entries;
+	struct HashMapEntry *entries;
 } HashMap;
+
+typedef struct HashMapEntry {
+	String *key;
+	void *value;
+	int deleted; // Flag to mark deleted entries
+} HashMapEntry;
 
 /**
  * Initializes a new HashMap instance.
@@ -36,6 +36,13 @@ void HashMap_constructor(HashMap *map);
  * @param map The HashMap instance to deallocate.
  */
 void HashMap_destructor(HashMap *map);
+
+/**
+ * Resizes the HashMap to the given capacity.
+ *
+ * @param map The HashMap instance to resize.
+ */
+void HashMap_resize(HashMap *map, size_t capacity);
 
 /**
  * Associates the specified value with the specified key in this map.
@@ -101,7 +108,7 @@ Array* HashMap_values(HashMap *map);
  * @param map The HashMap instance to iterate over.
  * @param callback The action to be performed for each entry.
  */
-void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value));
+void HashMap_forEach(HashMap *map, void (*callback)(String *key, void *value, size_t index));
 
 /**
  * Allocates memory for a new HashMap instance.
