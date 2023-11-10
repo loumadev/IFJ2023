@@ -64,8 +64,8 @@ int Expr_getPrecTbIndex(Token *token) {
 		case TOKEN_DEFAULT:
 			if(token->type == TOKEN_IDENTIFIER) {
 				return I_ID;
-			} //else error
-			return I_DOLLAR; //maybe
+			} 
+			return I_DOLLAR;
 		case TOKEN_STRING:
 		case TOKEN_INTEGER:
 		case TOKEN_FLOATING:
@@ -104,7 +104,6 @@ StackItem *Expr_performReduction(Array *stack) {
 
 	// E -> i
 	if(stack->size == 1) {
-		//StackItem *id = Array_get(stack, 0);
 		StackItem *id = Array_pop(stack);
 
 		if(id->Stype == S_TERMINAL) {
@@ -124,13 +123,11 @@ StackItem *Expr_performReduction(Array *stack) {
 		//two operators consecutively
 		else {
 			return NULL;
-		}                   //TODO: check for null in main
+		}                   
 	}
 
 	// E -> E!
 	if(stack->size == 2) {
-		//StackItem *operator = Array_get(stack, 1);
-		//StackItem *argument = Array_get(stack, 0);
 		StackItem *argument = Array_pop(stack);
 		StackItem *operator = Array_pop(stack);
 
@@ -147,9 +144,6 @@ StackItem *Expr_performReduction(Array *stack) {
 
 	// Binary operations and parentheses
 	if(stack->size == 3) {
-		//StackItem *operator = Array_get(stack, 1);
-		//StackItem *leftOperand = Array_get(stack, 0);
-		//StackItem *rightOperand = Array_get(stack, 2);
 		StackItem *leftOperand = Array_pop(stack);
 		StackItem *operator = Array_pop(stack);
 		StackItem *rightOperand = Array_pop(stack);
@@ -257,7 +251,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			Array_free(stack);
 			//Array_free(reduceStack);
 			return ParserSuccess(finalExpression->node);
-		} //TODO: when to end
+		} 
 
 		StackItem *currentToken = mem_alloc(sizeof(StackItem));
 
