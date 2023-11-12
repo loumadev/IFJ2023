@@ -3,8 +3,6 @@
 #include <stdbool.h>
 
 #include "assertf.h"
-// #include "internal/Array.h"
-// #include "compiler/parser/ASTNodes.h"
 // #include "compiler/lexer/Lexer.h"
 #include "compiler/parser/ExpressionParser.h"
 #include "compiler/lexer/Token.h"
@@ -15,8 +13,7 @@
 #define TABLE_SIZE 9
 #define STACK_SIZE 20
 
-int precedence_table[TABLE_SIZE][TABLE_SIZE] =    // [stack top terminal][input token]
-{
+int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
 	// +-|*/| ! |??|r |i |( |) |$
 	{R, S, S, R, R, S, S, R, R}, // +-
 	{R, R, S, R, R, S, S, R, R}, // */
@@ -27,11 +24,9 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] =    // [stack top terminal][input 
 	{S, S, S, S, S, S, S, E, X}, // (
 	{R, R, R, R, R, X, X, R, R}, // )
 	{S, S, S, S, S, S, S, X, X}  // $
-
 };
 
 int Expr_getPrecTbIndex(Token *token) {
-
 	switch(token->kind) {
 		case TOKEN_PLUS:
 		case TOKEN_MINUS:
@@ -66,6 +61,7 @@ int Expr_getPrecTbIndex(Token *token) {
 				return I_ID;
 			}
 			return I_DOLLAR;
+
 		case TOKEN_STRING:
 		case TOKEN_INTEGER:
 		case TOKEN_FLOATING:
@@ -79,11 +75,15 @@ int Expr_getPrecTbIndex(Token *token) {
 
 StackItem Expr_getTopTerminal(Array *stack) {
 	StackItem *top = NULL;
+
 	for(size_t i = 0; i < stack->size; i++) {
-		if((top = Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL || top->Stype == S_BOTTOM) {
+		top = Array_get(stack, stack->size - i - 1);
+
+		if(top->Stype == S_TERMINAL || top->Stype == S_BOTTOM) {
 			return *top;
 		}
 	}
+
 	return *top;
 }
 
@@ -92,8 +92,12 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 	stopReduction->token = NULL;
 	stopReduction->Stype = S_STOP;
 	stopReduction->node = NULL;
+
 	for(size_t i = 0; i < stack->size; i++) {
-		if(((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL || ((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_BOTTOM) {
+		if(
+			((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL ||
+			((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_BOTTOM
+		) {
 			Array_insert(stack, (int)stack->size - i, stopReduction);
 			return;
 		}
@@ -111,12 +115,15 @@ StackItem* Expr_performReduction(Array *stack) {
 				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(id->token->value);
 				id->node = (ExpressionASTNode*)literalE;
 				id->Stype = S_NONTERMINAL;
+
 				return id;
 			}
+
 			if(id->token->type == TOKEN_IDENTIFIER) {
 				IdentifierASTNode *identifierE = new_IdentifierASTNode(id->token->value.string); // string or identifier?
 				id->node = (ExpressionASTNode*)identifierE;
 				id->Stype = S_NONTERMINAL;
+
 				return id;
 			}
 		}
@@ -135,7 +142,9 @@ StackItem* Expr_performReduction(Array *stack) {
 			UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_UNWRAP);
 			operator->node = (ExpressionASTNode*)unaryE;
 			operator->Stype = S_NONTERMINAL;
+
 			mem_free(argument);
+
 			return operator;
 		} else {
 			return NULL;
@@ -152,6 +161,7 @@ StackItem* Expr_performReduction(Array *stack) {
 		if(operator->Stype == S_NONTERMINAL && leftOperand->token->kind == TOKEN_LEFT_PAREN && rightOperand->token->kind == TOKEN_RIGHT_PAREN) {
 			mem_free(leftOperand);
 			mem_free(rightOperand);
+
 			return operator;
 		}
 
@@ -198,11 +208,14 @@ StackItem* Expr_performReduction(Array *stack) {
 			BinaryExpressionASTNode *binaryE = new_BinaryExpressionASTNode(leftOperand->node, rightOperand->node, operatorType);
 			operator->node = (ExpressionASTNode*)binaryE;
 			operator->Stype = S_NONTERMINAL;
+
 			mem_free(leftOperand);
 			mem_free(rightOperand);
+
 			return operator;
 		}
 	}
+
 	return NULL;
 }
 
@@ -214,6 +227,7 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 			Array_push(reduceStack, currentToken);
 		}
 	}
+
 	// Perform reduction and push result on stack (nonterminal)
 	if(currentToken == Expr_performReduction(reduceStack)) {
 		Array_push(stack, currentToken);
@@ -250,13 +264,14 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			mem_free(bottom);
 			Array_free(stack);
 			// Array_free(reduceStack);
+
 			return ParserSuccess(finalExpression->node);
 		}
 
 		StackItem *currentToken = mem_alloc(sizeof(StackItem));
 
 		switch(operation) {
-			case S:
+			case S: {
 				currentToken->Stype = S_TERMINAL;
 				currentToken->token = current.token;
 				currentToken->node = NULL;
@@ -265,15 +280,15 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 				if(!(removeFromTokenStream = Lexer_nextToken(parser->lexer)).success) return LexerToParserError(current);
 				current = Lexer_peekToken(parser->lexer, ++offset);
-				break;
+			} break;
 
-			case R:
+			case R: {
 				if(!Expr_Reduce(stack, currentToken)) {
 					return ParserError(String_fromFormat("Syntax error in expression"), Array_fromArgs(1, current.token));
 				}
-				break;
+			} break;
 
-			case E:
+			case E: {
 				currentToken->Stype = S_TERMINAL;
 				currentToken->token = current.token;
 				currentToken->node = NULL;
@@ -281,19 +296,17 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 				if(!(removeFromTokenStream = Lexer_nextToken(parser->lexer)).success) return LexerToParserError(current);
 				current = Lexer_peekToken(parser->lexer, ++offset);
-				break;
+			} break;
 
-			case X:
+			case X: {
 				if(!Expr_Reduce(stack, currentToken)) {
 					return ParserError(String_fromFormat("Syntax error in expression"), Array_fromArgs(1, current.token));
 				}
-				break;
+			} break;
 
-			default:
-				break;
-
+			default: {} break;
 		}
-	}
 
-	return ParserNoMatch();
+		return ParserNoMatch();
+	}
 }
