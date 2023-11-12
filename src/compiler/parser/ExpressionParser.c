@@ -254,9 +254,16 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	LexerResult removeFromTokenStream;
 
 	while(true) {
-
 		if(!current.success) return LexerToParserError(current);
-		enum PrecTableRelation operation = precedence_table[Expr_getPrecTbIndex(Expr_getTopTerminal(stack).token)][Expr_getPrecTbIndex(current.token)];
+
+		StackItem *topTerminal = Expr_getTopTerminal(stack);
+		// topTerminal returns S_BOTTOM, which has no token,
+		// this token is being dereferenced in Expr_getPrecTbIndex, thus causing a segfault
+
+		int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token);
+		int currentTokenIndex = Expr_getPrecTbIndex(current.token);
+
+		enum PrecTableRelation operation = precedence_table[topTerminalIndex][currentTokenIndex];
 
 		if(((StackItem*)Array_get(stack, stack->size - 1))->Stype == S_NONTERMINAL && stack->size == 2 && operation == X) {
 			StackItem *finalExpression = Array_pop(stack);
