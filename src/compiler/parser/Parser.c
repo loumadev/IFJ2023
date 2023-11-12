@@ -35,9 +35,12 @@ ParserResult __Parser_parseAssignmentStatement(Parser *parser);
 
 /* Definitions of public functions */
 
-void Parser_constructor(Parser *parser) {
+void Parser_constructor(Parser *parser, Lexer *lexer) {
+	assertf(parser != NULL);
+	assertf(lexer != NULL);
+
 	// TODO: Symbol table management
-	parser->lexer = NULL;
+	parser->lexer = lexer;
 }
 
 void Parser_destructor(Parser *parser) {
@@ -168,12 +171,12 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 	return ParserNoMatch();
 }
 
-//ParserResult __Parser_parseExpression(Parser *parser) {
+// ParserResult __Parser_parseExpression(Parser *parser) {
 //	assertf(parser != NULL);
 
-	// TODO: Add logic for parsing expressions (using LL(1) parsing)
+// TODO: Add logic for parsing expressions (using LL(1) parsing)
 //	return ParserNoMatch();
-//}
+// }
 
 ParserResult __Parser_parseTypeReference(Parser *parser) {
 	// TODO: Add logic to output correct error messages
