@@ -36,11 +36,8 @@ typedef struct StackItem {
 	ExpressionASTNode *node;
 } StackItem;
 
-StackItem Expr_getTopTerminal(Array *stack);
+StackItem* Expr_getTopTerminal(Array *stack);
 void Expr_pushAfterTopTerminal(Array *stack);
-StackItem *Expr_performReduction(Array *stack);
+StackItem* Expr_performReduction(Array *stack);
 
 #endif
-
-
-//LexerResult current = Lexer_nextToken(parser->lexer);

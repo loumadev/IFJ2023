@@ -73,18 +73,18 @@ int Expr_getPrecTbIndex(Token *token) {
 	}
 }
 
-StackItem Expr_getTopTerminal(Array *stack) {
+StackItem* Expr_getTopTerminal(Array *stack) {
 	StackItem *top = NULL;
 
 	for(size_t i = 0; i < stack->size; i++) {
 		top = Array_get(stack, stack->size - i - 1);
 
 		if(top->Stype == S_TERMINAL || top->Stype == S_BOTTOM) {
-			return *top;
+			return top;
 		}
 	}
 
-	return *top;
+	return top;
 }
 
 void Expr_pushAfterTopTerminal(Array *stack) {
