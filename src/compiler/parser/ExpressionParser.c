@@ -3,10 +3,10 @@
 #include <stdbool.h>
 
 #include "assertf.h"
-//#include "internal/Array.h"
-//#include "compiler/parser/ASTNodes.h"
-//#include "compiler/lexer/Lexer.h"
-#include "compiler/parser/Expressions.h"
+// #include "internal/Array.h"
+// #include "compiler/parser/ASTNodes.h"
+// #include "compiler/lexer/Lexer.h"
+#include "compiler/parser/ExpressionParser.h"
 #include "compiler/lexer/Token.h"
 #include "internal/Array.h"
 #include "allocator/MemoryAllocator.h"
@@ -15,7 +15,7 @@
 #define TABLE_SIZE 9
 #define STACK_SIZE 20
 
-int precedence_table[TABLE_SIZE][TABLE_SIZE] =    //[stack top terminal][input token]
+int precedence_table[TABLE_SIZE][TABLE_SIZE] =    // [stack top terminal][input token]
 {
 	// +-|*/| ! |??|r |i |( |) |$
 	{R, S, S, R, R, S, S, R, R}, // +-
@@ -64,7 +64,7 @@ int Expr_getPrecTbIndex(Token *token) {
 		case TOKEN_DEFAULT:
 			if(token->type == TOKEN_IDENTIFIER) {
 				return I_ID;
-			} 
+			}
 			return I_DOLLAR;
 		case TOKEN_STRING:
 		case TOKEN_INTEGER:
@@ -93,14 +93,14 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 	stopReduction->Stype = S_STOP;
 	stopReduction->node = NULL;
 	for(size_t i = 0; i < stack->size; i++) {
-		if(((StackItem *)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL || ((StackItem *)Array_get(stack, stack->size - i - 1))->Stype == S_BOTTOM) {
+		if(((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL || ((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_BOTTOM) {
 			Array_insert(stack, (int)stack->size - i, stopReduction);
 			return;
 		}
 	}
 }
 
-StackItem *Expr_performReduction(Array *stack) {
+StackItem* Expr_performReduction(Array *stack) {
 
 	// E -> i
 	if(stack->size == 1) {
@@ -114,16 +114,16 @@ StackItem *Expr_performReduction(Array *stack) {
 				return id;
 			}
 			if(id->token->type == TOKEN_IDENTIFIER) {
-				IdentifierASTNode *identifierE = new_IdentifierASTNode(id->token->value.string); //string or identifier?
+				IdentifierASTNode *identifierE = new_IdentifierASTNode(id->token->value.string); // string or identifier?
 				id->node = (ExpressionASTNode*)identifierE;
 				id->Stype = S_NONTERMINAL;
 				return id;
 			}
 		}
-		//two operators consecutively
+		// two operators consecutively
 		else {
 			return NULL;
-		}                   
+		}
 	}
 
 	// E -> E!
@@ -137,7 +137,7 @@ StackItem *Expr_performReduction(Array *stack) {
 			operator->Stype = S_NONTERMINAL;
 			mem_free(argument);
 			return operator;
-		} else   {
+		} else {
 			return NULL;
 		}
 	}
@@ -218,7 +218,7 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 	if(currentToken == Expr_performReduction(reduceStack)) {
 		Array_push(stack, currentToken);
 		return true;
-	} else   {
+	} else {
 		return false;
 	}
 }
@@ -227,8 +227,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	assertf(parser != NULL);
 
 	Array *stack = Array_alloc(STACK_SIZE);
-	//Array *reduceStack = Array_alloc(STACK_SIZE);
-	//Token *token = NULL;
+	// Array *reduceStack = Array_alloc(STACK_SIZE);
+	// Token *token = NULL;
 	StackItem *bottom = mem_alloc(sizeof(StackItem));
 
 	bottom->Stype = S_BOTTOM;
@@ -249,9 +249,9 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			bottom = Array_pop(stack);
 			mem_free(bottom);
 			Array_free(stack);
-			//Array_free(reduceStack);
+			// Array_free(reduceStack);
 			return ParserSuccess(finalExpression->node);
-		} 
+		}
 
 		StackItem *currentToken = mem_alloc(sizeof(StackItem));
 
