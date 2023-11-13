@@ -609,6 +609,9 @@ ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 	ExpressionASTNode *initializer = NULL;
 
 	if(peek.token->kind == TOKEN_EQUAL) {
+		// Consume the `=` token
+		Lexer_nextToken(parser->lexer);
+
 		ParserResult initializerResult = __Parser_parseExpression(parser);
 		if(!initializerResult.success) return initializerResult;
 		initializer = initializerResult.node;
