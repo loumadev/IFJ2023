@@ -472,6 +472,12 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 	if(!peek.success) return LexerToParserError(peek);
 
 	if(peek.token->kind == TOKEN_LET || peek.token->kind == TOKEN_VAR) {
+		if(hasOptionalParen) {
+			return ParserError(
+				String_fromFormat("cannot use optional binding in condition with parentheses"),
+				Array_fromArgs(1, peek.token));
+		}
+
 		ParserResult bindingConditionResult = __Parser_parseOptionalBindingCondition(parser);
 		if(!bindingConditionResult.success) return bindingConditionResult;
 		bindingCondition = (OptionalBindingConditionASTNode*)bindingConditionResult.node;
