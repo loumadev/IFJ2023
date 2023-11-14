@@ -2,8 +2,8 @@
 #include "internal/String.h"
 #include "internal/Array.h"
 
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef RESULT_H
+#define RESULT_H
 
 enum Severity {
 	SEVERITY_NONE = 0,
