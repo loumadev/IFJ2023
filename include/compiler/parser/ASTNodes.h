@@ -112,10 +112,10 @@ typedef struct ReturnStatementASTNode {
 
 typedef struct ParameterASTNode {
 	enum ASTNodeType _type;
-	IdentifierASTNode *id;
+	IdentifierASTNode *internalId;
 	TypeReferenceASTNode *type;
 	ExpressionASTNode *initializer;
-	IdentifierASTNode *externalName;
+	IdentifierASTNode *externalId;
 	bool isLabeless;
 } ParameterASTNode;
 
@@ -169,7 +169,6 @@ typedef struct UnaryExpressionASTNode {
 	ExpressionASTNode *argument;
 	enum OperatorType operator;
 	// bool isPrefix;
-
 } UnaryExpressionASTNode;
 
 typedef struct LiteralExpressionASTNode {
@@ -179,7 +178,7 @@ typedef struct LiteralExpressionASTNode {
 
 typedef struct PatternASTNode {
 	enum ASTNodeType _type;
-	IdentifierASTNode *name;
+	IdentifierASTNode *id;
 	TypeReferenceASTNode *type;
 } PatternASTNode;
 

@@ -87,17 +87,17 @@ ReturnStatementASTNode * new_ReturnStatementASTNode(
 }
 
 ParameterASTNode * new_ParameterASTNode(
-	IdentifierASTNode *id,
+	IdentifierASTNode *internalId,
 	TypeReferenceASTNode *type,
 	ExpressionASTNode *initializer,
-	IdentifierASTNode *externalName,
+	IdentifierASTNode *externalId,
 	bool isLabeless
 ) {
 	prepare_node_of(ParameterASTNode, NODE_PARAMETER)
-	node->id = id;
+	node->internalId = internalId;
 	node->type = type;
 	node->initializer = initializer;
-	node->externalName = externalName;
+	node->externalId = externalId;
 	node->isLabeless = isLabeless;
 	return node;
 }
@@ -153,11 +153,11 @@ FunctionCallASTNode * new_FunctionCallASTNode(
 }
 
 PatternASTNode * new_PatternASTNode(
-	IdentifierASTNode *name,
+	IdentifierASTNode *id,
 	TypeReferenceASTNode *type
 ) {
 	prepare_node_of(PatternASTNode, NODE_PATTERN)
-	node->name = name;
+	node->id = id;
 	node->type = type;
 	return node;
 }
