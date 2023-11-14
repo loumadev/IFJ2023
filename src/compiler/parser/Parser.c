@@ -98,11 +98,19 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 	// Parse statements
 	Array *statements = Array_alloc(0);
 
-	while(!Parser_isAtEnd(parser)) {
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	while((!requireBraces && !Parser_isAtEnd(parser)) || (requireBraces && peek.token->kind != TOKEN_RIGHT_BRACE)) {
 		ParserResult result = __Parser_parseStatement(parser);
 		if(!result.success) return result;
 
 		Array_push(statements, result.node);
+
+		if(requireBraces) {
+			peek = Lexer_peekToken(parser->lexer, 1);
+			if(!peek.success) return LexerToParserError(peek);
+		}
 	}
 
 	// Check for right brace
