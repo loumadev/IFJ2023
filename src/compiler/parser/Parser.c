@@ -27,7 +27,7 @@ ParserResult __Parser_parseWhileStatement(Parser *parser);
 ParserResult __Parser_parseReturnStatement(Parser *parser);
 ParserResult __Parser_parseVariableDeclarator(Parser *parser);
 ParserResult __Parser_parseVariableDeclarationList(Parser *parser);
-ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser);
+ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser, bool isConstant);
 ParserResult __Parser_parseArgument(Parser *parser);
 ParserResult __Parser_parseArgumentList(Parser *parser);
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
@@ -133,40 +133,41 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 ParserResult __Parser_parseStatement(Parser *parser) {
 	assertf(parser != NULL);
 
-	LexerResult peek = Lexer_peekToken(parser->lexer, 0);
-	if(!peek.success) return LexerToParserError(peek);
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
 
-	if(peek.token->kind == TOKEN_FUNC) {
+	if(result.token->kind == TOKEN_FUNC) {
 		ParserResult funcResult = __Parser_parseFuncStatement(parser);
 		if(!funcResult.success) return funcResult;
 		return ParserSuccess(funcResult.node);
 	}
 
-	if(peek.token->kind == TOKEN_IF) {
+	if(result.token->kind == TOKEN_IF) {
 		ParserResult ifResult = __Parser_parseIfStatement(parser);
 		if(!ifResult.success) return ifResult;
 		return ParserSuccess(ifResult.node);
 	}
 
-	if(peek.token->kind == TOKEN_WHILE) {
+	if(result.token->kind == TOKEN_WHILE) {
 		ParserResult whileResult = __Parser_parseWhileStatement(parser);
 		if(!whileResult.success) return whileResult;
 		return ParserSuccess(whileResult.node);
 	}
 
-	if(peek.token->kind == TOKEN_RETURN) {
+	if(result.token->kind == TOKEN_RETURN) {
 		ParserResult returnResult = __Parser_parseReturnStatement(parser);
 		if(!returnResult.success) return returnResult;
 		return ParserSuccess(returnResult.node);
 	}
 
-	if(peek.token->kind == TOKEN_LET || peek.token->kind == TOKEN_VAR) {
-		ParserResult variableDeclarationResult = __Parser_parseVariableDeclarationStatement(parser);
+	if(result.token->kind == TOKEN_LET || result.token->kind == TOKEN_VAR) {
+		bool isConstant = result.token->kind == TOKEN_LET;
+		ParserResult variableDeclarationResult = __Parser_parseVariableDeclarationStatement(parser, isConstant);
 		if(!variableDeclarationResult.success) return variableDeclarationResult;
 		return ParserSuccess(variableDeclarationResult.node);
 	}
 
-	if(peek.token->type == TOKEN_IDENTIFIER) {
+	if(result.token->type == TOKEN_IDENTIFIER) {
 		LexerResult tmp = Lexer_peekToken(parser->lexer, 1);
 		if(!tmp.success) return LexerToParserError(tmp);
 		if(tmp.token->kind == TOKEN_EQUAL) {
@@ -189,11 +190,9 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 ParserResult __Parser_parseTypeReference(Parser *parser) {
 	// TODO: Add logic to output correct error messages
 	assertf(parser != NULL);
-
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	LexerResult peek;
 	int nullable = false;
 
+	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
 	if(result.token->type != TOKEN_IDENTIFIER) {
@@ -202,8 +201,9 @@ ParserResult __Parser_parseTypeReference(Parser *parser) {
 			Array_fromArgs(1, result.token));
 	}
 
-	peek = Lexer_peekToken(parser->lexer, 1);
-	if(!peek.success) return LexerToParserError(result);
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
 
 
 	// nullable type
@@ -229,6 +229,7 @@ ParserResult __Parser_parseParameter(Parser *parser) {
 	IdentifierASTNode *paramLocalId = NULL;
 	IdentifierASTNode *paramExternalId = NULL;
 	ExpressionASTNode *initializer = NULL;
+
 	LexerResult peek;
 	LexerResult result = Lexer_nextToken(parser->lexer);
 
@@ -306,16 +307,18 @@ ParserResult __Parser_parseParameterList(Parser *parser) {
 
 	// parser parameter-list
 	Array *parameters = Array_alloc(0);
-	while(true) {
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	while(peek.token->kind != TOKEN_RIGHT_PAREN) {
+
 		ParserResult paramResult = __Parser_parseParameter(parser);
 		if(!paramResult.success) return paramResult;
 
 		Array_push(parameters, (ParameterASTNode*)paramResult.node);
 
-		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
-
-
-		if(!peek.success) return LexerToParserError(result);
+		peek = Lexer_peekToken(parser->lexer, 1);
+		if(!peek.success) return LexerToParserError(peek);
 
 		if(peek.token->kind == TOKEN_COMMA) {
 			result = Lexer_nextToken(parser->lexer);
@@ -323,13 +326,12 @@ ParserResult __Parser_parseParameterList(Parser *parser) {
 
 		}
 
-		peek = Lexer_peekToken(parser->lexer, 1);
-		if(peek.token->kind == TOKEN_RIGHT_PAREN) {
-			result = Lexer_nextToken(parser->lexer);
-			if(!result.success) return LexerToParserError(result);
-			break;
-		}
 	}
+
+	// skip ')'
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
 	ParameterListASTNode *parameterList = new_ParameterListASTNode(parameters);
 
 	return ParserSuccess(parameterList);
@@ -340,13 +342,11 @@ ParserResult __Parser_parseFuncStatement(Parser *parser) {
 	// TODO: Symbol table management
 	assertf(parser != NULL);
 
-	// skip func keyword
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
-	result = Lexer_nextToken(parser->lexer);
 	LexerResult peek;
-	if(!result.success) return LexerToParserError(result);
+
 
 	if(result.token->type != TOKEN_IDENTIFIER) {
 		return ParserError(
@@ -358,6 +358,7 @@ ParserResult __Parser_parseFuncStatement(Parser *parser) {
 
 	ParserResult parameterListResult = __Parser_parseParameterList(parser);
 	if(!parameterListResult.success) return parameterListResult;
+
 
 	peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
@@ -375,6 +376,7 @@ ParserResult __Parser_parseFuncStatement(Parser *parser) {
 		// Void return type
 		returnType = NULL;
 	}
+
 
 	ParserResult blockResult = __Parser_parseBlock(parser, true);
 	if(!blockResult.success) return blockResult;
@@ -402,6 +404,10 @@ ParserResult __Parser_parsePattern(Parser *parser) {
 	if(!peek.success) return LexerToParserError(peek);
 
 	if(peek.token->kind == TOKEN_COLON) {
+		// skip ':'
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(tmp);
+
 		ParserResult typeResult = __Parser_parseTypeReference(parser);
 		if(!typeResult.success) return typeResult;
 		type = (TypeReferenceASTNode*)typeResult.node;
@@ -450,6 +456,10 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 	ExpressionASTNode *expression = NULL;
 	OptionalBindingConditionASTNode *bindingCondition = NULL;
 
+	// consume '('
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
@@ -463,6 +473,10 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 
 		expression = (ExpressionASTNode*)expressionResult.node;
 	}
+
+	// consume ')'
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
 
 	ConditionASTNode *condition = new_ConditionASTNode(expression, bindingCondition);
 
@@ -502,10 +516,6 @@ ParserResult __Parser_parseElseClause(Parser *parser) {
 
 ParserResult __Parser_parseIfStatement(Parser *parser) {
 	assertf(parser != NULL);
-
-	// skip if keyword
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
 
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
@@ -549,10 +559,6 @@ ParserResult __Parser_parseIfStatement(Parser *parser) {
 ParserResult __Parser_parseWhileStatement(Parser *parser) {
 	assertf(parser != NULL);
 
-	// skip while keyword
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
-
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
@@ -582,11 +588,6 @@ ParserResult __Parser_parseWhileStatement(Parser *parser) {
 
 ParserResult __Parser_parseReturnStatement(Parser *parser) {
 	assertf(parser != NULL);
-
-	// skip return keyword
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
-
 
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
@@ -618,7 +619,8 @@ ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 
 	if(peek.token->kind == TOKEN_EQUAL) {
 		// Consume the `=` token
-		Lexer_nextToken(parser->lexer);
+		LexerResult result = Lexer_nextToken(parser->lexer);
+		if(!result.success) return LexerToParserError(result);
 
 		ParserResult initializerResult = __Parser_parseExpression(parser);
 		if(!initializerResult.success) return initializerResult;
@@ -637,40 +639,42 @@ ParserResult __Parser_parseVariableDeclarationList(Parser *parser) {
 
 
 	Array *declarators = Array_alloc(0);
-	while(true) {
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+	while(peek.token->type != TOKEN_EOF) {
 		ParserResult declaratorResult = __Parser_parseVariableDeclarator(parser);
 		if(!declaratorResult.success) return declaratorResult;
 
 		Array_push(declarators, (VariableDeclaratorASTNode*)declaratorResult.node);
 
 		peek = Lexer_peekToken(parser->lexer, 1);
+		if(!peek.success) return LexerToParserError(peek);
+
 
 		if(peek.token->kind == TOKEN_COMMA) {
 			result = Lexer_nextToken(parser->lexer);
 			if(!result.success) return LexerToParserError(result);
-
+		} else if(peek.token->type != TOKEN_EOF) {
+			return ParserError(
+				String_fromFormat("found an unexpected second identifier in constant declaration; is there an accidental break?"),
+				Array_fromArgs(1, peek.token));
 		}
 
 		peek = Lexer_peekToken(parser->lexer, 1);
-		if(peek.token->type == TOKEN_EOF) {
-			result = Lexer_nextToken(parser->lexer);
-			if(!result.success) return LexerToParserError(result);
-			break;
-		}
+		if(!peek.success) return LexerToParserError(peek);
 	}
+
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
 
 	VariableDeclarationListASTNode *variableDeclarationList = new_VariableDeclarationListASTNode(declarators);
 
 	return ParserSuccess(variableDeclarationList);
 }
 
-ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser) {
+ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser, bool isConstant) {
 	assertf(parser != NULL);
-
-	// let/var
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
-	bool isConstant = result.token->kind == TOKEN_LET;
 
 	ParserResult declarationList = __Parser_parseVariableDeclarationList(parser);
 	if(!declarationList.success) return declarationList;
@@ -716,15 +720,19 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 
 	// parse argument-list
 	Array *arguments = Array_alloc(0);
-	while(true) {
+
+	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
+
+
+	while(peek.token->kind != TOKEN_RIGHT_PAREN) {
 		ParserResult argumentResult = __Parser_parseArgument(parser);
 		if(!argumentResult.success) return argumentResult;
 
 		Array_push(arguments, (ArgumentASTNode*)argumentResult.node);
 
 		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
-
-		if(!peek.success) return LexerToParserError(result);
+		if(!peek.success) return LexerToParserError(peek);
 
 		if(peek.token->kind == TOKEN_COMMA) {
 			result = Lexer_nextToken(parser->lexer);
@@ -733,12 +741,14 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 		}
 
 		peek = Lexer_peekToken(parser->lexer, 1);
-		if(peek.token->kind == TOKEN_RIGHT_PAREN) {
-			result = Lexer_nextToken(parser->lexer);
-			if(!result.success) return LexerToParserError(result);
-			break;
-		}
+		if(!peek.success) return LexerToParserError(peek);
 	}
+
+	// skip ')'
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+
 	ArgumentListASTNode *argumentList = new_ArgumentListASTNode(arguments);
 
 	return ParserSuccess(argumentList);
@@ -766,12 +776,12 @@ ParserResult __Parser_parseAssignmentStatement(Parser *parser) {
 	assertf(parser != NULL);
 
 	// identifier
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
-	IdentifierASTNode *variableId = new_IdentifierASTNode(result.token->value.string);
+	LexerResult peek = Lexer_peekToken(parser->lexer, 0);
+	if(!peek.success) return LexerToParserError(peek);
+	IdentifierASTNode *variableId = new_IdentifierASTNode(peek.token->value.string);
 
 	// skip '='
-	result = Lexer_nextToken(parser->lexer);
+	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
 	ParserResult assignmentResult = __Parser_parseExpression(parser);
