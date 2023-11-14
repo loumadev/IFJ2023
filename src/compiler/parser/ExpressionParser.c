@@ -257,7 +257,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	bottom->token = NULL;
 	Array_push(stack, bottom);
 
-	bool reductionSucces;
+	bool reductionSuccess;
 	int offset = 1;
 	LexerResult current = Lexer_peekToken(parser->lexer, offset);
 	LexerResult removeFromTokenStream;
@@ -301,8 +301,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			} break;
 
 			case R: {
-				reductionSucces = Expr_Reduce(stack, currentToken);
-				if(!reductionSucces) {
+				reductionSuccess = Expr_Reduce(stack, currentToken);
+				if(!reductionSuccess) {
 					return ParserError(String_fromFormat("Syntax error in expression"), Array_fromArgs(1, current.token));
 				}
 			} break;
@@ -319,8 +319,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			} break;
 
 			case X: {
-				reductionSucces = Expr_Reduce(stack, currentToken);
-				if(!reductionSucces) {
+				reductionSuccess = Expr_Reduce(stack, currentToken);
+				if(!reductionSuccess) {
 					return ParserError(String_fromFormat("Syntax error in expression"), Array_fromArgs(1, current.token));
 				}
 			} break;
