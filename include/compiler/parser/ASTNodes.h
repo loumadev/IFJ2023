@@ -234,7 +234,7 @@ VariableDeclarationASTNode* new_VariableDeclarationASTNode(VariableDeclarationLi
 VariableDeclaratorASTNode* new_VariableDeclaratorASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer);
 VariableDeclarationListASTNode* new_VariableDeclarationListASTNode(Array *declarators);
 ReturnStatementASTNode* new_ReturnStatementASTNode(ExpressionASTNode *expression);
-ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalName, bool isLabeless);
+ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *internalId, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalId, bool isLabeless);
 ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, enum OperatorType operator);
@@ -243,7 +243,7 @@ LiteralExpressionASTNode* new_LiteralExpressionASTNode(union TokenValue value);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
-PatternASTNode* new_PatternASTNode(IdentifierASTNode *name, TypeReferenceASTNode *type);
+PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
 OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
 ConditionASTNode* new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);
 ElseClauseASTNode* new_ElseClauseASTNode(IfStatementASTNode *ifStatement, BlockASTNode *body, bool isElseIf);
