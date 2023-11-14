@@ -36,7 +36,7 @@ enum ASTNodeType {
 	NODE_ASSIGNMENT_STATEMENT
 };
 
-enum OperatorType {
+typedef enum OperatorType {
 	OPERATOR_DEFAULT = 0,
 	OPERATOR_PLUS,
 	OPERATOR_MINUS,
@@ -50,7 +50,8 @@ enum OperatorType {
 	OPERATOR_GREATER,
 	OPERATOR_LESS_EQUAL,
 	OPERATOR_GREATER_EQUAL
-};
+} OperatorType;
+
 
 
 /* Definition of AST nodes */
@@ -161,13 +162,13 @@ typedef struct BinaryExpressionASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *left;
 	ExpressionASTNode *right;
-	enum OperatorType operator;
+	OperatorType operator;
 } BinaryExpressionASTNode;
 
 typedef struct UnaryExpressionASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *argument;
-	enum OperatorType operator;
+	OperatorType operator;
 	// bool isPrefix;
 } UnaryExpressionASTNode;
 
@@ -237,8 +238,8 @@ ReturnStatementASTNode* new_ReturnStatementASTNode(ExpressionASTNode *expression
 ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *internalId, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalId, bool isLabeless);
 ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
-BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, enum OperatorType operator);
-UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, enum OperatorType operator /*, bool isPrefix*/);
+BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
+UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator /*, bool isPrefix*/);
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(union TokenValue value);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);

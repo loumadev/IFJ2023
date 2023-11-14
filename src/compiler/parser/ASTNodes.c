@@ -231,7 +231,7 @@ AssignmentStatementASTNode * new_AssignmentStatementASTNode(
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(
 	ExpressionASTNode *left,
 	ExpressionASTNode *right,
-	enum OperatorType operator
+	OperatorType operator
 ) {
 	prepare_node_of(BinaryExpressionASTNode, NODE_BINARY_EXPRESSION)
 	node->left = left;
@@ -242,7 +242,7 @@ BinaryExpressionASTNode* new_BinaryExpressionASTNode(
 
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(
 	ExpressionASTNode *argument,
-	enum OperatorType operator
+	OperatorType operator
 	//bool IsPrefix
 ) {
 	prepare_node_of(UnaryExpressionASTNode, NODE_UNARY_EXPRESSION)
