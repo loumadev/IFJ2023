@@ -1,13 +1,13 @@
-#include "compiler/parser/Parser.h"
+#include "compiler/parser/ExpressionParser.h"
 
 #include <stdbool.h>
 
 #include "assertf.h"
 // #include "compiler/lexer/Lexer.h"
-#include "compiler/parser/ExpressionParser.h"
-#include "compiler/lexer/Token.h"
-#include "internal/Array.h"
 #include "allocator/MemoryAllocator.h"
+#include "internal/Array.h"
+#include "compiler/lexer/Token.h"
+#include "compiler/parser/Parser.h"
 #include "compiler/parser/ASTNodes.h"
 
 #define TABLE_SIZE 9
