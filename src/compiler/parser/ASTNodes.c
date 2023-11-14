@@ -253,9 +253,11 @@ UnaryExpressionASTNode* new_UnaryExpressionASTNode(
 }
 
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(
+	LiteralType type,
 	union TokenValue value
 ) {
 	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
+	node->type = type;
 	node->value = value;
 	return node;
 }

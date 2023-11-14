@@ -52,6 +52,14 @@ typedef enum OperatorType {
 	OPERATOR_GREATER_EQUAL
 } OperatorType;
 
+typedef enum LiteralType {
+	LITERAL_INVALID = 0,
+	LITERAL_STRING,
+	LITERAL_INTEGER,
+	LITERAL_FLOATING,
+	LITERAL_BOOLEAN,
+	LITERAL_NIL
+} LiteralType;
 
 
 /* Definition of AST nodes */
@@ -174,6 +182,7 @@ typedef struct UnaryExpressionASTNode {
 
 typedef struct LiteralExpressionASTNode {
 	enum ASTNodeType _type;
+	LiteralType type;
 	union TokenValue value;
 } LiteralExpressionASTNode;
 
@@ -240,7 +249,7 @@ ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator /*, bool isPrefix*/);
-LiteralExpressionASTNode* new_LiteralExpressionASTNode(union TokenValue value);
+LiteralExpressionASTNode* new_LiteralExpressionASTNode(LiteralType type, union TokenValue value);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);

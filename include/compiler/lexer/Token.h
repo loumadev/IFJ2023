@@ -21,6 +21,9 @@ enum TokenKind {
 	TOKEN_DEFAULT = 0,
 
 	// Literals
+	// This has to be at this position in the enum
+	// because it's being converted into another
+	// enum with the same values.
 	TOKEN_STRING,
 	TOKEN_INTEGER,
 	TOKEN_FLOATING,

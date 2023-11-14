@@ -114,7 +114,7 @@ StackItem* Expr_performReduction(Array *stack) {
 
 		if(id->Stype == S_TERMINAL) {
 			if(id->token->type == TOKEN_LITERAL) {
-				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(id->token->value);
+				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode((LiteralType)id->token->kind, id->token->value);
 				id->node = (ExpressionASTNode*)literalE;
 				id->Stype = S_NONTERMINAL;
 
