@@ -27,6 +27,9 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input
 };
 
 int Expr_getPrecTbIndex(Token *token) {
+	if(!token){
+		return I_DOLLAR;
+	}
 	switch(token->kind) {
 		case TOKEN_PLUS:
 		case TOKEN_MINUS:
@@ -94,10 +97,9 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 	stopReduction->node = NULL;
 
 	for(size_t i = 0; i < stack->size; i++) {
-		if(
-			((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_TERMINAL ||
-			((StackItem*)Array_get(stack, stack->size - i - 1))->Stype == S_BOTTOM
-		) {
+		StackItem *top = Array_get(stack, stack->size - i - 1);
+
+		if(top->Stype == S_TERMINAL ||top->Stype == S_BOTTOM) {
 			Array_insert(stack, (int)stack->size - i, stopReduction);
 			return;
 		}
@@ -222,6 +224,10 @@ StackItem* Expr_performReduction(Array *stack) {
 bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 	Array *reduceStack = Array_alloc(STACK_SIZE);
 
+	if(stack->size == 1){
+		return false;
+	}
+
 	while((currentToken = Array_pop(stack))->Stype != S_STOP) {
 		if(currentToken->Stype != S_STOP) {
 			Array_push(reduceStack, currentToken);
@@ -229,7 +235,8 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 	}
 
 	// Perform reduction and push result on stack (nonterminal)
-	if(currentToken == Expr_performReduction(reduceStack)) {
+	currentToken = Expr_performReduction(reduceStack);
+	if(currentToken != NULL) {
 		Array_push(stack, currentToken);
 		return true;
 	} else {
@@ -247,9 +254,11 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 	bottom->Stype = S_BOTTOM;
 	bottom->node = NULL;
+	bottom->token = NULL;
 	Array_push(stack, bottom);
 
-	int offset = 0;
+	bool reductionSucces;
+	int offset = 1;
 	LexerResult current = Lexer_peekToken(parser->lexer, offset);
 	LexerResult removeFromTokenStream;
 
@@ -265,7 +274,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 		enum PrecTableRelation operation = precedence_table[topTerminalIndex][currentTokenIndex];
 
-		if(((StackItem*)Array_get(stack, stack->size - 1))->Stype == S_NONTERMINAL && stack->size == 2 && operation == X) {
+		StackItem *isItFinal = Array_get(stack, stack->size - 1);
+		if(isItFinal->Stype == S_NONTERMINAL && stack->size == 2 && operation == X) {
 			StackItem *finalExpression = Array_pop(stack);
 			bottom = Array_pop(stack);
 			mem_free(bottom);
@@ -285,12 +295,14 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				Expr_pushAfterTopTerminal(stack);
 				Array_push(stack, currentToken);
 
-				if(!(removeFromTokenStream = Lexer_nextToken(parser->lexer)).success) return LexerToParserError(current);
-				current = Lexer_peekToken(parser->lexer, ++offset);
+				removeFromTokenStream = Lexer_nextToken(parser->lexer);
+				if(!(removeFromTokenStream.success)) return LexerToParserError(current);
+				current = Lexer_peekToken(parser->lexer, offset);
 			} break;
 
 			case R: {
-				if(!Expr_Reduce(stack, currentToken)) {
+				reductionSucces = Expr_Reduce(stack, currentToken);
+				if(!reductionSucces) {
 					return ParserError(String_fromFormat("Syntax error in expression"), Array_fromArgs(1, current.token));
 				}
 			} break;
@@ -301,12 +313,14 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				currentToken->node = NULL;
 				Array_push(stack, currentToken);
 
-				if(!(removeFromTokenStream = Lexer_nextToken(parser->lexer)).success) return LexerToParserError(current);
-				current = Lexer_peekToken(parser->lexer, ++offset);
+				removeFromTokenStream = Lexer_nextToken(parser->lexer);
+				if(!(removeFromTokenStream.success)) return LexerToParserError(current);
+				current = Lexer_peekToken(parser->lexer, offset);
 			} break;
 
 			case X: {
-				if(!Expr_Reduce(stack, currentToken)) {
+				reductionSucces = Expr_Reduce(stack, currentToken);
+				if(!reductionSucces) {
 					return ParserError(String_fromFormat("Syntax error in expression"), Array_fromArgs(1, current.token));
 				}
 			} break;
@@ -314,6 +328,6 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			default: {} break;
 		}
 
-		return ParserNoMatch();
 	}
+	return ParserNoMatch();
 }
