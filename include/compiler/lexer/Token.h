@@ -9,6 +9,7 @@ enum TokenType {
 	TOKEN_EOF = 1,
 	TOKEN_CONTROL,  // Forgot what this is for :(
 	TOKEN_MARKER,   // Marker in the source code (for error messages)
+	TOKEN_STRING_INTERPOLATION_MARKER,
 
 	TOKEN_LITERAL,
 	TOKEN_IDENTIFIER,

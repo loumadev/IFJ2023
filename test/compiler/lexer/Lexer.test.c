@@ -1299,8 +1299,576 @@ DESCRIBE(string_tokenization, "String literals tokenization") {
 	LexerResult result;
 	Token *token;
 
-	(void)token;
-	(void)result;
+	TEST("Empty string", {
+		result = Lexer_tokenize(&lexer, "\"\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+		EXPECT_EQUAL_INT(token->value.string->length, 0);
+	})
+
+	TEST("Single character string", {
+		result = Lexer_tokenize(&lexer, "\"a\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "a"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multicharacter string", {
+		result = Lexer_tokenize(&lexer, "\"abc\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "abc"));
+		EXPECT_EQUAL_INT(token->value.string->length, 3);
+	})
+}
+
+DESCRIBE(string_invalid_tokeniz, "Invalid string literals tokenization") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+
+	TEST("Unterminated string", {
+		result = Lexer_tokenize(&lexer, "\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Unescaped quote", {
+		result = Lexer_tokenize(&lexer, "\"Hello \" World\"");
+		EXPECT_FALSE(result.success);
+	})
+}
+
+DESCRIBE(string_quotes_escape, "String literals tokenization with escaped quotes") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Single escaped double quote", {
+		result = Lexer_tokenize(&lexer, "\"\\\"\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\""));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multiple escaped double quotes", {
+		result = Lexer_tokenize(&lexer, "\"\\\"\\\"\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\"\""));
+		EXPECT_EQUAL_INT(token->value.string->length, 2);
+	})
+
+	TEST("Multiple escaped double quotes with text", {
+		result = Lexer_tokenize(&lexer, "\"pre \\\"in\\\" post\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre \"in\" post"));
+		EXPECT_EQUAL_INT(token->value.string->length, 13);
+	})
+}
+
+DESCRIBE(string_backslash_escape, "String literals tokenization with escaped backslashes") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Single escaped backslash", {
+		result = Lexer_tokenize(&lexer, "\"\\\\\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\\"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multiple escaped backslashes", {
+		result = Lexer_tokenize(&lexer, "\"\\\\\\\\\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\\\\"));
+		EXPECT_EQUAL_INT(token->value.string->length, 2);
+	})
+
+	TEST("Multiple escaped backslashes with text", {
+		result = Lexer_tokenize(&lexer, "\"pre \\\\in\\\\ post\"");
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre \\in\\ post"));
+		EXPECT_EQUAL_INT(token->value.string->length, 13);
+	})
+}
+
+DESCRIBE(string_whitespace_escape, "String literals tokenization with escaped whitespace") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Single line feed", {
+		result = Lexer_tokenize(&lexer, "\"\\n\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\n"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multiple line feeds", {
+		result = Lexer_tokenize(&lexer, "\"\\n\\n\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\n\n"));
+		EXPECT_EQUAL_INT(token->value.string->length, 2);
+	})
+
+
+	TEST("Single carriage return", {
+		result = Lexer_tokenize(&lexer, "\"\\r\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\r"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multiple carriage returns", {
+		result = Lexer_tokenize(&lexer, "\"\\r\\r\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\r\r"));
+		EXPECT_EQUAL_INT(token->value.string->length, 2);
+	})
+
+
+	TEST("Single tab", {
+		result = Lexer_tokenize(&lexer, "\"\\t\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\t"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multiple tabs", {
+		result = Lexer_tokenize(&lexer, "\"\\t\\t\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\t\t"));
+		EXPECT_EQUAL_INT(token->value.string->length, 2);
+	})
+}
+
+DESCRIBE(string_unicode_escape, "String literals tokenization with escaped unicode sequences") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Single unicode character", {
+		result = Lexer_tokenize(&lexer, "\"\\u{61}\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "a"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Single prefixed unicode character", {
+		result = Lexer_tokenize(&lexer, "\"\\u{0061}\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "a"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	})
+
+	TEST("Multiple unicode characters", {
+		result = Lexer_tokenize(&lexer, "\"\\u{61}\\u{62}\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "ab"));
+		EXPECT_EQUAL_INT(token->value.string->length, 2);
+	})
+
+	TEST("Multiple unicode characters in text", {
+		result = Lexer_tokenize(&lexer, "\"pre \\u{61} in \\u{62} post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre a in b post"));
+		EXPECT_EQUAL_INT(token->value.string->length, 15);
+	})
+}
+
+DESCRIBE(str_invalid_escape, "Invalid escape sequences in string literals tokenization") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+
+	TEST("Invalid escape sequence", {
+		result = Lexer_tokenize(&lexer, "\"\\a\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Incomplete unicode sequence 1", {
+		result = Lexer_tokenize(&lexer, "\"\\u\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Incomplete unicode sequence 2", {
+		result = Lexer_tokenize(&lexer, "\"\\u{\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Incomplete unicode sequence 3", {
+		result = Lexer_tokenize(&lexer, "\"\\u{61\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Too short unicode sequence", {
+		result = Lexer_tokenize(&lexer, "\"\\u{}\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Too long unicode sequence", {
+		result = Lexer_tokenize(&lexer, "\"\\u{123456789}\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Out of the range unicode sequence", {
+		result = Lexer_tokenize(&lexer, "\"\\u{FFFFFFFF}\"");
+		EXPECT_FALSE(result.success);
+	})
+
+	TEST("Invalid characters in unicode sequence", {
+		result = Lexer_tokenize(&lexer, "\"\\u{FFXF}\"");
+		EXPECT_FALSE(result.success);
+	})
+}
+
+DESCRIBE(string_escape_sequences, "String literals tokenization with escaped sequences") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Combination of all supported escape sequences", {
+		result = Lexer_tokenize(&lexer, "\"\\\"\\\\\\n\\r\\t\\u{61}\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\"\\\n\r\ta"));
+		EXPECT_EQUAL_INT(token->value.string->length, 6);
+	})
+}
+
+DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST("Simple interpolated string", {
+		result = Lexer_tokenize(&lexer, "\"Hello \\(name)!\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "Hello "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "name"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "!"));
+	})
+
+	TEST_BEGIN("Interpolated string starts with expression") {
+		result = Lexer_tokenize(&lexer, "\"\\(expr) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	} TEST_END()
+
+	TEST("Interpolated string ends with expression", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(expr)\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+	})
+
+	TEST("Interpolated string starts & ends with expression", {
+		result = Lexer_tokenize(&lexer, "\"\\(expr)\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+	})
+
+	TEST("Interpolated string contining parentheses in expression", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(expr * (a + b)) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_OPERATOR);
+		EXPECT_TRUE(token->kind == TOKEN_STAR);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(token->kind == TOKEN_LEFT_PAREN);
+
+		token = (Token*)Array_get(lexer.tokens, 5);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "a"));
+
+		token = (Token*)Array_get(lexer.tokens, 6);
+		EXPECT_TRUE(token->type == TOKEN_OPERATOR);
+		EXPECT_TRUE(token->kind == TOKEN_PLUS);
+
+		token = (Token*)Array_get(lexer.tokens, 7);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "b"));
+
+		token = (Token*)Array_get(lexer.tokens, 8);
+		EXPECT_TRUE(token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(token->kind == TOKEN_RIGHT_PAREN);
+
+		token = (Token*)Array_get(lexer.tokens, 9);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 10);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	})
+
+	TEST("Interpolated string contining string as teh expression", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"in\") post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "in"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	})
+
+	TEST("Nested interpolated strings", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"in_pre \\(expr) in_post\") post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "in_pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 5);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 6);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " in_post"));
+
+		token = (Token*)Array_get(lexer.tokens, 7);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		token = (Token*)Array_get(lexer.tokens, 8);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	})
+
+	TEST("Invalid use interpolated strings", {
+		result = Lexer_tokenize(&lexer, "\"\\(\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\( post\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"\\( post\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"\"\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"\" post\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"in\" post\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"in_pre \\(expr)\" post\"");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "\"pre \\(\"in_pre \\(expr\") post\"");
+		EXPECT_FALSE(result.success);
+	})
 }
 
 DESCRIBE(nextToken, "Token stream (nextToken)") {
