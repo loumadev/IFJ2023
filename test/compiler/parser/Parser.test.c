@@ -54,7 +54,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 
 
 	TEST_BEGIN("Constant with type annotation") {
-	    Lexer_setSource(&lexer, "let hello_string_variable: String = \"hello\"");
+		Lexer_setSource(&lexer, "let hello_string_variable: String = \"hello\"");
 		result = Parser_parse(&parser);
 
 		EXPECT_TRUE(result.success);
@@ -78,7 +78,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		EXPECT_NOT_NULL(pattern->type);
 		EXPECT_TRUE(pattern->_type == NODE_PATTERN);
 		EXPECT_TRUE(pattern->type->_type == NODE_TYPE_REFERENCE);
-		EXPECT_TRUE(String_equals(pattern->type->id->name,"String"));
+		EXPECT_TRUE(String_equals(pattern->type->id->name, "String"));
 
 		IdentifierASTNode *id = pattern->id;
 		EXPECT_NOT_NULL(id);
@@ -93,7 +93,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("More variables declaration") {
-	    Lexer_setSource(&lexer, "var a = \"hello\", b: Int = 20, c = 10.12");
+		Lexer_setSource(&lexer, "var a = \"hello\", b: Int = 20, c = 10.12");
 		result = Parser_parse(&parser);
 
 		EXPECT_TRUE(result.success);
@@ -109,7 +109,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		Array *arr = list->declarators;
 		EXPECT_EQUAL_INT(arr->size, 3);
 
-        // first declarator  a = "hello"
+		// first declarator  a = "hello"
 		VariableDeclaratorASTNode *declarator = Array_get(arr, 0);
 		EXPECT_NOT_NULL(declarator);
 
@@ -127,8 +127,8 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		EXPECT_TRUE(initializer->type == LITERAL_STRING);
 		EXPECT_TRUE(String_equals(initializer->value.string, "hello"));
 
-        // second declarator b = 20
-	    declarator = Array_get(arr, 1);
+		// second declarator b = 20
+		declarator = Array_get(arr, 1);
 		EXPECT_NOT_NULL(declarator);
 
 		pattern = declarator->pattern;
@@ -136,7 +136,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		EXPECT_NOT_NULL(pattern->type);
 		EXPECT_TRUE(pattern->_type == NODE_PATTERN);
 		EXPECT_TRUE(pattern->type->_type == NODE_TYPE_REFERENCE);
-		EXPECT_TRUE(String_equals(pattern->type->id->name,"Int"));
+		EXPECT_TRUE(String_equals(pattern->type->id->name, "Int"));
 
 		id = pattern->id;
 		EXPECT_NOT_NULL(id);
@@ -148,8 +148,8 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		EXPECT_TRUE(initializer->type == LITERAL_INTEGER);
 		EXPECT_EQUAL_INT(initializer->value.integer, 20);
 
-        // third declarator c = 10.12
-        declarator = Array_get(arr, 2);
+		// third declarator c = 10.12
+		declarator = Array_get(arr, 2);
 		EXPECT_NOT_NULL(declarator);
 
 		pattern = declarator->pattern;
@@ -169,15 +169,15 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("Missing colon") {
-        Lexer_setSource(&lexer, "let hello_string_variable String = \"hello\"");
+		Lexer_setSource(&lexer, "let hello_string_variable String = \"hello\"");
 		result = Parser_parse(&parser);
 
 		EXPECT_FALSE(result.success);
 		EXPECT_NULL(result.node);
 
-        EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
-        EXPECT_TRUE(result.severity == SEVERITY_ERROR);
-        // prbbly later add message check also
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
 
 	} TEST_END();
 
