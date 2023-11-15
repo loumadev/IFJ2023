@@ -52,7 +52,6 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		EXPECT_EQUAL_INT(initializer->value.integer, 7);
 	} TEST_END();
 
-
 	TEST_BEGIN("Constant with type annotation") {
 		Lexer_setSource(&lexer, "let hello_string_variable: String = \"hello\"");
 		result = Parser_parse(&parser);
@@ -224,7 +223,6 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 	} TEST_END();
-
 
 	TEST_BEGIN("With simple parameters empty body") {
 		Lexer_setSource(&lexer, "func parameters_function(a: Int, b: Int = 10, c: String = \"hello\"){}");
@@ -486,3 +484,170 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 
 	} TEST_END();
 }
+
+DESCRIBE(if_statement, "If statement parsing") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Simple condition no body, no else") {
+		Lexer_setSource(&lexer, "if (true) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_IF_STATEMENT);
+
+		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->condition);
+		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->condition->expression;
+		EXPECT_NOT_NULL(condition_expression);
+		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->value.boolean);
+
+		// if body
+		BlockASTNode *body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+		// else
+		EXPECT_NULL(if_statement->elseClause);
+
+	} TEST_END();
+
+	TEST_BEGIN("Simple condition no parens, no body") {
+		Lexer_setSource(&lexer, "if (true) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_IF_STATEMENT);
+
+		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->condition);
+		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->condition->expression;
+		EXPECT_NOT_NULL(condition_expression);
+		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->value.boolean);
+
+		// if body
+		BlockASTNode *body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+		// else
+		EXPECT_NOT_NULL(if_statement->elseClause);
+		EXPECT_FALSE(if_statement->elseClause->isElseIf);
+		EXPECT_NULL(if_statement->elseClause->ifStatement);
+		EXPECT_NOT_NULL(if_statement->elseClause->body);
+
+		// else body
+		body = if_statement->elseClause->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+	} TEST_END();
+
+	TEST_BEGIN("Else if condition, no body") {
+		Lexer_setSource(&lexer, "if a > 10 {}  else if (a < 10) {} else {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_IF_STATEMENT);
+
+		// if
+		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->condition);
+		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+
+		BinaryExpressionASTNode *condition_expression = (BinaryExpressionASTNode*)if_statement->condition->expression;
+		EXPECT_NOT_NULL(condition_expression);
+		EXPECT_TRUE(condition_expression->_type == NODE_BINARY_EXPRESSION);
+
+		IdentifierASTNode *left = (IdentifierASTNode*)condition_expression->left;
+		EXPECT_NOT_NULL(left);
+		EXPECT_TRUE(left->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(left->name, "a"));
+
+		LiteralExpressionASTNode *right = (LiteralExpressionASTNode*)condition_expression->right;
+		EXPECT_NOT_NULL(right);
+		EXPECT_TRUE(right->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(right->type == LITERAL_INTEGER);
+		EXPECT_EQUAL_INT(right->value.integer, 10);
+
+		EXPECT_TRUE(condition_expression->operator == OPERATOR_GREATER);
+
+		// if body
+		BlockASTNode *body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+		// else if
+		EXPECT_NOT_NULL(if_statement->elseClause);
+		EXPECT_TRUE(if_statement->elseClause->isElseIf);
+		EXPECT_NOT_NULL(if_statement->elseClause->ifStatement);
+
+		IfStatementASTNode *elseif = if_statement->elseClause->ifStatement;
+
+		EXPECT_NOT_NULL(elseif->condition);
+		EXPECT_TRUE(elseif->condition->_type == NODE_CONDITION);
+
+		condition_expression = (BinaryExpressionASTNode*)elseif->condition->expression;
+		EXPECT_NOT_NULL(condition_expression);
+		EXPECT_TRUE(condition_expression->_type == NODE_BINARY_EXPRESSION);
+
+		left = (IdentifierASTNode*)condition_expression->left;
+		EXPECT_NOT_NULL(left);
+		EXPECT_TRUE(left->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(left->name, "a"));
+
+		right = (LiteralExpressionASTNode*)condition_expression->right;
+		EXPECT_NOT_NULL(right);
+		EXPECT_TRUE(right->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(right->type == LITERAL_INTEGER);
+		EXPECT_EQUAL_INT(right->value.integer, 10);
+
+		EXPECT_TRUE(condition_expression->operator == OPERATOR_LESS);
+
+		// else if body
+		body = elseif->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+		// else
+		EXPECT_NOT_NULL(elseif->elseClause);
+		EXPECT_FALSE(elseif->elseClause->isElseIf);
+		EXPECT_NULL(elseif->elseClause->ifStatement);
+		EXPECT_NOT_NULL(elseif->elseClause->body);
+
+		// else body
+		body = elseif->elseClause->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+	} TEST_END();
+}
+
