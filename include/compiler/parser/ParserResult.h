@@ -36,6 +36,6 @@ ParserResult ParserResult_construct(
 #define ParserSuccess(node) ParserResult_construct(RESULT_SUCCESS, SEVERITY_NONE, NULL, NULL, (ASTNode*)node)
 #define ParserNoMatch() ParserResult_construct(RESULT_NO_MATCH, SEVERITY_NONE, NULL, NULL, NULL)
 #define ParserError(message, markers) ParserResult_construct(RESULT_ERROR_STATIC_SYNTACTIC_ANALYSIS, SEVERITY_ERROR, message, markers, NULL)
-#define LexerToParserError(lexerResult) ParserResult_construct(RESULT_ERROR_STATIC_SYNTACTIC_ANALYSIS, SEVERITY_ERROR, lexerResult.message, lexerResult.markers, NULL)
+#define LexerToParserError(lexerResult) ParserResult_construct(lexerResult.type, lexerResult.severity, lexerResult.message, lexerResult.markers, NULL)
 
 #endif
