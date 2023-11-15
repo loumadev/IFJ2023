@@ -81,7 +81,6 @@ ParserResult __Parser_parseProgram(Parser *parser) {
 ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 	assertf(parser != NULL);
 
-
 	// Check for left brace
 	if(requireBraces) {
 		LexerResult result = Lexer_nextToken(parser->lexer);
@@ -221,8 +220,6 @@ ParserResult __Parser_parseTypeReference(Parser *parser) {
 }
 
 ParserResult __Parser_parseParameter(Parser *parser) {
-	// TODO: Add logic to output correct error messages
-	// TODO: Add expression parsing
 	assertf(parser != NULL);
 
 	bool isLabeless = false;
@@ -272,7 +269,6 @@ ParserResult __Parser_parseParameter(Parser *parser) {
 	}
 
 	// check for Type
-
 	ParserResult typeResult = __Parser_parseTypeReference(parser);
 	if(!typeResult.success) return typeResult;
 
@@ -280,12 +276,14 @@ ParserResult __Parser_parseParameter(Parser *parser) {
 	// check for initializer
 	peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
-
 	if(peek.token->kind == TOKEN_EQUAL) {
-		// TODO: Add expression parsing
-		//     : Add constructor for ExpressionASTNode
-		//     : Expression until , or )
-		initializer = NULL;
+		// Skip the '=' token
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(result);
+
+		ParserResult initializerResult = __Parser_parseExpression(parser);
+		if(!initializerResult.success) return initializerResult;
+		initializer = (ExpressionASTNode*)initializerResult.node;
 	}
 
 	ParameterASTNode *paramNode = new_ParameterASTNode(paramLocalId, (TypeReferenceASTNode*)typeResult.node, initializer, paramExternalId, isLabeless);
@@ -328,7 +326,7 @@ ParserResult __Parser_parseParameterList(Parser *parser) {
 
 	}
 
-	// skip ')'
+	// consume ')'
 	result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
@@ -624,7 +622,6 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 
 	return ParserSuccess(returnStatement);
 }
-
 
 ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 	assertf(parser != NULL);
