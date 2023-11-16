@@ -525,7 +525,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("Simple condition no parens, no body") {
-		Lexer_setSource(&lexer, "if (true) {}");
+		Lexer_setSource(&lexer, "if true {} else {}");
 		result = Parser_parse(&parser);
 
 		EXPECT_TRUE(result.success);
