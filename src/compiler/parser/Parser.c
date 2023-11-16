@@ -513,7 +513,6 @@ ParserResult __Parser_parseElseClause(Parser *parser) {
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
-
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
@@ -522,6 +521,10 @@ ParserResult __Parser_parseElseClause(Parser *parser) {
 	BlockASTNode *body = NULL;
 
 	if(peek.token->kind == TOKEN_IF) {
+		// consume if keyword
+		result = Lexer_nextToken(parser->lexer);
+		if(!result.success) return LexerToParserError(result);
+
 		ParserResult ifStatementResult = __Parser_parseIfStatement(parser);
 		if(!ifStatementResult.success) return ifStatementResult;
 		ifStatement = (IfStatementASTNode*)ifStatementResult.node;
