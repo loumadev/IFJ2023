@@ -71,13 +71,13 @@ enum TokenKind {
 enum WhitespaceType {
 	WHITESPACE_NONE = 0,                // No whitespace
 
-	// WHITESPACE_LEFT_LIMIT = 1 << 0,     // BOF or EOF
-	WHITESPACE_LEFT_SPACE = 1 << 1,     // Space, tab, or vertical tab
-	WHITESPACE_LEFT_NEWLINE = 1 << 2,   // Line feed or carriage return
+	// WHITESPACE_LEFT_LIMIT = 1 << 0,  // BOF or EOF
+	WHITESPACE_LEFT_SPACE = 1 << 1,     // Space, tab, vertical tab or multi-line comment on a single line
+	WHITESPACE_LEFT_NEWLINE = 1 << 2,   // Line feed, carriage return, multi-line comment on multiple lines or single-line comment
 
-	// WHITESPACE_RIGHT_LIMIT = 1 << 4,    // BOF or EOF
-	WHITESPACE_RIGHT_SPACE = 1 << 5,    // Space, tab, or vertical tab
-	WHITESPACE_RIGHT_NEWLINE = 1 << 6,  // Line feed or carriage return
+	// WHITESPACE_RIGHT_LIMIT = 1 << 4, // BOF or EOF
+	WHITESPACE_RIGHT_SPACE = 1 << 5,    // Space, tab, vertical tab or multi-line comment on a single line
+	WHITESPACE_RIGHT_NEWLINE = 1 << 6,  // Line feed, carriage return, multi-line comment on multiple lines or single-line comment
 
 	WHITESPACE_LEFT = WHITESPACE_LEFT_SPACE | WHITESPACE_LEFT_NEWLINE,
 	WHITESPACE_RIGHT = WHITESPACE_RIGHT_SPACE | WHITESPACE_RIGHT_NEWLINE,
