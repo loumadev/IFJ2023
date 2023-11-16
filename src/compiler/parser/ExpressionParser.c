@@ -14,7 +14,7 @@
 #define STACK_SIZE 20
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
-	// +-|*/| ! |??|r |i |( |) |$
+ // +-|*/| ! |??|r |i |( |) |$
 	{R, S, S, R, R, S, S, R, R}, // +-
 	{R, R, S, R, R, S, S, R, R}, // */
 	{R, R, X, R, R, X, X, R, R}, // !
@@ -53,11 +53,11 @@ int Expr_getPrecTbIndex(Token *token) {
 		case TOKEN_GREATER_EQUAL:
 			return I_REL_OP;
 
-		case TOKEN_LEFT_BRACE:
-			return I_LEFT_BRAC;
+		case TOKEN_LEFT_PAREN:
+			return I_LEFT_PAREN;
 
-		case TOKEN_RIGHT_BRACE:
-			return I_RIGHT_BRAC;
+		case TOKEN_RIGHT_PAREN:
+			return I_RIGHT_PAREN;
 
 		case TOKEN_DEFAULT:
 			if(token->type == TOKEN_IDENTIFIER) {
@@ -69,6 +69,7 @@ int Expr_getPrecTbIndex(Token *token) {
 		case TOKEN_INTEGER:
 		case TOKEN_FLOATING:
 		case TOKEN_NIL:
+		case TOKEN_BOOLEAN:
 			return I_ID;
 
 		default:
@@ -236,6 +237,8 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 
 	// Perform reduction and push result on stack (nonterminal)
 	currentToken = Expr_performReduction(reduceStack);
+	Array_free(reduceStack);
+	
 	if(currentToken != NULL) {
 		Array_push(stack, currentToken);
 		return true;

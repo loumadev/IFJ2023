@@ -18,8 +18,8 @@ enum PrecTableIndex {
 	I_NIL_COALES,
 	I_REL_OP,
 	I_ID,
-	I_LEFT_BRAC,
-	I_RIGHT_BRAC,
+	I_LEFT_PAREN,
+	I_RIGHT_PAREN,
 	I_DOLLAR
 };
 
