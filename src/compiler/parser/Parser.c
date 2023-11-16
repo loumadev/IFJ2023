@@ -486,14 +486,19 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 		expression = (ExpressionASTNode*)expressionResult.node;
 	}
 
-	// consume ')' if we consumed '('
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
+	peek = Lexer_peekToken(parser->lexer, 1);
+	if(!peek.success) return LexerToParserError(peek);
 
-	if(hasOptionalParen && result.token->kind != TOKEN_RIGHT_PAREN) {
-		return ParserError(
-			String_fromFormat("expected ')' in condition"),
-			Array_fromArgs(1, result.token));
+	// consume ')' if we consumed '('
+	if(hasOptionalParen) {
+		if(peek.token->kind == TOKEN_RIGHT_PAREN) {
+			LexerResult result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+		} else {
+			return ParserError(
+				String_fromFormat("expected ')' in condition"),
+				Array_fromArgs(1, peek.token));
+		}
 	}
 
 	ConditionASTNode *condition = new_ConditionASTNode(expression, bindingCondition);
