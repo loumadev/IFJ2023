@@ -91,7 +91,7 @@ enum WhitespaceType {
 #define whitespace_right(whitespace) ((whitespace) & WHITESPACE_RIGHT)
 #define whitespace_both(whitespace) (whitespace_left(whitespace) && whitespace_right(whitespace))
 #define whitespace_none(whitespace) ((whitespace) == WHITESPACE_NONE)
-#define whitespace_consistent(whitespace) (whitespace_left(whitespace) && whitespace_right(whitespace) || whitespace_none(whitespace))
+#define whitespace_consistent(whitespace) (whitespace_both(whitespace) || whitespace_none(whitespace))
 
 #define right_to_left_whitespace(whitespace) (((whitespace) & WHITESPACE_RIGHT) >> 4)
 #define left_to_right_whitespace(whitespace) (((whitespace) & WHITESPACE_LEFT) << 4)
