@@ -649,5 +649,64 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 	} TEST_END();
+
+	TEST_BEGIN("Binding condition with parantheses") {
+		Lexer_setSource(&lexer, "if (let b = a) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition no body, no else") {
+		Lexer_setSource(&lexer, "if let b = a {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_IF_STATEMENT);
+
+		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->condition);
+		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+
+		EXPECT_NULL(if_statement->condition->expression);
+
+		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)if_statement->condition->optionalBindingCondition;
+		EXPECT_NOT_NULL(binding_condition);
+		EXPECT_TRUE(binding_condition->isConstant);
+		EXPECT_TRUE(binding_condition->_type == NODE_OPTIONAL_BINDING_CONDITION);
+
+		PatternASTNode *pattern = binding_condition->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		IdentifierASTNode *id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "b"));
+
+		IdentifierASTNode *initializer = (IdentifierASTNode*)binding_condition->initializer;
+
+		EXPECT_NOT_NULL(initializer);
+		EXPECT_TRUE(initializer->_type == NODE_IDENTIFIER);
+		EXPECT_NOT_NULL(initializer->name);
+		EXPECT_TRUE(String_equals(initializer->name, "a"));
+
+		// if body
+		BlockASTNode *body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+		// else
+		EXPECT_NULL(if_statement->elseClause);
+
+	} TEST_END();
 }
 
