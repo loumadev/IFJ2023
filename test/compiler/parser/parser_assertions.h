@@ -36,6 +36,6 @@
 	EXPECT_NOT_NULL(_block->statements);          				\
                                                           		\
 	Array *statements = _block->statements;           			\
-	EXPECT_EQUAL_INT(statementsArr->size, count);           	
+	EXPECT_EQUAL_INT(statements->size, count);
 
 #endif
