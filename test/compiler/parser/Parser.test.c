@@ -710,3 +710,122 @@ DESCRIBE(if_statement, "If statement parsing") {
 	} TEST_END();
 }
 
+DESCRIBE(while_statement, "While statement parsing") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Simple condition no body") {
+		Lexer_setSource(&lexer, "while (true) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_WHILE_STATEMENT);
+
+		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(while_statement->condition);
+		EXPECT_TRUE(while_statement->condition->_type == NODE_CONDITION);
+
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->condition->expression;
+		EXPECT_NOT_NULL(condition_expression);
+		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->value.boolean);
+
+		// while body
+		BlockASTNode *body = while_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+	} TEST_END();
+
+	TEST_BEGIN("Simple condition no parens, no body") {
+		Lexer_setSource(&lexer, "while true {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_WHILE_STATEMENT);
+
+		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(while_statement->condition);
+		EXPECT_TRUE(while_statement->condition->_type == NODE_CONDITION);
+
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->condition->expression;
+		EXPECT_NOT_NULL(condition_expression);
+		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->value.boolean);
+
+		// while body
+		BlockASTNode *body = while_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition with parantheses") {
+		Lexer_setSource(&lexer, "while (let hello = world) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition no body") {
+		Lexer_setSource(&lexer, "while let hello = world {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_WHILE_STATEMENT);
+
+		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(while_statement->condition);
+		EXPECT_TRUE(while_statement->condition->_type == NODE_CONDITION);
+
+		EXPECT_NULL(while_statement->condition->expression);
+
+		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)while_statement->condition->optionalBindingCondition;
+		EXPECT_NOT_NULL(binding_condition);
+		EXPECT_TRUE(binding_condition->isConstant);
+		EXPECT_TRUE(binding_condition->_type == NODE_OPTIONAL_BINDING_CONDITION);
+
+		PatternASTNode *pattern = binding_condition->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		IdentifierASTNode *id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "hello"));
+
+		IdentifierASTNode *initializer = (IdentifierASTNode*)binding_condition->initializer;
+
+		EXPECT_NOT_NULL(initializer);
+		EXPECT_TRUE(initializer->_type == NODE_IDENTIFIER);
+		EXPECT_NOT_NULL(initializer->name);
+		EXPECT_TRUE(String_equals(initializer->name, "world"));
+
+		// while body
+		BlockASTNode *body = while_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		Array *arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+	} TEST_END();
+}
