@@ -184,27 +184,15 @@ ConditionASTNode * new_ConditionASTNode(
 	return node;
 }
 
-ElseClauseASTNode * new_ElseClauseASTNode(
-	IfStatementASTNode *ifStatement,
-	BlockASTNode *body,
-	bool isElseIf
-) {
-	prepare_node_of(ElseClauseASTNode, NODE_ELSE_CLAUSE)
-	node->ifStatement = ifStatement;
-	node->body = body;
-	node->isElseIf = isElseIf;
-	return node;
-}
-
 IfStatementASTNode * new_IfStatementASTNode(
 	ConditionASTNode *condition,
 	BlockASTNode *body,
-	ElseClauseASTNode *elseClause
+	ASTNode *alternate
 ) {
 	prepare_node_of(IfStatementASTNode, NODE_IF_STATEMENT)
 	node->condition = condition;
 	node->body = body;
-	node->elseClause = elseClause;
+	node->alternate = alternate;
 	return node;
 }
 
@@ -243,12 +231,12 @@ BinaryExpressionASTNode* new_BinaryExpressionASTNode(
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(
 	ExpressionASTNode *argument,
 	OperatorType operator
-	//bool IsPrefix
+	// bool IsPrefix
 ) {
 	prepare_node_of(UnaryExpressionASTNode, NODE_UNARY_EXPRESSION)
 	node->argument = argument;
 	node->operator = operator;
-	//node->isPrefix = isPrefix;
+	// node->isPrefix = isPrefix;
 	return node;
 }
 

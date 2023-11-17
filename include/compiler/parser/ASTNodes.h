@@ -28,7 +28,6 @@ enum ASTNodeType {
 	NODE_ARGUMENT_LIST,
 	NODE_FUNCTION_CALL,
 	NODE_IF_STATEMENT,
-	NODE_ELSE_CLAUSE,
 	NODE_PATTERN,
 	NODE_CONDITION,
 	NODE_OPTIONAL_BINDING_CONDITION,
@@ -205,18 +204,11 @@ typedef struct ConditionASTNode {
 	OptionalBindingConditionASTNode *optionalBindingCondition;
 } ConditionASTNode;
 
-typedef struct ElseClauseASTNode {
-	enum ASTNodeType _type;
-	struct IfStatementASTNode *ifStatement;
-	BlockASTNode *body;
-	bool isElseIf;
-} ElseClauseASTNode;
-
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
 	ConditionASTNode *condition;
 	BlockASTNode *body;
-	ElseClauseASTNode *elseClause;
+	ASTNode /* BlockASTNode | IfStatementASTNode | null */ *alternate;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
@@ -256,8 +248,7 @@ FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentList
 PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
 OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
 ConditionASTNode* new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);
-ElseClauseASTNode* new_ElseClauseASTNode(IfStatementASTNode *ifStatement, BlockASTNode *body, bool isElseIf);
-IfStatementASTNode* new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ElseClauseASTNode *elseClause);
+IfStatementASTNode* new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ASTNode *alternate);
 WhileStatementASTNode* new_WhileStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body);
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *assignment);
 

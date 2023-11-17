@@ -520,7 +520,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 		// else
-		EXPECT_NULL(if_statement->elseClause);
+		EXPECT_NULL(if_statement->alternate);
 
 	} TEST_END();
 
@@ -549,14 +549,9 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 0);
 
-		// else
-		EXPECT_NOT_NULL(if_statement->elseClause);
-		EXPECT_FALSE(if_statement->elseClause->isElseIf);
-		EXPECT_NULL(if_statement->elseClause->ifStatement);
-		EXPECT_NOT_NULL(if_statement->elseClause->body);
-
 		// else body
-		body = if_statement->elseClause->body;
+		EXPECT_TRUE(if_statement->alternate->_type == NODE_BLOCK);
+		body = (BlockASTNode*)if_statement->alternate;
 		EXPECT_NOT_NULL(body->statements);
 		arr = body->statements;
 		EXPECT_NULL(arr->data);
@@ -602,11 +597,11 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 		// else if
-		EXPECT_NOT_NULL(if_statement->elseClause);
-		EXPECT_TRUE(if_statement->elseClause->isElseIf);
-		EXPECT_NOT_NULL(if_statement->elseClause->ifStatement);
+		EXPECT_NOT_NULL(if_statement->alternate);
 
-		IfStatementASTNode *elseif = if_statement->elseClause->ifStatement;
+		EXPECT_TRUE(if_statement->alternate->_type == NODE_IF_STATEMENT);
+
+		IfStatementASTNode *elseif = (IfStatementASTNode*)if_statement->alternate;
 
 		EXPECT_NOT_NULL(elseif->condition);
 		EXPECT_TRUE(elseif->condition->_type == NODE_CONDITION);
@@ -635,14 +630,9 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 0);
 
-		// else
-		EXPECT_NOT_NULL(elseif->elseClause);
-		EXPECT_FALSE(elseif->elseClause->isElseIf);
-		EXPECT_NULL(elseif->elseClause->ifStatement);
-		EXPECT_NOT_NULL(elseif->elseClause->body);
-
 		// else body
-		body = elseif->elseClause->body;
+		EXPECT_TRUE(elseif->alternate->_type == NODE_BLOCK);
+		body = (BlockASTNode*)elseif->alternate;
 		EXPECT_NOT_NULL(body->statements);
 		arr = body->statements;
 		EXPECT_NULL(arr->data);
@@ -705,7 +695,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 		// else
-		EXPECT_NULL(if_statement->elseClause);
+		EXPECT_NULL(if_statement->alternate);
 
 	} TEST_END();
 }

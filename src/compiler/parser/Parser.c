@@ -21,7 +21,6 @@ ParserResult __Parser_parseFuncStatement(Parser *parser);
 ParserResult __Parser_parsePattern(Parser *parser);
 ParserResult __Parser_parseOptionalBindingCondition(Parser *parser);
 ParserResult __Parser_parseCondition(Parser *parser);
-ParserResult __Parser_parseElseClause(Parser *parser);
 ParserResult __Parser_parseIfStatement(Parser *parser);
 ParserResult __Parser_parseWhileStatement(Parser *parser);
 ParserResult __Parser_parseReturnStatement(Parser *parser);
@@ -506,40 +505,6 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 	return ParserSuccess(condition);
 }
 
-ParserResult __Parser_parseElseClause(Parser *parser) {
-	assertf(parser != NULL);
-
-	// skip else keyword
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
-
-	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
-	if(!peek.success) return LexerToParserError(peek);
-
-	IfStatementASTNode *ifStatement = NULL;
-	bool isElseIf = false;
-	BlockASTNode *body = NULL;
-
-	if(peek.token->kind == TOKEN_IF) {
-		// consume if keyword
-		result = Lexer_nextToken(parser->lexer);
-		if(!result.success) return LexerToParserError(result);
-
-		ParserResult ifStatementResult = __Parser_parseIfStatement(parser);
-		if(!ifStatementResult.success) return ifStatementResult;
-		ifStatement = (IfStatementASTNode*)ifStatementResult.node;
-		isElseIf = true;
-	} else {
-		ParserResult blockResult = __Parser_parseBlock(parser, true);
-		if(!blockResult.success) return blockResult;
-		body = (BlockASTNode*)blockResult.node;
-	}
-
-	ElseClauseASTNode *elseClause = new_ElseClauseASTNode(ifStatement, body, isElseIf);
-
-	return ParserSuccess(elseClause);
-}
-
 ParserResult __Parser_parseIfStatement(Parser *parser) {
 	assertf(parser != NULL);
 
@@ -569,15 +534,33 @@ ParserResult __Parser_parseIfStatement(Parser *parser) {
 	peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
-	ElseClauseASTNode *elseClause = NULL;
+	ASTNode *alternate = NULL;
 
 	if(peek.token->kind == TOKEN_ELSE) {
-		ParserResult elseClauseResult = __Parser_parseElseClause(parser);
-		if(!elseClauseResult.success) return elseClauseResult;
-		elseClause = (ElseClauseASTNode*)elseClauseResult.node;
+		// skip else keyword
+		LexerResult result = Lexer_nextToken(parser->lexer);
+		if(!result.success) return LexerToParserError(result);
+
+		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+		if(!peek.success) return LexerToParserError(peek);
+
+		if(peek.token->kind == TOKEN_IF) {
+			// consume if keyword
+			result = Lexer_nextToken(parser->lexer);
+			if(!result.success) return LexerToParserError(result);
+
+			ParserResult ifStatementResult = __Parser_parseIfStatement(parser);
+			if(!ifStatementResult.success) return ifStatementResult;
+			alternate = (ASTNode*)ifStatementResult.node;
+
+		} else {
+			ParserResult blockResult = __Parser_parseBlock(parser, true);
+			if(!blockResult.success) return blockResult;
+			alternate = (ASTNode*)blockResult.node;
+		}
 	}
 
-	IfStatementASTNode *ifStatement = new_IfStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node, (ElseClauseASTNode*)elseClause);
+	IfStatementASTNode *ifStatement = new_IfStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node, (ASTNode*)alternate);
 
 	return ParserSuccess(ifStatement);
 }
