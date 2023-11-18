@@ -819,3 +819,44 @@ DESCRIBE(while_statement, "While statement parsing") {
 
 	} TEST_END();
 }
+
+DESCRIBE(statement_separation, "Validity of statement separation") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Single statement") {
+		Lexer_setSource(&lexer, "var a = 10");
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_VARIABLE_DECLARATION);
+	} TEST_END();
+
+	TEST_BEGIN("Multiple statements on new lines") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 10" LF
+			"var b = 20" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENTS(result.node, 2);
+	} TEST_END();
+
+	TEST_BEGIN("Multiple statements on same line") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 10 var b = 20" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+}
