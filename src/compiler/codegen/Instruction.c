@@ -221,13 +221,3 @@ void Instruction_break() {
 void Instruction_dprint(char *symb) {
 	INSTRUCTION_UNARY("DPRINT", symb)
 }
-
-// Custom instructions which are not officially recognized as "instructions"
-
-void Instruction_comment(char *comment) {
-    INSTRUCTION_UNARY("#", comment)
-}
-
-void Instruction_header() {
-    INSTRUCTION_NULLARY(".IFJcode23");
-}
