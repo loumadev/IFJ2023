@@ -645,12 +645,11 @@ ParserResult __Parser_parseVariableDeclarationList(Parser *parser) {
 	LexerResult peek;
 	LexerResult result;
 
-
 	Array *declarators = Array_alloc(0);
 	peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
-	while(peek.token->type != TOKEN_EOF) {
+	while(true) {
 		ParserResult declaratorResult = __Parser_parseVariableDeclarator(parser);
 		if(!declaratorResult.success) return declaratorResult;
 
@@ -659,22 +658,14 @@ ParserResult __Parser_parseVariableDeclarationList(Parser *parser) {
 		peek = Lexer_peekToken(parser->lexer, 1);
 		if(!peek.success) return LexerToParserError(peek);
 
-
+		// Consume the `,` token
 		if(peek.token->kind == TOKEN_COMMA) {
 			result = Lexer_nextToken(parser->lexer);
 			if(!result.success) return LexerToParserError(result);
-		} else if(peek.token->type != TOKEN_EOF) {
-			return ParserError(
-				String_fromFormat("found an unexpected second identifier in constant declaration; is there an accidental break?"),
-				Array_fromArgs(1, peek.token));
+		} else {
+			break;
 		}
-
-		peek = Lexer_peekToken(parser->lexer, 1);
-		if(!peek.success) return LexerToParserError(peek);
 	}
-
-	result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
 
 	VariableDeclarationListASTNode *variableDeclarationList = new_VariableDeclarationListASTNode(declarators);
 
