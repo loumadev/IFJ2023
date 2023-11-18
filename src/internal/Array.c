@@ -67,10 +67,16 @@ void Array_set(Array *array, int index, void *value) {
 
 	index = __Array_resolveIndex(array, index);
 
-	// If size is not enough to fit the index, resize the array
-	if((size_t)index >= array->size) {
-		Array_resize(array, array->capacity + (index - array->size) + 1);
-		array->size = index + 1;
+	size_t size = index + 1;
+
+	// If there's not enough capacity to fit the index, resize the array
+	if(size > array->capacity) {
+		Array_resize(array, size);
+	}
+
+	// If the index is past the end of the array, set the size to the index
+	if(size > array->size) {
+		array->size = size;
 	}
 
 	array->data[index] = value;
@@ -108,16 +114,16 @@ void Array_clear(Array *array) {
 void Array_resize(Array *array, size_t capacity) {
 	if(!array) return;
 
-	array->capacity = capacity;
-
 	if(capacity) {
 		// Non-zero capacity => reallocate the array
-		array->data = mem_realloc(array->data, array->capacity * sizeof(void*));
+		array->data = mem_recalloc(array->data, array->capacity, capacity, sizeof(void*));
 	} else {
 		// Zero capacity => free the array and set it to NULL
 		if(array->data) mem_free(array->data);
 		array->data = NULL;
 	}
+
+	array->capacity = capacity;
 }
 
 void Array_reserve(Array *array, size_t capacity) {
