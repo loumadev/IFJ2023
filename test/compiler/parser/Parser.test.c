@@ -7,6 +7,7 @@
 #include "compiler/parser/Parser.h"
 #include "compiler/parser/ASTNodes.h"
 
+#define TEST_PRIORITY 80
 
 DESCRIBE(variable_declaration, "Variable declaration parsing") {
 	Lexer lexer;

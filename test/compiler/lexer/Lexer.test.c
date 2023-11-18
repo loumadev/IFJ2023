@@ -2,6 +2,8 @@
 #include "unit.h"
 #include <stdio.h>
 
+#define TEST_PRIORITY 90
+
 DESCRIBE(comment_stripping, "Comments stripping") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);

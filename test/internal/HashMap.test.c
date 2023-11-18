@@ -2,6 +2,8 @@
 #include "unit.h"
 #include <stdio.h>
 
+#define TEST_PRIORITY 100
+
 DESCRIBE(map_alloc, "HashMap_alloc/HashMap_resize") {
 	HashMap *map = NULL;
 
