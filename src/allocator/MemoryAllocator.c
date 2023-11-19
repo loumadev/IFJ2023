@@ -108,7 +108,7 @@ void* Allocator_memoryAction(void *ptr, size_t oldNitems, size_t nitems, size_t 
 			assertf(size > 0, PREFIX "recalloc: Cannot allocate 0 bytes");
 
 			#ifdef ALLOCATOR_USE_DEFAULT
-			assertf(size < 0, PREFIX "recalloc: There's no recalloc implementation in the default allocator");
+			fassertf(PREFIX "recalloc: There's no recalloc implementation in the default allocator");
 			#endif
 
 			ptr && assertf(PointerSet_has(set, ptr), PREFIX "recalloc: Provided pointer has not been allocated by this allocator (Maybe used 'malloc()' instead of 'mem_alloc()'?)");
