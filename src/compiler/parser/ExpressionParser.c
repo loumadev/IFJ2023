@@ -16,7 +16,7 @@
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
- // +-|*/| ! |??|r |i |( |) |$
+	// +-|*/| ! |??|r |i |( |) |$
 	{R, S, S, R, R, S, S, R, R}, // +-
 	{R, R, S, R, R, S, S, R, R}, // */
 	{R, R, X, R, R, X, X, R, R}, // !
@@ -29,7 +29,7 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input
 };
 
 int Expr_getPrecTbIndex(Token *token) {
-	if(!token){
+	if(!token) {
 		return I_DOLLAR;
 	}
 	switch(token->kind) {
@@ -102,7 +102,7 @@ void Expr_pushAfterTopTerminal(Array *stack) {
 	for(size_t i = 0; i < stack->size; i++) {
 		StackItem *top = Array_get(stack, stack->size - i - 1);
 
-		if(top->Stype == S_TERMINAL ||top->Stype == S_BOTTOM) {
+		if(top->Stype == S_TERMINAL || top->Stype == S_BOTTOM) {
 			Array_insert(stack, (int)stack->size - i, stopReduction);
 			return;
 		}
@@ -117,7 +117,7 @@ StackItem* Expr_performReduction(Array *stack) {
 
 		if(id->Stype == S_TERMINAL) {
 			if(id->token->type == TOKEN_LITERAL) {
-				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode((LiteralType)id->token->kind, id->token->value);
+				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(Analyser_getTypeFromToken(id->token->kind), id->token->value);
 				id->node = (ExpressionASTNode*)literalE;
 				id->Stype = S_NONTERMINAL;
 
@@ -227,7 +227,7 @@ StackItem* Expr_performReduction(Array *stack) {
 bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 	Array *reduceStack = Array_alloc(STACK_SIZE);
 
-	if(stack->size == 1){
+	if(stack->size == 1) {
 		return false;
 	}
 
@@ -240,7 +240,7 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 	// Perform reduction and push result on stack (nonterminal)
 	currentToken = Expr_performReduction(reduceStack);
 	Array_free(reduceStack);
-	
+
 	if(currentToken != NULL) {
 		Array_push(stack, currentToken);
 		return true;

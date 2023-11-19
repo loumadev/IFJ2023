@@ -7,7 +7,7 @@
 
 /* Definitions of ASTNodes */
 
-ProgramASTNode * new_ProgramASTNode(
+ProgramASTNode* new_ProgramASTNode(
 	BlockASTNode *block
 ) {
 	prepare_node_of(ProgramASTNode, NODE_PROGRAM)
@@ -15,15 +15,16 @@ ProgramASTNode * new_ProgramASTNode(
 	return node;
 }
 
-BlockASTNode * new_BlockASTNode(
+BlockASTNode* new_BlockASTNode(
 	Array *statements
 ) {
 	prepare_node_of(BlockASTNode, NODE_BLOCK)
 	node->statements = statements;
+	node->scope = NULL;
 	return node;
 }
 
-IdentifierASTNode * new_IdentifierASTNode(
+IdentifierASTNode* new_IdentifierASTNode(
 	String *name
 ) {
 	prepare_node_of(IdentifierASTNode, NODE_IDENTIFIER)
@@ -31,7 +32,7 @@ IdentifierASTNode * new_IdentifierASTNode(
 	return node;
 }
 
-TypeReferenceASTNode * new_TypeReferenceASTNode(
+TypeReferenceASTNode* new_TypeReferenceASTNode(
 	IdentifierASTNode *id,
 	bool isNullable
 ) {
@@ -41,7 +42,7 @@ TypeReferenceASTNode * new_TypeReferenceASTNode(
 	return node;
 }
 
-VariableDeclaratorASTNode * new_VariableDeclaratorASTNode(
+VariableDeclaratorASTNode* new_VariableDeclaratorASTNode(
 	PatternASTNode *pattern,
 	ExpressionASTNode *initializer
 ) {
@@ -51,7 +52,7 @@ VariableDeclaratorASTNode * new_VariableDeclaratorASTNode(
 	return node;
 }
 
-VariableDeclarationListASTNode * new_VariableDeclarationListASTNode(
+VariableDeclarationListASTNode* new_VariableDeclarationListASTNode(
 	Array *declarators
 ) {
 	prepare_node_of(VariableDeclarationListASTNode, NODE_VARIABLE_DECLARATION_LIST)
@@ -59,7 +60,7 @@ VariableDeclarationListASTNode * new_VariableDeclarationListASTNode(
 	return node;
 }
 
-VariableDeclarationASTNode * new_VariableDeclarationASTNode(
+VariableDeclarationASTNode* new_VariableDeclarationASTNode(
 	VariableDeclarationListASTNode *declaratorList,
 	bool isConstant
 ) {
@@ -70,7 +71,7 @@ VariableDeclarationASTNode * new_VariableDeclarationASTNode(
 }
 
 
-ExpressionStatementASTNode * new_ExpressionStatementASTNode(
+ExpressionStatementASTNode* new_ExpressionStatementASTNode(
 	ExpressionASTNode *expression
 ) {
 	prepare_node_of(ExpressionStatementASTNode, NODE_EXPRESSION_STATEMENT)
@@ -78,7 +79,7 @@ ExpressionStatementASTNode * new_ExpressionStatementASTNode(
 	return node;
 }
 
-ReturnStatementASTNode * new_ReturnStatementASTNode(
+ReturnStatementASTNode* new_ReturnStatementASTNode(
 	ExpressionASTNode *expression
 ) {
 	prepare_node_of(ReturnStatementASTNode, NODE_RETURN_STATEMENT)
@@ -86,7 +87,7 @@ ReturnStatementASTNode * new_ReturnStatementASTNode(
 	return node;
 }
 
-ParameterASTNode * new_ParameterASTNode(
+ParameterASTNode* new_ParameterASTNode(
 	IdentifierASTNode *internalId,
 	TypeReferenceASTNode *type,
 	ExpressionASTNode *initializer,
@@ -102,7 +103,7 @@ ParameterASTNode * new_ParameterASTNode(
 	return node;
 }
 
-ParameterListASTNode * new_ParameterListASTNode(
+ParameterListASTNode* new_ParameterListASTNode(
 	Array *parameters
 ) {
 	prepare_node_of(ParameterListASTNode, NODE_PARAMETER_LIST)
@@ -110,7 +111,7 @@ ParameterListASTNode * new_ParameterListASTNode(
 	return node;
 }
 
-FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(
+FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 	IdentifierASTNode *id,
 	ParameterListASTNode *parameterList,
 	TypeReferenceASTNode *returnType,
@@ -124,7 +125,7 @@ FunctionDeclarationASTNode * new_FunctionDeclarationASTNode(
 	return node;
 }
 
-ArgumentASTNode * new_ArgumentASTNode(
+ArgumentASTNode* new_ArgumentASTNode(
 	ExpressionASTNode *expression,
 	IdentifierASTNode *label
 ) {
@@ -134,7 +135,7 @@ ArgumentASTNode * new_ArgumentASTNode(
 	return node;
 }
 
-ArgumentListASTNode * new_ArgumentListASTNode(
+ArgumentListASTNode* new_ArgumentListASTNode(
 	Array *arguments
 ) {
 	prepare_node_of(ArgumentListASTNode, NODE_ARGUMENT_LIST)
@@ -142,7 +143,7 @@ ArgumentListASTNode * new_ArgumentListASTNode(
 	return node;
 }
 
-FunctionCallASTNode * new_FunctionCallASTNode(
+FunctionCallASTNode* new_FunctionCallASTNode(
 	IdentifierASTNode *id,
 	ArgumentListASTNode *argumentList
 ) {
@@ -152,7 +153,7 @@ FunctionCallASTNode * new_FunctionCallASTNode(
 	return node;
 }
 
-PatternASTNode * new_PatternASTNode(
+PatternASTNode* new_PatternASTNode(
 	IdentifierASTNode *id,
 	TypeReferenceASTNode *type
 ) {
@@ -162,7 +163,7 @@ PatternASTNode * new_PatternASTNode(
 	return node;
 }
 
-OptionalBindingConditionASTNode * new_OptionalBindingConditionASTNode(
+OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(
 	PatternASTNode *pattern,
 	ExpressionASTNode *initializer,
 	bool isConstant
@@ -174,7 +175,7 @@ OptionalBindingConditionASTNode * new_OptionalBindingConditionASTNode(
 	return node;
 }
 
-ConditionASTNode * new_ConditionASTNode(
+ConditionASTNode* new_ConditionASTNode(
 	ExpressionASTNode *expression,
 	OptionalBindingConditionASTNode *optionalBindingCondition
 ) {
@@ -184,7 +185,7 @@ ConditionASTNode * new_ConditionASTNode(
 	return node;
 }
 
-IfStatementASTNode * new_IfStatementASTNode(
+IfStatementASTNode* new_IfStatementASTNode(
 	ConditionASTNode *condition,
 	BlockASTNode *body,
 	ASTNode *alternate
@@ -196,7 +197,7 @@ IfStatementASTNode * new_IfStatementASTNode(
 	return node;
 }
 
-WhileStatementASTNode * new_WhileStatementASTNode(
+WhileStatementASTNode* new_WhileStatementASTNode(
 	ConditionASTNode *condition,
 	BlockASTNode *body
 ) {
@@ -206,13 +207,13 @@ WhileStatementASTNode * new_WhileStatementASTNode(
 	return node;
 }
 
-AssignmentStatementASTNode * new_AssignmentStatementASTNode(
+AssignmentStatementASTNode* new_AssignmentStatementASTNode(
 	IdentifierASTNode *id,
-	ExpressionASTNode *assignment
+	ExpressionASTNode *expression
 ) {
 	prepare_node_of(AssignmentStatementASTNode, NODE_ASSIGNMENT_STATEMENT)
 	node->id = id;
-	node->assignment = assignment;
+	node->expression = expression;
 	return node;
 }
 
@@ -241,7 +242,7 @@ UnaryExpressionASTNode* new_UnaryExpressionASTNode(
 }
 
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(
-	LiteralType type,
+	ValueType type,
 	union TokenValue value
 ) {
 	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
@@ -255,7 +256,7 @@ LiteralExpressionASTNode* new_LiteralExpressionASTNode(
 
 /* General purpose methods */
 
-ASTNode * ASTNode_alloc(size_t size, enum ASTNodeType type) {
+ASTNode* ASTNode_alloc(size_t size, enum ASTNodeType type) {
 	ASTNode *node = mem_alloc(size);
 	node->_type = type;
 	return node;

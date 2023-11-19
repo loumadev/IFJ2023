@@ -2,7 +2,9 @@
 
 #include "internal/Array.h"
 #include "internal/String.h"
+
 #include "compiler/lexer/Token.h"
+#include "compiler/analyser/Analyser.h"
 
 #ifndef ASTNode_H
 #define ASTNode_H
@@ -51,14 +53,24 @@ typedef enum OperatorType {
 	OPERATOR_GREATER_EQUAL
 } OperatorType;
 
-typedef enum LiteralType {
-	LITERAL_INVALID = 0,
-	LITERAL_STRING,
-	LITERAL_INTEGER,
-	LITERAL_FLOATING,
-	LITERAL_BOOLEAN,
-	LITERAL_NIL
-} LiteralType;
+enum BuiltInTypes {
+	TYPE_NIL = -2,
+	TYPE_UNKNOWN = -1,
+	TYPE_INVALID = 0,
+	TYPE_INT,
+	TYPE_DOUBLE,
+	TYPE_BOOL,
+	TYPE_STRING,
+	TYPE_VOID
+};
+
+#define is_type_valid(type) ((type) > TYPE_INVALID)
+#define is_value_assignable(dst, src) ((dst).type == (src).type && ((dst).isNullable || !(src).isNullable))
+
+typedef struct ValueType {
+	enum BuiltInTypes type;
+	bool isNullable;
+} ValueType;
 
 
 /* Definition of AST nodes */
@@ -73,6 +85,7 @@ typedef ASTNode StatementASTNode;
 typedef struct BlockASTNode {
 	enum ASTNodeType _type;
 	Array /*<StatementASTNode>*/ *statements;
+	struct BlockScope *scope;
 } BlockASTNode;
 
 typedef struct ProgramASTNode {
@@ -83,12 +96,14 @@ typedef struct ProgramASTNode {
 typedef struct IdentifierASTNode {
 	enum ASTNodeType _type;
 	String *name;
+	size_t id;
 } IdentifierASTNode;
 
 typedef struct TypeReferenceASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
 	bool isNullable;
+	struct ValueType type;
 } TypeReferenceASTNode;
 
 typedef struct VariableDeclaratorASTNode {
@@ -170,6 +185,7 @@ typedef struct BinaryExpressionASTNode {
 	ExpressionASTNode *left;
 	ExpressionASTNode *right;
 	OperatorType operator;
+	struct ValueType type;
 } BinaryExpressionASTNode;
 
 typedef struct UnaryExpressionASTNode {
@@ -177,12 +193,13 @@ typedef struct UnaryExpressionASTNode {
 	ExpressionASTNode *argument;
 	OperatorType operator;
 	// bool isPrefix;
+	struct ValueType type;
 } UnaryExpressionASTNode;
 
 typedef struct LiteralExpressionASTNode {
 	enum ASTNodeType _type;
-	LiteralType type;
 	union TokenValue value;
+	struct ValueType type;
 } LiteralExpressionASTNode;
 
 typedef struct PatternASTNode {
@@ -220,7 +237,7 @@ typedef struct WhileStatementASTNode {
 typedef struct AssignmentStatementASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	ExpressionASTNode *assignment;
+	ExpressionASTNode *expression;
 } AssignmentStatementASTNode;
 
 // TODO: Add more AST nodes
@@ -241,7 +258,7 @@ ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator /*, bool isPrefix*/);
-LiteralExpressionASTNode* new_LiteralExpressionASTNode(LiteralType type, union TokenValue value);
+LiteralExpressionASTNode* new_LiteralExpressionASTNode(ValueType type, union TokenValue value);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
@@ -250,7 +267,7 @@ OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(PatternASTN
 ConditionASTNode* new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);
 IfStatementASTNode* new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ASTNode *alternate);
 WhileStatementASTNode* new_WhileStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body);
-AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *assignment);
+AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);
 
 // TODO: Add more AST node constructors
 
