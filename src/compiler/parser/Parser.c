@@ -705,14 +705,19 @@ ParserResult __Parser_parseArgument(Parser *parser) {
 	IdentifierASTNode *argumentLabel = NULL;
 	ExpressionASTNode *expression = NULL;
 
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
-
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
+	LexerResult peekColon = Lexer_peekToken(parser->lexer, 2);
+	if(!peekColon.success) return LexerToParserError(peekColon);
+
+
 	// labeled argument
-	if(result.token->type == TOKEN_IDENTIFIER && peek.token->kind == TOKEN_COLON) {
+	if(peek.token->type == TOKEN_IDENTIFIER && peekColon.token->kind == TOKEN_COLON) {
+
+		LexerResult result = Lexer_nextToken(parser->lexer);
+		if(!result.success) return LexerToParserError(result);
+
 		argumentLabel = new_IdentifierASTNode(result.token->value.string);
 		// Skip the ':' token
 		LexerResult tmp = Lexer_nextToken(parser->lexer);
@@ -747,17 +752,16 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 
 		Array_push(arguments, (ArgumentASTNode*)argumentResult.node);
 
-		LexerResult peek = Lexer_peekToken(parser->lexer, 1);
+		peek = Lexer_peekToken(parser->lexer, 1);
 		if(!peek.success) return LexerToParserError(peek);
 
 		if(peek.token->kind == TOKEN_COMMA) {
 			result = Lexer_nextToken(parser->lexer);
 			if(!result.success) return LexerToParserError(result);
 
+			peek = Lexer_peekToken(parser->lexer, 1);
+			if(!peek.success) return LexerToParserError(peek);
 		}
-
-		peek = Lexer_peekToken(parser->lexer, 1);
-		if(!peek.success) return LexerToParserError(peek);
 	}
 
 	// skip ')'
