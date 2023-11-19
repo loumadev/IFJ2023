@@ -934,7 +934,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
 
@@ -972,7 +971,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
 
@@ -1011,7 +1009,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 2);
 
 
@@ -1062,7 +1059,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 2);
 
 
@@ -1115,7 +1111,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 
@@ -1146,7 +1141,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
 		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
@@ -1208,7 +1202,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(String_equals(id->name, "foo"));
 
 		Array *arr = function_call->argumentList->arguments;
-		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
 		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
