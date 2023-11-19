@@ -49,7 +49,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		LiteralExpressionASTNode *initializer = (LiteralExpressionASTNode*)declarator->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_INTEGER);
+		EXPECT_TRUE(initializer->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(initializer->value.integer, 7);
 	} TEST_END();
 
@@ -87,7 +87,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		LiteralExpressionASTNode *initializer = (LiteralExpressionASTNode*)declarator->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_STRING);
+		EXPECT_TRUE(initializer->type.type == TYPE_STRING);
 		EXPECT_TRUE(String_equals(initializer->value.string, "hello"));
 
 	} TEST_END();
@@ -124,7 +124,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		LiteralExpressionASTNode *initializer = (LiteralExpressionASTNode*)declarator->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_STRING);
+		EXPECT_TRUE(initializer->type.type == TYPE_STRING);
 		EXPECT_TRUE(String_equals(initializer->value.string, "hello"));
 
 		// second declarator b = 20
@@ -145,7 +145,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		initializer = (LiteralExpressionASTNode*)declarator->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_INTEGER);
+		EXPECT_TRUE(initializer->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(initializer->value.integer, 20);
 
 		// third declarator c = 10.12
@@ -163,7 +163,7 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 		initializer = (LiteralExpressionASTNode*)declarator->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_FLOATING);
+		EXPECT_TRUE(initializer->type.type == TYPE_DOUBLE);
 		EXPECT_EQUAL_FLOAT(initializer->value.floating, 10.12);
 
 	} TEST_END();
@@ -280,7 +280,7 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 		LiteralExpressionASTNode *initializer = (LiteralExpressionASTNode*)parameter->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_INTEGER);
+		EXPECT_TRUE(initializer->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(initializer->value.integer, 10);
 
 		// third parameter  c = "hello"
@@ -300,7 +300,7 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 		initializer = (LiteralExpressionASTNode*)parameter->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_STRING);
+		EXPECT_TRUE(initializer->type.type == TYPE_STRING);
 		EXPECT_TRUE(String_equals(initializer->value.string, "hello"));
 
 		// body
@@ -367,7 +367,7 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 		LiteralExpressionASTNode *initializer = (LiteralExpressionASTNode*)parameter->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_INTEGER);
+		EXPECT_TRUE(initializer->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(initializer->value.integer, 100);
 
 		// third parameter  _ _: Double = 12.3
@@ -387,7 +387,7 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 		initializer = (LiteralExpressionASTNode*)parameter->initializer;
 		EXPECT_NOT_NULL(initializer);
 		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(initializer->type == LITERAL_FLOATING);
+		EXPECT_TRUE(initializer->type.type == TYPE_DOUBLE);
 		EXPECT_EQUAL_INT(initializer->value.floating, 12.3);
 
 		// body
@@ -510,7 +510,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->condition->expression;
 		EXPECT_NOT_NULL(condition_expression);
 		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
 		// if body
@@ -540,7 +540,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->condition->expression;
 		EXPECT_NOT_NULL(condition_expression);
 		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
 		// if body
@@ -585,7 +585,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 		LiteralExpressionASTNode *right = (LiteralExpressionASTNode*)condition_expression->right;
 		EXPECT_NOT_NULL(right);
 		EXPECT_TRUE(right->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(right->type == LITERAL_INTEGER);
+		EXPECT_TRUE(right->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(right->value.integer, 10);
 
 		EXPECT_TRUE(condition_expression->operator == OPERATOR_GREATER);
@@ -619,7 +619,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 		right = (LiteralExpressionASTNode*)condition_expression->right;
 		EXPECT_NOT_NULL(right);
 		EXPECT_TRUE(right->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(right->type == LITERAL_INTEGER);
+		EXPECT_TRUE(right->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(right->value.integer, 10);
 
 		EXPECT_TRUE(condition_expression->operator == OPERATOR_LESS);
@@ -725,7 +725,7 @@ DESCRIBE(while_statement, "While statement parsing") {
 		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->condition->expression;
 		EXPECT_NOT_NULL(condition_expression);
 		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
 		// while body
@@ -752,7 +752,7 @@ DESCRIBE(while_statement, "While statement parsing") {
 		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->condition->expression;
 		EXPECT_NOT_NULL(condition_expression);
 		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
-		EXPECT_TRUE(condition_expression->type == LITERAL_BOOLEAN);
+		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
 		// while body
@@ -859,5 +859,361 @@ DESCRIBE(statement_separation, "Validity of statement separation") {
 
 		EXPECT_FALSE(result.success);
 	} TEST_END();
+}
 
+DESCRIBE(function_calls, "Function call parsing") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Simple function call") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo()" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+	} TEST_END();
+
+	TEST_BEGIN("Simple function call in context") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo()" LF
+			"b = 7" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENTS(result.node, 2);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)Array_get(statements, 0);
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+	} TEST_END();
+
+	TEST_BEGIN("Function call with a single parameter") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(1)" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+
+		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument);
+
+		IdentifierASTNode *label = argument->label;
+		EXPECT_NULL(label);
+
+		LiteralExpressionASTNode *expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(expression);
+		EXPECT_TRUE(expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(expression->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(expression->value.integer, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Function call with a single labeled parameter") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(bar: 1)" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+
+		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument);
+
+		IdentifierASTNode *label = argument->label;
+		EXPECT_NOT_NULL(label);
+		EXPECT_TRUE(String_equals(label->name, "bar"));
+
+		LiteralExpressionASTNode *expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(expression);
+		EXPECT_TRUE(expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(expression->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(expression->value.integer, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Function call with multiple parameters") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(1, 7)" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 2);
+
+
+		ArgumentASTNode *argument1 = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument1);
+
+		IdentifierASTNode *label1 = argument1->label;
+		EXPECT_NULL(label1);
+
+		LiteralExpressionASTNode *expression1 = (LiteralExpressionASTNode*)argument1->expression;
+		EXPECT_NOT_NULL(expression1);
+		EXPECT_TRUE(expression1->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(expression1->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(expression1->value.integer, 1);
+
+
+		ArgumentASTNode *argument2 = (ArgumentASTNode*)Array_get(arr, 1);
+		EXPECT_NOT_NULL(argument2);
+
+		IdentifierASTNode *label2 = argument2->label;
+		EXPECT_NULL(label2);
+
+		LiteralExpressionASTNode *expression2 = (LiteralExpressionASTNode*)argument2->expression;
+		EXPECT_NOT_NULL(expression2);
+		EXPECT_TRUE(expression2->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(expression2->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(expression2->value.integer, 7);
+	} TEST_END();
+
+	TEST_BEGIN("Function call with multiple labeled parameters") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(bar: 1, baz: 7)" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 2);
+
+
+		ArgumentASTNode *argument1 = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument1);
+
+		IdentifierASTNode *label1 = argument1->label;
+		EXPECT_NOT_NULL(label1);
+		EXPECT_TRUE(String_equals(label1->name, "bar"));
+
+		LiteralExpressionASTNode *expression1 = (LiteralExpressionASTNode*)argument1->expression;
+		EXPECT_NOT_NULL(expression1);
+		EXPECT_TRUE(expression1->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(expression1->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(expression1->value.integer, 1);
+
+
+		ArgumentASTNode *argument2 = (ArgumentASTNode*)Array_get(arr, 1);
+		EXPECT_NOT_NULL(argument2);
+
+		IdentifierASTNode *label2 = argument2->label;
+		EXPECT_NOT_NULL(label2);
+		EXPECT_TRUE(String_equals(label2->name, "baz"));
+
+		LiteralExpressionASTNode *expression2 = (LiteralExpressionASTNode*)argument2->expression;
+		EXPECT_NOT_NULL(expression2);
+		EXPECT_TRUE(expression2->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(expression2->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(expression2->value.integer, 7);
+	} TEST_END();
+
+	TEST_BEGIN("Function call in simple expression") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo() * 2" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		EXPECT_BINARY_NODE(assignment->expression, OPERATOR_MUL, NODE_FUNCTION_CALL, NODE_LITERAL_EXPRESSION, binary);
+
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)binary->left;
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+
+		LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
+		EXPECT_TRUE(literal->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(literal->value.integer, 2);
+	} TEST_END();
+
+	TEST_BEGIN("Function call with arguments in simple expression") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(4) * 2" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		EXPECT_BINARY_NODE(assignment->expression, OPERATOR_MUL, NODE_FUNCTION_CALL, NODE_LITERAL_EXPRESSION, binary);
+
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)binary->left;
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		LiteralExpressionASTNode *argLiteral = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argLiteral);
+		EXPECT_TRUE(argLiteral->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argLiteral->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(argLiteral->value.integer, 4);
+
+
+		LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
+		EXPECT_TRUE(literal->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(literal->value.integer, 2);
+	} TEST_END();
+
+	TEST_BEGIN("Function call in complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"a = 4 + (8 - foo(7)) * 2" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		EXPECT_BINARY_NODE(assignment->expression, OPERATOR_PLUS, NODE_LITERAL_EXPRESSION, NODE_BINARY_EXPRESSION, binary1);
+
+		EXPECT_BINARY_NODE(binary1->right, OPERATOR_MUL, NODE_BINARY_EXPRESSION, NODE_LITERAL_EXPRESSION, binary2);
+
+		EXPECT_BINARY_NODE(binary2->left, OPERATOR_MINUS, NODE_LITERAL_EXPRESSION, NODE_FUNCTION_CALL, binary3);
+
+	} TEST_END();
+
+	TEST_BEGIN("Expression inside function call") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(3 * 8)" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		EXPECT_BINARY_NODE(argument->expression, OPERATOR_MUL, NODE_LITERAL_EXPRESSION, NODE_LITERAL_EXPRESSION, binary);
+	} TEST_END();
 }
