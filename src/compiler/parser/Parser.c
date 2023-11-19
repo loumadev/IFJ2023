@@ -20,7 +20,7 @@ ParserResult __Parser_parseParameterList(Parser *parser);
 ParserResult __Parser_parseFuncStatement(Parser *parser);
 ParserResult __Parser_parsePattern(Parser *parser);
 ParserResult __Parser_parseOptionalBindingCondition(Parser *parser);
-ParserResult __Parser_parseCondition(Parser *parser);
+ParserResult __Parser_parseTest(Parser *parser);
 ParserResult __Parser_parseIfStatement(Parser *parser);
 ParserResult __Parser_parseWhileStatement(Parser *parser);
 ParserResult __Parser_parseReturnStatement(Parser *parser);
@@ -464,11 +464,10 @@ ParserResult __Parser_parseOptionalBindingCondition(Parser *parser) {
 	return ParserSuccess(bindingCondition);
 }
 
-ParserResult __Parser_parseCondition(Parser *parser) {
+ParserResult __Parser_parseTest(Parser *parser) {
 	assertf(parser != NULL);
 
-	ExpressionASTNode *expression = NULL;
-	OptionalBindingConditionASTNode *bindingCondition = NULL;
+	ASTNode *test = NULL;
 
 	// consume '(' optionally
 	bool hasOptionalParen = false;
@@ -494,12 +493,11 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 
 		ParserResult bindingConditionResult = __Parser_parseOptionalBindingCondition(parser);
 		if(!bindingConditionResult.success) return bindingConditionResult;
-		bindingCondition = (OptionalBindingConditionASTNode*)bindingConditionResult.node;
+		test = (ASTNode*)bindingConditionResult.node;
 	} else {
 		ParserResult expressionResult = __Parser_parseExpression(parser);
 		if(!expressionResult.success) return expressionResult;
-
-		expression = (ExpressionASTNode*)expressionResult.node;
+		test = (ASTNode*)expressionResult.node;
 	}
 
 	peek = Lexer_peekToken(parser->lexer, 1);
@@ -517,9 +515,7 @@ ParserResult __Parser_parseCondition(Parser *parser) {
 		}
 	}
 
-	ConditionASTNode *condition = new_ConditionASTNode(expression, bindingCondition);
-
-	return ParserSuccess(condition);
+	return ParserSuccess(test);
 }
 
 ParserResult __Parser_parseIfStatement(Parser *parser) {
@@ -542,8 +538,8 @@ ParserResult __Parser_parseIfStatement(Parser *parser) {
 			Array_fromArgs(1, peek.token));
 	}
 
-	ParserResult conditionResult = __Parser_parseCondition(parser);
-	if(!conditionResult.success) return conditionResult;
+	ParserResult testResult = __Parser_parseTest(parser);
+	if(!testResult.success) return testResult;
 
 	ParserResult blockResult = __Parser_parseBlock(parser, true);
 	if(!blockResult.success) return blockResult;
@@ -577,7 +573,7 @@ ParserResult __Parser_parseIfStatement(Parser *parser) {
 		}
 	}
 
-	IfStatementASTNode *ifStatement = new_IfStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node, (ASTNode*)alternate);
+	IfStatementASTNode *ifStatement = new_IfStatementASTNode((ASTNode*)testResult.node,  (BlockASTNode*)blockResult.node, (ASTNode*)alternate);
 
 	return ParserSuccess(ifStatement);
 }
@@ -601,13 +597,13 @@ ParserResult __Parser_parseWhileStatement(Parser *parser) {
 			Array_fromArgs(1, peek.token));
 	}
 
-	ParserResult conditionResult = __Parser_parseCondition(parser);
-	if(!conditionResult.success) return conditionResult;
+	ParserResult testResult = __Parser_parseTest(parser);
+	if(!testResult.success) return testResult;
 
 	ParserResult blockResult = __Parser_parseBlock(parser, true);
 	if(!blockResult.success) return blockResult;
 
-	WhileStatementASTNode *whileStatement = new_WhileStatementASTNode((ConditionASTNode*)conditionResult.node,  (BlockASTNode*)blockResult.node);
+	WhileStatementASTNode *whileStatement = new_WhileStatementASTNode((ASTNode*)testResult.node,  (BlockASTNode*)blockResult.node);
 
 	return ParserSuccess(whileStatement);
 }

@@ -31,7 +31,6 @@ enum ASTNodeType {
 	NODE_FUNCTION_CALL,
 	NODE_IF_STATEMENT,
 	NODE_PATTERN,
-	NODE_CONDITION,
 	NODE_OPTIONAL_BINDING_CONDITION,
 	NODE_WHILE_STATEMENT,
 	NODE_ASSIGNMENT_STATEMENT
@@ -215,22 +214,16 @@ typedef struct OptionalBindingConditionASTNode {
 	bool isConstant;
 } OptionalBindingConditionASTNode;
 
-typedef struct ConditionASTNode {
-	enum ASTNodeType _type;
-	ExpressionASTNode *expression;
-	OptionalBindingConditionASTNode *optionalBindingCondition;
-} ConditionASTNode;
-
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
-	ConditionASTNode *condition;
+    ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
 	BlockASTNode *body;
 	ASTNode /* BlockASTNode | IfStatementASTNode | null */ *alternate;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
-	ConditionASTNode *condition;
+    ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
 	BlockASTNode *body;
 } WhileStatementASTNode;
 
@@ -264,9 +257,8 @@ ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
 PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
 OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
-ConditionASTNode* new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);
-IfStatementASTNode* new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ASTNode *alternate);
-WhileStatementASTNode* new_WhileStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body);
+IfStatementASTNode* new_IfStatementASTNode(ASTNode *test,  BlockASTNode *body, ASTNode *alternate);
+WhileStatementASTNode* new_WhileStatementASTNode(ASTNode *test,  BlockASTNode *body);
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);
 
 // TODO: Add more AST node constructors

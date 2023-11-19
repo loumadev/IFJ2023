@@ -521,12 +521,10 @@ DESCRIBE(if_statement, "If statement parsing") {
 
 		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(if_statement->condition);
-		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_TRUE(if_statement->test->_type == NODE_LITERAL_EXPRESSION);
 
-		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->condition->expression;
-		EXPECT_NOT_NULL(condition_expression);
-		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->test;
 		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
@@ -551,12 +549,10 @@ DESCRIBE(if_statement, "If statement parsing") {
 
 		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(if_statement->condition);
-		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_TRUE(if_statement->test->_type == NODE_LITERAL_EXPRESSION);
 
-		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->condition->expression;
-		EXPECT_NOT_NULL(condition_expression);
-		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)if_statement->test;
 		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
@@ -587,12 +583,10 @@ DESCRIBE(if_statement, "If statement parsing") {
 		// if
 		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(if_statement->condition);
-		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_FALSE(if_statement->test->_type == NODE_EXPRESSION_STATEMENT);
 
-		BinaryExpressionASTNode *condition_expression = (BinaryExpressionASTNode*)if_statement->condition->expression;
-		EXPECT_NOT_NULL(condition_expression);
-		EXPECT_TRUE(condition_expression->_type == NODE_BINARY_EXPRESSION);
+		BinaryExpressionASTNode *condition_expression = (BinaryExpressionASTNode*)if_statement->test;
 
 		IdentifierASTNode *left = (IdentifierASTNode*)condition_expression->left;
 		EXPECT_NOT_NULL(left);
@@ -621,12 +615,10 @@ DESCRIBE(if_statement, "If statement parsing") {
 
 		IfStatementASTNode *elseif = (IfStatementASTNode*)if_statement->alternate;
 
-		EXPECT_NOT_NULL(elseif->condition);
-		EXPECT_TRUE(elseif->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(elseif->test);
+		EXPECT_TRUE(elseif->test->_type == NODE_BINARY_EXPRESSION);
 
-		condition_expression = (BinaryExpressionASTNode*)elseif->condition->expression;
-		EXPECT_NOT_NULL(condition_expression);
-		EXPECT_TRUE(condition_expression->_type == NODE_BINARY_EXPRESSION);
+		condition_expression = (BinaryExpressionASTNode*)elseif->test;
 
 		left = (IdentifierASTNode*)condition_expression->left;
 		EXPECT_NOT_NULL(left);
@@ -680,15 +672,11 @@ DESCRIBE(if_statement, "If statement parsing") {
 
 		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(if_statement->condition);
-		EXPECT_TRUE(if_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_TRUE(if_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
-		EXPECT_NULL(if_statement->condition->expression);
-
-		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)if_statement->condition->optionalBindingCondition;
-		EXPECT_NOT_NULL(binding_condition);
+		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)if_statement->test;
 		EXPECT_TRUE(binding_condition->isConstant);
-		EXPECT_TRUE(binding_condition->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
 		PatternASTNode *pattern = binding_condition->pattern;
 		EXPECT_NOT_NULL(pattern);
@@ -736,12 +724,10 @@ DESCRIBE(while_statement, "While statement parsing") {
 
 		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(while_statement->condition);
-		EXPECT_TRUE(while_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(while_statement->test);
+		EXPECT_TRUE(while_statement->test->_type == NODE_LITERAL_EXPRESSION);
 
-		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->condition->expression;
-		EXPECT_NOT_NULL(condition_expression);
-		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->test;
 		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
@@ -763,12 +749,10 @@ DESCRIBE(while_statement, "While statement parsing") {
 
 		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(while_statement->condition);
-		EXPECT_TRUE(while_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(while_statement->test);
+		EXPECT_TRUE(while_statement->test->_type == NODE_LITERAL_EXPRESSION);
 
-		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->condition->expression;
-		EXPECT_NOT_NULL(condition_expression);
-		EXPECT_TRUE(condition_expression->_type == NODE_LITERAL_EXPRESSION);
+		LiteralExpressionASTNode *condition_expression = (LiteralExpressionASTNode*)while_statement->test;
 		EXPECT_TRUE(condition_expression->type.type == TYPE_BOOL);
 		EXPECT_TRUE(condition_expression->value.boolean);
 
@@ -803,15 +787,11 @@ DESCRIBE(while_statement, "While statement parsing") {
 
 		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
 
-		EXPECT_NOT_NULL(while_statement->condition);
-		EXPECT_TRUE(while_statement->condition->_type == NODE_CONDITION);
+		EXPECT_NOT_NULL(while_statement->test);
+		EXPECT_TRUE(while_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
-		EXPECT_NULL(while_statement->condition->expression);
-
-		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)while_statement->condition->optionalBindingCondition;
-		EXPECT_NOT_NULL(binding_condition);
+		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)while_statement->test;
 		EXPECT_TRUE(binding_condition->isConstant);
-		EXPECT_TRUE(binding_condition->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
 		PatternASTNode *pattern = binding_condition->pattern;
 		EXPECT_NOT_NULL(pattern);

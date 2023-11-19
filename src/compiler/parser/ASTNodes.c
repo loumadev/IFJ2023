@@ -175,34 +175,24 @@ OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(
 	return node;
 }
 
-ConditionASTNode* new_ConditionASTNode(
-	ExpressionASTNode *expression,
-	OptionalBindingConditionASTNode *optionalBindingCondition
-) {
-	prepare_node_of(ConditionASTNode, NODE_CONDITION)
-	node->expression = expression;
-	node->optionalBindingCondition = optionalBindingCondition;
-	return node;
-}
-
 IfStatementASTNode* new_IfStatementASTNode(
-	ConditionASTNode *condition,
+	ASTNode *test,
 	BlockASTNode *body,
 	ASTNode *alternate
 ) {
 	prepare_node_of(IfStatementASTNode, NODE_IF_STATEMENT)
-	node->condition = condition;
+	node->test = test;
 	node->body = body;
 	node->alternate = alternate;
 	return node;
 }
 
 WhileStatementASTNode* new_WhileStatementASTNode(
-	ConditionASTNode *condition,
+	ASTNode *test,
 	BlockASTNode *body
 ) {
 	prepare_node_of(WhileStatementASTNode, NODE_WHILE_STATEMENT)
-	node->condition = condition;
+	node->test = test;
 	node->body = body;
 	return node;
 }
