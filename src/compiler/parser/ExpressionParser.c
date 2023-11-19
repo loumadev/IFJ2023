@@ -13,6 +13,8 @@
 #define TABLE_SIZE 9
 #define STACK_SIZE 20
 
+ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
+
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
  // +-|*/| ! |??|r |i |( |) |$
 	{R, S, S, R, R, S, S, R, R}, // +-
@@ -262,20 +264,41 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 	bool reductionSuccess;
 	int offset = 1;
+	enum PrecTableRelation operation;
+	
 	LexerResult current = Lexer_peekToken(parser->lexer, offset);
+	LexerResult leftParen;
 	LexerResult removeFromTokenStream;
 
 	while(true) {
 		if(!current.success) return LexerToParserError(current);
 
-		StackItem *topTerminal = Expr_getTopTerminal(stack);
-		// topTerminal returns S_BOTTOM, which has no token,
-		// this token is being dereferenced in Expr_getPrecTbIndex, thus causing a segfault
+		// check if there is a function call in expression
+		if(current.token->type == TOKEN_IDENTIFIER){
+			leftParen = Lexer_peekToken(parser->lexer, offset + 1);
+			if(!leftParen.success) return LexerToParserError(current);
 
-		int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token);
-		int currentTokenIndex = Expr_getPrecTbIndex(current.token);
+			if(leftParen.token->kind == TOKEN_LEFT_PAREN){
+				ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
+				if(!functionCallExpression.success) return functionCallExpression;
 
-		enum PrecTableRelation operation = precedence_table[topTerminalIndex][currentTokenIndex];
+				StackItem *function = mem_alloc(sizeof(StackItem));
+				function->node = functionCallExpression.node;
+				function->Stype = S_NONTERMINAL;
+				function->token = NULL;
+				Array_push(stack, function);
+			}
+		}
+
+		if(operation != X){
+
+			StackItem *topTerminal = Expr_getTopTerminal(stack);
+
+			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token);
+			int currentTokenIndex = Expr_getPrecTbIndex(current.token);
+
+			operation = precedence_table[topTerminalIndex][currentTokenIndex];
+		}
 
 		StackItem *isItFinal = Array_get(stack, stack->size - 1);
 		if(isItFinal->Stype == S_NONTERMINAL && stack->size == 2 && operation == X) {
