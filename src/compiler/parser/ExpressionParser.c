@@ -28,8 +28,11 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input
 	{S, S, S, S, S, S, S, X, X}  // $
 };
 
-int Expr_getPrecTbIndex(Token *token) {
+int Expr_getPrecTbIndex(Token *token, bool isFunction) {
 	if(!token) {
+		if(isFunction){
+			return I_ID;
+		}
 		return I_DOLLAR;
 	}
 	switch(token->kind) {
@@ -116,6 +119,14 @@ StackItem* Expr_performReduction(Array *stack) {
 		StackItem *id = Array_pop(stack);
 
 		if(id->Stype == S_TERMINAL) {
+			// function call
+			if((id->token == NULL) && (id->node != NULL)){
+				id->node = (ExpressionASTNode*)id->node;
+				id->Stype = S_NONTERMINAL;
+
+				return id;
+			}
+
 			if(id->token->type == TOKEN_LITERAL) {
 				LiteralExpressionASTNode *literalE = new_LiteralExpressionASTNode(Analyser_getTypeFromToken(id->token->kind), id->token->value);
 				id->node = (ExpressionASTNode*)literalE;
@@ -263,6 +274,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	Array_push(stack, bottom);
 
 	bool reductionSuccess;
+	bool functionCall = false;
 	int offset = 1;
 	enum PrecTableRelation operation;
 	
@@ -272,6 +284,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 	while(true) {
 		if(!current.success) return LexerToParserError(current);
+		functionCall = false;
 
 		// check if there is a function call in expression
 		if(current.token->type == TOKEN_IDENTIFIER){
@@ -282,11 +295,17 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
 				if(!functionCallExpression.success) return functionCallExpression;
 
+				functionCall = true;
+
 				StackItem *function = mem_alloc(sizeof(StackItem));
 				function->node = functionCallExpression.node;
-				function->Stype = S_NONTERMINAL;
+				function->Stype = S_TERMINAL;
 				function->token = NULL;
+				Expr_pushAfterTopTerminal(stack);
 				Array_push(stack, function);
+
+				current = Lexer_peekToken(parser->lexer, offset);
+				if(!current.success) return LexerToParserError(current);
 			}
 		}
 
@@ -294,8 +313,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 			StackItem *topTerminal = Expr_getTopTerminal(stack);
 
-			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token);
-			int currentTokenIndex = Expr_getPrecTbIndex(current.token);
+			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, functionCall);
+			int currentTokenIndex = Expr_getPrecTbIndex(current.token, false);
 
 			operation = precedence_table[topTerminalIndex][currentTokenIndex];
 		}
