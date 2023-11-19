@@ -1184,6 +1184,7 @@ DESCRIBE(function_calls, "Function call parsing") {
 
 		EXPECT_BINARY_NODE(binary2->left, OPERATOR_MINUS, NODE_LITERAL_EXPRESSION, NODE_FUNCTION_CALL, binary3);
 
+		// TODO: Add more checks here
 	} TEST_END();
 
 	TEST_BEGIN("Expression inside function call") {
