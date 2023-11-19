@@ -181,6 +181,23 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 
 	} TEST_END();
 
+	TEST_BEGIN("Missing type and initializer") {
+		Lexer_setSource(
+			&lexer,
+			"let a" LF
+			"a = 7" LF
+		);
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+
+
 }
 
 DESCRIBE(function_declaration, "Function declaration parsing") {

@@ -640,6 +640,8 @@ ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
+	PatternASTNode *patternNode = (PatternASTNode*)patternResult.node;
+
 	ExpressionASTNode *initializer = NULL;
 
 	if(peek.token->kind == TOKEN_EQUAL) {
@@ -650,9 +652,13 @@ ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 		ParserResult initializerResult = __Parser_parseExpression(parser);
 		if(!initializerResult.success) return initializerResult;
 		initializer = initializerResult.node;
+	} else if(!patternNode->type) {
+		return ParserError(
+			String_fromFormat("type anotation missing in pattern"),
+			NULL);
 	}
 
-	VariableDeclaratorASTNode *variableDeclarator = new_VariableDeclaratorASTNode((PatternASTNode*)patternResult.node, (ExpressionASTNode*)initializer);
+	VariableDeclaratorASTNode *variableDeclarator = new_VariableDeclaratorASTNode(patternNode, (ExpressionASTNode*)initializer);
 
 	return ParserSuccess(variableDeclarator);
 }
