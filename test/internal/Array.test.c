@@ -2,6 +2,8 @@
 #include "unit.h"
 #include <stdio.h>
 
+#define TEST_PRIORITY 100
+
 DESCRIBE(get, "Array_get") {
 	Array *arr = NULL;
 

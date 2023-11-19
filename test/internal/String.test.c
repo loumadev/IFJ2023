@@ -2,6 +2,8 @@
 #include "unit.h"
 #include <stdio.h>
 
+#define TEST_PRIORITY 100
+
 DESCRIBE(equals, "String_equals") {
 	String *str = NULL;
 

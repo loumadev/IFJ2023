@@ -9,6 +9,7 @@ enum TokenType {
 	TOKEN_EOF = 1,
 	TOKEN_CONTROL,  // Forgot what this is for :(
 	TOKEN_MARKER,   // Marker in the source code (for error messages)
+	TOKEN_STRING_INTERPOLATION_MARKER,
 
 	TOKEN_LITERAL,
 	TOKEN_IDENTIFIER,
@@ -21,6 +22,9 @@ enum TokenKind {
 	TOKEN_DEFAULT = 0,
 
 	// Literals
+	// This has to be at this position in the enum
+	// because it's being converted into another
+	// enum with the same values.
 	TOKEN_STRING,
 	TOKEN_INTEGER,
 	TOKEN_FLOATING,
@@ -67,13 +71,13 @@ enum TokenKind {
 enum WhitespaceType {
 	WHITESPACE_NONE = 0,                // No whitespace
 
-	// WHITESPACE_LEFT_LIMIT = 1 << 0,     // BOF or EOF
-	WHITESPACE_LEFT_SPACE = 1 << 1,     // Space, tab, or vertical tab
-	WHITESPACE_LEFT_NEWLINE = 1 << 2,   // Line feed or carriage return
+	// WHITESPACE_LEFT_LIMIT = 1 << 0,  // BOF or EOF
+	WHITESPACE_LEFT_SPACE = 1 << 1,     // Space, tab, vertical tab or multi-line comment on a single line
+	WHITESPACE_LEFT_NEWLINE = 1 << 2,   // Line feed, carriage return, multi-line comment on multiple lines or single-line comment
 
-	// WHITESPACE_RIGHT_LIMIT = 1 << 4,    // BOF or EOF
-	WHITESPACE_RIGHT_SPACE = 1 << 5,    // Space, tab, or vertical tab
-	WHITESPACE_RIGHT_NEWLINE = 1 << 6,  // Line feed or carriage return
+	// WHITESPACE_RIGHT_LIMIT = 1 << 4, // BOF or EOF
+	WHITESPACE_RIGHT_SPACE = 1 << 5,    // Space, tab, vertical tab or multi-line comment on a single line
+	WHITESPACE_RIGHT_NEWLINE = 1 << 6,  // Line feed, carriage return, multi-line comment on multiple lines or single-line comment
 
 	WHITESPACE_LEFT = WHITESPACE_LEFT_SPACE | WHITESPACE_LEFT_NEWLINE,
 	WHITESPACE_RIGHT = WHITESPACE_RIGHT_SPACE | WHITESPACE_RIGHT_NEWLINE,
@@ -83,7 +87,11 @@ enum WhitespaceType {
 	WHITESPACE_MASK_RIGHT = /*WHITESPACE_RIGHT_LIMIT |*/ WHITESPACE_RIGHT_SPACE | WHITESPACE_RIGHT_NEWLINE
 };
 
-#define whitespace_both(whitespace) (((whitespace) & WHITESPACE_LEFT) && ((whitespace) & WHITESPACE_RIGHT))
+#define whitespace_left(whitespace) ((whitespace) & WHITESPACE_LEFT)
+#define whitespace_right(whitespace) ((whitespace) & WHITESPACE_RIGHT)
+#define whitespace_both(whitespace) (whitespace_left(whitespace) && whitespace_right(whitespace))
+#define whitespace_none(whitespace) ((whitespace) == WHITESPACE_NONE)
+#define whitespace_consistent(whitespace) (whitespace_both(whitespace) || whitespace_none(whitespace))
 
 #define right_to_left_whitespace(whitespace) (((whitespace) & WHITESPACE_RIGHT) >> 4)
 #define left_to_right_whitespace(whitespace) (((whitespace) & WHITESPACE_LEFT) << 4)
