@@ -8,6 +8,8 @@
 #define ID(name) "_" ## name ## __LINE__
 
 #define LF "\n"
+#define SP "  "
+#define TAB "\t"
 
 /**
  * Validates program body and looks for a single statemtnt of a given type.
