@@ -12,6 +12,11 @@
 #define MESSAGE GREY
 #define ERASE_LINE "\033[2K"
 
+#define CURSOR_UP(n) "\033[" #n "A"
+#define CURSOR_DOWN(n) "\033[" #n "B"
+#define CURSOR_RIGHT(n) "\033[" #n "C"
+#define CURSOR_LEFT(n) "\033[" #n "D"
+
 struct unit_global {
 	int files_count;
 	int suites_count;
