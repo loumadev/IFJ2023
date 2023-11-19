@@ -24,7 +24,8 @@ enum ResultType {
 	RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE = 5,       // Použití nedefinované proměnné
 	RESULT_ERROR_SEMANTIC_INVALID_RETURN = 6,           // Chybějící/přebývající výraz v příkazu návratu z funkce
 	RESULT_ERROR_SEMANTIC_INVALID_TYPE = 7,             // Chyba typové kompatibility v aritmetických, řetězcových a relačních výrazech
-	RESULT_ERROR_SEMANTIC_OTHER = 8,                    // Ostatní sémantické chyby
+	RESULT_ERROR_SEMANTIC_FAILED_INFER = 8,             // Typ proměnné nebo parametru není uveden a nelze odvodit od použitého výrazu.
+	RESULT_ERROR_SEMANTIC_OTHER = 9,                    // Ostatní sémantické chyby
 	RESULT_ERROR_INTERNAL = 99                          // Interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)
 };
 
