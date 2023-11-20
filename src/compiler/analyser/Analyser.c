@@ -150,13 +150,13 @@ VariableDeclaration* Analyser_getVariableById(Analyser *analyser, size_t id) {
 	return (VariableDeclaration*)declaration;
 }
 
-VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, String *name, BlockScope *scope) {
+VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, BlockScope *scope) {
 	VariableDeclaration *declaration = NULL;
 
 	(void)analyser;
 
 	while(scope) {
-		declaration = HashMap_get(scope->variables, name->value);
+		declaration = HashMap_get(scope->variables, name);
 		if(declaration) return declaration;
 
 		scope = scope->parent;
@@ -190,7 +190,9 @@ AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast) {
 
 	analyser->ast = ast;
 
-	__Analyser_createBlockScopeChaining(analyser, ast->block, analyser->globalScope);
+	__Analyser_createBlockScopeChaining(analyser, ast->block, NULL);
+	analyser->globalScope = ast->block->scope;
+
 	__Analyser_collectFunctionDeclarations(analyser);
 
 	return __Analyser_analyseBlock(analyser, ast->block);
@@ -246,7 +248,7 @@ void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block
 }
 
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent) {
-	if(node->_type != NODE_BLOCK) return;
+	// if(node->_type != NODE_BLOCK) return;
 
 	switch(node->_type) {
 		case NODE_IF_STATEMENT: {
@@ -321,12 +323,10 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 					// Validate/infer the type based on the initializer
 					if(declaratorNode->initializer) {
-						// TODO: Get type of the initializer
 						ValueType type;
 						AnalyserResult result = Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, &type);
 						if(!result.success) return result;
 
-						// TODO: Check if the type of the initializer matches the type annotation
 						if(declaratorNode->pattern->type) {
 							declaratorNode->pattern->type->type = Analyser_TypeReferenceToValueType(declaratorNode->pattern->type);
 
@@ -343,10 +343,28 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 								);
 							}
 						} else {
+							if(type.type == TYPE_NIL) {
+								return AnalyserError(
+									RESULT_ERROR_SEMANTIC_FAILED_INFER,
+									String_fromFormat("'nil' requires a contextual type"),
+									NULL
+								);
+							}
+
 							declaration->type = type;
 						}
 					}
 
+					// null-initialize the non-initialized nullable variables
+					if(declaration->type.isNullable && !declaration->isInitialized) {
+						declaratorNode->initializer = (ExpressionASTNode*)new_LiteralExpressionASTNode(
+							(ValueType){.type = TYPE_NIL, .isNullable = true},
+							(union TokenValue){0}
+						);
+						declaration->isInitialized = true;
+					}
+
+					// Look for already existing variable with the same
 					VariableDeclaration *existingDeclaration = HashMap_get(block->scope->variables, declaration->name->value);
 
 					// There is already a variable with the same name in the current scope
@@ -364,12 +382,12 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 			case NODE_ASSIGNMENT_STATEMENT: {
 				AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
-				VariableDeclaration *variable = Analyser_getVariableByName(analyser, assignment->id->name, block->scope);
+				VariableDeclaration *variable = Analyser_getVariableByName(analyser, assignment->id->name->value, block->scope);
 
 				// Variable is not declared in reachable scopes
 				if(!variable) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
 						String_fromFormat("cannot find '%s' in scope", assignment->id->name),
 						NULL
 					);
@@ -384,9 +402,115 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					);
 				}
 
-				// TODO: Check for type compatibility
+				ValueType type;
+				AnalyserResult result = Analyser_resolveExpressionType(analyser, assignment->expression, block->scope, &type);
+				if(!result.success) return result;
+
+				if(!is_value_assignable(variable->type, type)) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+						String_fromFormat(
+							"cannot convert value of type '%s' to specified type '%s'",
+							__Analyser_stringifyType(type)->value,
+							__Analyser_stringifyType(variable->type)->value
+						),
+						NULL
+					);
+				}
 
 				assignment->id->id = variable->id;
+			} break;
+
+			case NODE_IF_STATEMENT: {
+				IfStatementASTNode *ifStatement = (IfStatementASTNode*)statement;
+
+				while(ifStatement->_type == NODE_IF_STATEMENT) {
+					// Resolve the condition of the if statement
+					if(ifStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
+						OptionalBindingConditionASTNode *condition = (OptionalBindingConditionASTNode*)ifStatement->test;
+						IdentifierASTNode *identifier = condition->id;
+
+						VariableDeclaration *declaration = Analyser_getVariableByName(analyser, identifier->name->value, block->scope);
+
+						// Variable is not declared in reachable scopes
+						if(!declaration) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
+								String_fromFormat("cannot find '%s' in scope", identifier->name->value),
+								NULL
+							);
+						}
+
+						// Validate type of the variable
+						if(!declaration->type.isNullable) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat(
+									"initializer for conditional binding must have Optional type, not '%s'",
+									__Analyser_stringifyType(declaration->type)->value
+								),
+								NULL
+							);
+						}
+
+						// Create a new declaration for the variable
+						VariableDeclaration *newDeclaration = new_VariableDeclaration(
+							analyser,
+							NULL,
+							true,
+							(ValueType){.type = declaration->type.type, .isNullable = false},
+							declaration->name,
+							false,
+							true
+						);
+
+						// Add the new declaration to the scope of the if statement body
+						HashMap_set(ifStatement->body->scope->variables, newDeclaration->name->value, newDeclaration);
+
+						// Set the id of the identifier node to the id of the new declaration
+						identifier->id = newDeclaration->id;
+					} else {
+						// Get the type of the test expression
+						ValueType type;
+						AnalyserResult result = Analyser_resolveExpressionType(analyser, ifStatement->test, block->scope, &type);
+						if(!result.success) return result;
+
+						// Validate the type of the test expression
+						if(type.type != TYPE_BOOL) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat(
+									"type '%s' cannot be used as a boolean%s",
+									__Analyser_stringifyType(type)->value,
+									type.isNullable ? "; test for '= nil' instead" :
+										type.type == TYPE_INT ? "; test for '!= 0' instead" :
+											type.type == TYPE_DOUBLE ? "; test for '!= 0.0' instead" :
+												type.type == TYPE_STRING ? "; test for '!= \"\"' instead" :
+													""
+								),
+								NULL
+							);
+						}
+					}
+
+					// Analyse the body of the if statement
+					AnalyserResult result = __Analyser_analyseBlock(analyser, ifStatement->body);
+					if(!result.success) return result;
+
+					// If the if statement has no alternate, we are done
+					if(!ifStatement->alternate) break;
+
+					// Process the alternate
+					if(ifStatement->alternate->_type == NODE_BLOCK) {
+						AnalyserResult result = __Analyser_analyseBlock(analyser, (BlockASTNode*)ifStatement->alternate);
+						if(!result.success) return result;
+
+						// There cannot be another if statement after the alternate, so we are done
+						break;
+					} else {
+						ifStatement = (IfStatementASTNode*)ifStatement->alternate;
+					}
+				}
 			} break;
 
 			default: {
@@ -419,7 +543,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				return AnalyserSuccess();
 			}
 
-			VariableDeclaration *declaration = Analyser_getVariableByName(analyser, identifier->name, scope);
+			VariableDeclaration *declaration = Analyser_getVariableByName(analyser, identifier->name->value, scope);
 
 			if(!declaration) {
 				return AnalyserError(
@@ -440,6 +564,8 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				);
 			}
 
+			identifier->id = declaration->id;
+			declaration->isUsed = true;
 			*outType = declaration->type;
 		} break;
 
