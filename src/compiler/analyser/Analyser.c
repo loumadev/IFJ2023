@@ -522,7 +522,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						);
 					}
 
-					unary->type.isNullable = false;
+					unary->type = (ValueType){.type = type.type, .isNullable = false};
 				} break;
 
 				default: {
