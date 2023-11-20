@@ -42,6 +42,7 @@ VariableDeclaration* new_VariableDeclaration(
 	declaration->isUsed = false;
 
 	if(node) {
+		declaration->node = node;
 		declaration->name = node->pattern->id->name;
 		// declaration->type = node->pattern->type ? node->pattern->type->id->name : NULL;
 		// declaration->isNullable = node->pattern->type ? node->pattern->type->isNullable : false;
@@ -50,6 +51,7 @@ VariableDeclaration* new_VariableDeclaration(
 		declaration->isUserDefined = true;
 		declaration->isInitialized = node->initializer != NULL;
 	} else {
+		declaration->node = NULL;
 		declaration->name = name;
 		declaration->type = type;
 		declaration->isUserDefined = isUserDefined;

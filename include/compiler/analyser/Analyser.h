@@ -21,6 +21,7 @@ typedef struct Declaration {
 typedef struct VariableDeclaration {
 	enum DeclarationType _type;
 	size_t id;
+	struct VariableDeclaratorASTNode *node; // null if isUserDefined = 0
 	String *name;
 	ValueType type;
 	bool isConstant;
