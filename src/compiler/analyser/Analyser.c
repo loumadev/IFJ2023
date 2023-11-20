@@ -760,7 +760,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					}
 
 					binary->type.isNullable = false;
-					outType->type = binary->type.type;
+					*outType = binary->type;
 				} break;
 
 				case OPERATOR_EQUAL:
