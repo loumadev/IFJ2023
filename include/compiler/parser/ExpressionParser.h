@@ -20,6 +20,9 @@ enum PrecTableIndex {
 	I_ID,
 	I_LEFT_PAREN,
 	I_RIGHT_PAREN,
+	I_NOT,
+	I_AND,
+	I_OR,
 	I_DOLLAR
 };
 
@@ -30,10 +33,17 @@ typedef enum {
 	S_NONTERMINAL
 }StackItemType;
 
+typedef enum{
+	P_IS_PREFIX,
+	P_IS_POSTFIX,
+	P_UNRESOLVED,
+}PrefixStatus;
+
 typedef struct StackItem {
 	Token *token;
 	StackItemType Stype;
 	ExpressionASTNode *node;
+	PrefixStatus isPrefix;
 } StackItem;
 
 StackItem* Expr_getTopTerminal(Array *stack);

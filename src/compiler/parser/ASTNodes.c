@@ -218,13 +218,13 @@ BinaryExpressionASTNode* new_BinaryExpressionASTNode(
 
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(
 	ExpressionASTNode *argument,
-	OperatorType operator
-	// bool IsPrefix
+	OperatorType operator,
+	bool isPrefix
 ) {
 	prepare_node_of(UnaryExpressionASTNode, NODE_UNARY_EXPRESSION)
 	node->argument = argument;
 	node->operator = operator;
-	// node->isPrefix = isPrefix;
+	node->isPrefix = isPrefix;
 	return node;
 }
 

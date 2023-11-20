@@ -10,31 +10,37 @@
 #include "compiler/parser/Parser.h"
 #include "compiler/parser/ASTNodes.h"
 
-#define TABLE_SIZE 9
+#define TABLE_SIZE 12
 #define STACK_SIZE 20
 
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
+PrefixStatus prefix = P_UNRESOLVED;
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
-	// +-|*/| ! |??|r |i |( |) |$
-	{R, S, S, R, R, S, S, R, R}, // +-
-	{R, R, S, R, R, S, S, R, R}, // */
-	{R, R, X, R, R, X, X, R, R}, // !
-	{S, S, S, S, S, S, S, R, R}, // ??
-	{S, S, S, R, X, S, S, R, R}, // r (==, !=, <, >, <=, >=)
-	{R, R, R, R, R, X, X, R, R}, // i
-	{S, S, S, S, S, S, S, E, X}, // (
-	{R, R, R, R, R, X, X, R, R}, // )
-	{S, S, S, S, S, S, S, X, X}  // $
+ // +-|*/| x!|??|r |i |( |)| !x||||&&|$
+	{R, S, S, R, R, S, S, R, S, R, R, R}, // +-
+	{R, R, S, R, R, S, S, R, S, R, R, R}, // */
+	{R, R, X, R, R, X, X, R, X, R, R, R}, // x!
+	{S, S, S, S, S, S, S, R, S, S, S, R}, // ??
+	{S, S, S, R, X, S, S, R, S, R, R, R}, // r (==, !=, <, >, <=, >=)
+	{R, R, R, R, R, X, X, R, X, R, R, R}, // i
+	{S, S, S, S, S, S, S, E, S, S, S, X}, // (
+	{R, R, R, R, R, X, X, R, X, R, R, R}, // )
+	{R, R, R, R, R, S, X, R, X, R, R, R}, // !x
+	{S, S, S, S, S, S, S, R, S, R, R, R}, // ||
+	{S, S, S, S, S, S, S, R, S, R, R, R}, // &&
+	{S, S, S, S, S, S, S, X, S, S, S, X}  // $
 };
 
-int Expr_getPrecTbIndex(Token *token, bool isFunction) {
+int Expr_getPrecTbIndex(Token *token, bool isFunction, Parser *parser, PrefixStatus status) {
+	prefix = P_UNRESOLVED;
 	if(!token) {
 		if(isFunction){
 			return I_ID;
 		}
 		return I_DOLLAR;
 	}
+	LexerResult postfixPrefix;
 	switch(token->kind) {
 		case TOKEN_PLUS:
 		case TOKEN_MINUS:
@@ -45,7 +51,36 @@ int Expr_getPrecTbIndex(Token *token, bool isFunction) {
 			return I_MULTIPLICATIVE;
 
 		case TOKEN_EXCLAMATION:
-			return I_UNWRAP_OP;
+			if(status == P_IS_POSTFIX){
+				return I_UNWRAP_OP;
+			}
+			if(status == P_IS_PREFIX){
+				return I_NOT;
+			}
+			// x!
+			if(!whitespace_left(token->whitespace)){
+				postfixPrefix = Lexer_peekToken(parser->lexer, 0);
+				if(postfixPrefix.success){
+					if((postfixPrefix.token->type == TOKEN_IDENTIFIER) ||
+					   (postfixPrefix.token->type == TOKEN_LITERAL)){
+						prefix = P_IS_POSTFIX;
+						return I_UNWRAP_OP;
+					}
+				}
+			}
+
+			// !x
+			if(!whitespace_right(token->whitespace)){
+				postfixPrefix = Lexer_peekToken(parser->lexer, 2);
+				if(postfixPrefix.success){
+					if((postfixPrefix.token->type == TOKEN_IDENTIFIER) ||
+					   (postfixPrefix.token->type == TOKEN_LITERAL)){
+						prefix = P_IS_PREFIX;
+						return I_NOT;
+					}
+				}	
+			}
+			return I_DOLLAR;
 
 		case TOKEN_NULL_COALESCING:
 			return I_NIL_COALES;
@@ -76,6 +111,12 @@ int Expr_getPrecTbIndex(Token *token, bool isFunction) {
 		case TOKEN_NIL:
 		case TOKEN_BOOLEAN:
 			return I_ID;
+
+		case TOKEN_LOG_OR:
+			return I_OR;
+		
+		case TOKEN_LOG_AND:
+			return I_AND;
 
 		default:
 			return I_DOLLAR;
@@ -149,20 +190,30 @@ StackItem* Expr_performReduction(Array *stack) {
 		}
 	}
 
-	// E -> E!
+	// E -> E! or E -> !E
 	if(stack->size == 2) {
 		StackItem *argument = Array_pop(stack);
 		StackItem *operator = Array_pop(stack);
 
 		if(operator->token->kind == TOKEN_EXCLAMATION && argument->Stype == S_NONTERMINAL) {
-			UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_UNWRAP);
+			UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_UNWRAP, false);
 			operator->node = (ExpressionASTNode*)unaryE;
 			operator->Stype = S_NONTERMINAL;
 
 			mem_free(argument);
 
 			return operator;
-		} else {
+		} 
+		else if(operator->Stype == S_NONTERMINAL && argument->token->kind == TOKEN_EXCLAMATION){
+			UnaryExpressionASTNode *unaryLogE = new_UnaryExpressionASTNode(operator->node, OPERATOR_NOT, true);
+			argument->node = (ExpressionASTNode*)unaryLogE;
+			argument->Stype = S_NONTERMINAL;
+
+			mem_free(operator);
+
+			return argument;
+		}
+		else {
 			return NULL;
 		}
 	}
@@ -216,6 +267,12 @@ StackItem* Expr_performReduction(Array *stack) {
 					break;
 				case TOKEN_NULL_COALESCING:
 					operatorType = OPERATOR_NULL_COALESCING;
+					break;
+				case TOKEN_LOG_OR:
+					operatorType = OPERATOR_OR;
+					break;
+				case TOKEN_LOG_AND:
+					operatorType = OPERATOR_AND;
 					break;
 				default:
 					break;
@@ -271,6 +328,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	bottom->Stype = S_BOTTOM;
 	bottom->node = NULL;
 	bottom->token = NULL;
+	bottom->isPrefix = P_UNRESOLVED;
 	Array_push(stack, bottom);
 
 	bool reductionSuccess;
@@ -313,8 +371,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 			StackItem *topTerminal = Expr_getTopTerminal(stack);
 
-			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, functionCall);
-			int currentTokenIndex = Expr_getPrecTbIndex(current.token, false);
+			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, functionCall, parser, topTerminal->isPrefix);
+			int currentTokenIndex = Expr_getPrecTbIndex(current.token, false, parser, P_UNRESOLVED);
 
 			operation = precedence_table[topTerminalIndex][currentTokenIndex];
 		}
@@ -325,7 +383,6 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			bottom = Array_pop(stack);
 			mem_free(bottom);
 			Array_free(stack);
-			// Array_free(reduceStack);
 
 			return ParserSuccess(finalExpression->node);
 		}
@@ -337,6 +394,15 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				currentToken->Stype = S_TERMINAL;
 				currentToken->token = current.token;
 				currentToken->node = NULL;
+				if(prefix == P_IS_POSTFIX){
+					currentToken->isPrefix = P_IS_POSTFIX;
+				}
+				if(prefix == P_IS_PREFIX){
+					currentToken->isPrefix = P_IS_PREFIX;
+				}
+				if(prefix == P_UNRESOLVED){
+					currentToken->isPrefix = P_UNRESOLVED;
+				}
 				Expr_pushAfterTopTerminal(stack);
 				Array_push(stack, currentToken);
 

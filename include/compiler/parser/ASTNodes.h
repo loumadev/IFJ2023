@@ -49,7 +49,10 @@ typedef enum OperatorType {
 	OPERATOR_LESS,
 	OPERATOR_GREATER,
 	OPERATOR_LESS_EQUAL,
-	OPERATOR_GREATER_EQUAL
+	OPERATOR_GREATER_EQUAL, 
+	OPERATOR_NOT,
+	OPERATOR_OR,
+	OPERATOR_AND
 } OperatorType;
 
 enum BuiltInTypes {
@@ -191,7 +194,7 @@ typedef struct UnaryExpressionASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *argument;
 	OperatorType operator;
-	// bool isPrefix;
+	bool isPrefix;
 	struct ValueType type;
 } UnaryExpressionASTNode;
 
@@ -248,7 +251,7 @@ ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *internalId, TypeRefere
 ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
-UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator /*, bool isPrefix*/);
+UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator, bool isPrefix);
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(ValueType type, union TokenValue value);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
