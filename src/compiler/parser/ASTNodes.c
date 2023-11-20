@@ -20,6 +20,7 @@ BlockASTNode* new_BlockASTNode(
 ) {
 	prepare_node_of(BlockASTNode, NODE_BLOCK)
 	node->statements = statements;
+	node->scope = NULL;
 	return node;
 }
 
@@ -28,6 +29,7 @@ IdentifierASTNode* new_IdentifierASTNode(
 ) {
 	prepare_node_of(IdentifierASTNode, NODE_IDENTIFIER)
 	node->name = name;
+	node->id = 0;
 	return node;
 }
 
@@ -41,15 +43,34 @@ TypeReferenceASTNode* new_TypeReferenceASTNode(
 	return node;
 }
 
-VariableDeclarationASTNode* new_VariableDeclarationASTNode(
-	IdentifierASTNode *id,
-	TypeReferenceASTNode *type
+VariableDeclaratorASTNode* new_VariableDeclaratorASTNode(
+	PatternASTNode *pattern,
+	ExpressionASTNode *initializer
 ) {
-	prepare_node_of(VariableDeclarationASTNode, NODE_VARIABLE_DECLARATION)
-	node->id = id;
-	node->type = type;
+	prepare_node_of(VariableDeclaratorASTNode, NODE_VARIABLE_DECLARATOR)
+	node->pattern = pattern;
+	node->initializer = initializer;
 	return node;
 }
+
+VariableDeclarationListASTNode* new_VariableDeclarationListASTNode(
+	Array *declarators
+) {
+	prepare_node_of(VariableDeclarationListASTNode, NODE_VARIABLE_DECLARATION_LIST)
+	node->declarators = declarators;
+	return node;
+}
+
+VariableDeclarationASTNode* new_VariableDeclarationASTNode(
+	VariableDeclarationListASTNode *declaratorList,
+	bool isConstant
+) {
+	prepare_node_of(VariableDeclarationASTNode, NODE_VARIABLE_DECLARATION)
+	node->declaratorList = declaratorList;
+	node->isConstant = isConstant;
+	return node;
+}
+
 
 ExpressionStatementASTNode* new_ExpressionStatementASTNode(
 	ExpressionASTNode *expression
@@ -68,17 +89,17 @@ ReturnStatementASTNode* new_ReturnStatementASTNode(
 }
 
 ParameterASTNode* new_ParameterASTNode(
-	IdentifierASTNode *id,
+	IdentifierASTNode *internalId,
 	TypeReferenceASTNode *type,
 	ExpressionASTNode *initializer,
-	IdentifierASTNode *externalName,
+	IdentifierASTNode *externalId,
 	bool isLabeless
 ) {
 	prepare_node_of(ParameterASTNode, NODE_PARAMETER)
-	node->id = id;
+	node->internalId = internalId;
 	node->type = type;
 	node->initializer = initializer;
-	node->externalName = externalName;
+	node->externalId = externalId;
 	node->isLabeless = isLabeless;
 	return node;
 }
@@ -88,16 +109,6 @@ ParameterListASTNode* new_ParameterListASTNode(
 ) {
 	prepare_node_of(ParameterListASTNode, NODE_PARAMETER_LIST)
 	node->parameters = parameters;
-	return node;
-}
-
-ArgumentASTNode* new_ArgumentASTNode(
-	ExpressionASTNode *expression,
-	IdentifierASTNode *label
-) {
-	prepare_node_of(ArgumentASTNode, NODE_ARGUMENT)
-	node->label = label;
-	node->expression = expression;
 	return node;
 }
 
@@ -115,13 +126,115 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 	return node;
 }
 
+ArgumentASTNode* new_ArgumentASTNode(
+	ExpressionASTNode *expression,
+	IdentifierASTNode *label
+) {
+	prepare_node_of(ArgumentASTNode, NODE_ARGUMENT)
+	node->label = label;
+	node->expression = expression;
+	return node;
+}
+
+ArgumentListASTNode* new_ArgumentListASTNode(
+	Array *arguments
+) {
+	prepare_node_of(ArgumentListASTNode, NODE_ARGUMENT_LIST)
+	node->arguments = arguments;
+	return node;
+}
+
 FunctionCallASTNode* new_FunctionCallASTNode(
 	IdentifierASTNode *id,
-	Array *arguments
+	ArgumentListASTNode *argumentList
 ) {
 	prepare_node_of(FunctionCallASTNode, NODE_FUNCTION_CALL)
 	node->id = id;
-	node->arguments = arguments;
+	node->argumentList = argumentList;
+	return node;
+}
+
+PatternASTNode* new_PatternASTNode(
+	IdentifierASTNode *id,
+	TypeReferenceASTNode *type
+) {
+	prepare_node_of(PatternASTNode, NODE_PATTERN)
+	node->id = id;
+	node->type = type;
+	return node;
+}
+
+OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(
+	IdentifierASTNode *id
+) {
+	prepare_node_of(OptionalBindingConditionASTNode, NODE_OPTIONAL_BINDING_CONDITION)
+	node->id = id;
+	return node;
+}
+
+IfStatementASTNode* new_IfStatementASTNode(
+	ASTNode *test,
+	BlockASTNode *body,
+	ASTNode *alternate
+) {
+	prepare_node_of(IfStatementASTNode, NODE_IF_STATEMENT)
+	node->test = test;
+	node->body = body;
+	node->alternate = alternate;
+	return node;
+}
+
+WhileStatementASTNode* new_WhileStatementASTNode(
+	ASTNode *test,
+	BlockASTNode *body
+) {
+	prepare_node_of(WhileStatementASTNode, NODE_WHILE_STATEMENT)
+	node->test = test;
+	node->body = body;
+	return node;
+}
+
+AssignmentStatementASTNode* new_AssignmentStatementASTNode(
+	IdentifierASTNode *id,
+	ExpressionASTNode *expression
+) {
+	prepare_node_of(AssignmentStatementASTNode, NODE_ASSIGNMENT_STATEMENT)
+	node->id = id;
+	node->expression = expression;
+	return node;
+}
+
+BinaryExpressionASTNode* new_BinaryExpressionASTNode(
+	ExpressionASTNode *left,
+	ExpressionASTNode *right,
+	OperatorType operator
+) {
+	prepare_node_of(BinaryExpressionASTNode, NODE_BINARY_EXPRESSION)
+	node->left = left;
+	node->right = right;
+	node->operator = operator;
+	return node;
+}
+
+UnaryExpressionASTNode* new_UnaryExpressionASTNode(
+	ExpressionASTNode *argument,
+	OperatorType operator,
+	bool isPrefix
+) {
+	prepare_node_of(UnaryExpressionASTNode, NODE_UNARY_EXPRESSION)
+	node->argument = argument;
+	node->operator = operator;
+	node->isPrefix = isPrefix;
+	return node;
+}
+
+LiteralExpressionASTNode* new_LiteralExpressionASTNode(
+	ValueType type,
+	union TokenValue value
+) {
+	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
+	node->type = type;
+	node->value = value;
 	return node;
 }
 

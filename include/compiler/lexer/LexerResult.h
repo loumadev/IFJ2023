@@ -35,6 +35,6 @@ LexerResult LexerResult_construct(
 
 #define LexerSuccess() LexerResult_construct(RESULT_SUCCESS, SEVERITY_NONE, NULL, NULL, NULL)
 #define LexerNoMatch() LexerResult_construct(RESULT_NO_MATCH, SEVERITY_NONE, NULL, NULL, NULL)
-#define LexerError(message, markers) LexerResult_construct(RESULT_ERROR_STATIC_LEXICAL_ANALYSIS, SEVERITY_ERROR, message, markers, NULL)
+#define LexerError(message, markers) LexerResult_construct(RESULT_ERROR_LEXICAL_ANALYSIS, SEVERITY_ERROR, message, markers, NULL)
 
 #endif

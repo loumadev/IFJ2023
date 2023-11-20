@@ -7,7 +7,7 @@
 #include "inspector.h"
 #include "assertf.h"
 
-char __Lexer_resolveEscapedChar(char ch);
+bool __Lexer_resolveEscapedChar(char ch, char *out);
 
 LexerResult __Lexer_tokenizeWhitespace(Lexer *lexer);
 LexerResult __Lexer_tokenizeSpace(Lexer *lexer);
@@ -357,6 +357,7 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 		return LexerSuccess();
 	}
 	// Match string literals
+	// TODO: Allow only double-quoted string literals
 	else if(ch == '"' || ch == '\'') {
 		return __Lexer_tokenizeString(lexer);
 	}
@@ -496,24 +497,180 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source) {
 	return LexerSuccess();
 }
 
-char __Lexer_resolveEscapedChar(char ch) {
+LexerResult __Lexer_tokenizeUntilStringInterpolationTerminator(Lexer *lexer) {
+	if(!lexer) return LexerNoMatch();
+	if(!lexer->currentChar) return LexerNoMatch();
+
+	// Keep track of the depth in case of nested parentheses
+	// 1 - the initial string interpolation parenthesis to match with the closing one
+	size_t depth = 1;
+
+	// While there are tokens to process
+	LexerResult result = LexerSuccess();
+	// while((result = Lexer_tokenizeNextToken(lexer)).token && result.token->type != TOKEN_EOF) {
+	// 	if(result.token->kind == TOKEN_LEFT_PAREN) {
+	// 		depth++;
+	// 	} else if(result.token->kind == TOKEN_RIGHT_PAREN) {
+	// 		depth--;
+
+	// 		if(depth == 0) break;
+	// 	}
+	// }
+
+	do {
+		result = Lexer_tokenizeNextToken(lexer);
+		if(!result.success) return result;
+
+		// Get the token at the top of the token stream
+		Token *token = Array_get(lexer->tokens, -1);
+
+		// If the token is an EOF, the interpolation is not terminated
+		if(token->type == TOKEN_EOF) return LexerError(
+				String_fromFormat("cannot find ')' to match opening '(' in string interpolation"),
+				Array_fromArgs(
+					1,
+					Token_alloc(
+						TOKEN_MARKER,
+						TOKEN_CARET,
+						WHITESPACE_NONE,
+						TextRange_construct(
+							lexer->currentChar - 1,
+							lexer->currentChar,
+							lexer->line,
+							lexer->column
+						),
+						(union TokenValue){0}
+					)
+				)
+		);
+
+		// Sort out the parentheses
+		// We must NOT consume the closing parentheses, because of potentionally consuming
+		// whitespace directly after the closing parenthesis which is part of the string,
+		// so instead we will just check for the current char
+		if(*lexer->currentChar == '(') {
+			depth++;
+		} else if(*lexer->currentChar == ')') {
+			depth--;
+		}
+	} while(depth != 0);
+
+	// Consume the closing parenthesis
+	Lexer_advance(lexer);
+
+	return LexerSuccess();
+}
+
+bool __Lexer_resolveEscapedChar(char ch, char *out) {
 	switch(ch) {
-		case '0': return '\0';
-		case 'a': return '\a';
-		case 'b': return '\b';
-		case 'f': return '\f';
-		case 'n': return '\n';
-		case 'r': return '\r';
-		case 't': return '\t';
-		case 'v': return '\v';
-		case '\\': return '\\';
-		case '\'': return '\'';
-		case '"': return '"';
-		case 'd': return 'd';
-		case 'x': return 'x';
-		case 'u': return 'u';
-		default: return '\0';
+		case '0': *out = '\0'; break;
+		case 'n': *out = '\n'; break;
+		case 'r': *out = '\r'; break;
+		case 't': *out = '\t'; break;
+		case '\\': *out = '\\'; break;
+		case '\'': *out = '\''; break;
+		case '"': *out = '"'; break;
+		default: return false;
 	}
+
+	return true;
+}
+
+LexerResult __Lexer_parseUnicodeEscapeSequence(Lexer *lexer, char *out) {
+	// Consume the opening brace
+	if(!Lexer_match(lexer, "{")) return LexerError(
+			String_fromFormat("expected hexadecimal code in braces after unicode escape"),
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
+			)
+	);
+
+	// Parse the hexadecimal code
+	char *start = lexer->currentChar;
+	char *end = NULL;
+	long code = strtol(lexer->currentChar, &end, 16);
+
+	// Check if the code is valid
+	if(!end || code < 0 || code > 0x10FFFF) return LexerError(
+			String_fromFormat("invalid unicode scalar '%d'", code),
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						start,
+						end,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
+			)
+	);
+
+	// Check for length of the code
+	size_t length = end - lexer->currentChar;
+	if(length < 1 || length > 8) return LexerError(
+			String_fromFormat("\\u{...} escape sequence expects between 1 and 8 hex digits"),
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						start,
+						end,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
+			)
+	);
+
+	// Consume the hexadecimal code
+	lexer->currentChar = end;
+
+	// Check for the closing brace
+	if(!Lexer_match(lexer, "}")) return LexerError(
+			String_fromFormat("expected closing brace '}' after unicode escape"),
+			Array_fromArgs(
+				1,
+				Token_alloc(
+					TOKEN_MARKER,
+					TOKEN_CARET,
+					WHITESPACE_NONE,
+					TextRange_construct(
+						lexer->currentChar,
+						lexer->currentChar + 1,
+						lexer->line,
+						lexer->column
+					),
+					(union TokenValue){0}
+				)
+			)
+	);
+
+	// Write the code to the output
+	// NOTICE: This will only work for values in range 0-255
+	*out = code;
+
+	return LexerSuccess();
 }
 
 // Swift multiline string literals
@@ -563,7 +720,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	// Match string
 	while(ch != quote) {
 		// Handle unterminated string literals
-		if(ch == '\0') return LexerError(
+		if(ch == '\0' || ch == '\n') return LexerError(
 				String_fromFormat("unterminated string literal"),
 				Array_fromArgs(
 					1,
@@ -582,15 +739,119 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 				)
 		);
 
+		// TODO: Handle multiline string literals
+
 		// This consumes two characters, so in case of `\<quote>`, both backslash
 		// and the quote are consumed and therefore the loop will not terminate
 		if(ch == '\\') {
-			char escaped = Lexer_advance(lexer);
-			// TODO: Add support for unicode and hex escapes according to the language specification
-			ch = __Lexer_resolveEscapedChar(escaped);
-		}
+			// Get the character to escape (consume the backslash)
+			char toEscape = Lexer_advance(lexer);
 
-		String_appendChar(string, ch);
+			// Pick the escaping strategy
+			if(toEscape == 'u') {
+				// TODO: Add support for unicode and hex escapes according to the language specification
+				// Consume the 'u'
+				Lexer_advance(lexer);
+
+				char escaped = '\0';
+				LexerResult res = __Lexer_parseUnicodeEscapeSequence(lexer, &escaped);
+
+				if(!res.success) return res;
+
+				String_appendChar(string, escaped);
+				lexer->currentChar--; // Go back one character
+			} else if(toEscape == '(') {
+				// TODO: Add escape sequences for interpolation
+
+				// Finish the current string literal
+				{
+					TextRange range;
+					TextRange_constructor(&range, start, lexer->currentChar, lexer->line, lexer->column);
+
+					fetch_next_whitespace(lexer);
+
+					// Create a token
+					Token *token = Token_alloc(TOKEN_LITERAL, TOKEN_STRING, __wh_bit, range, (union TokenValue){.string = string});
+					assertf(token != NULL);
+
+					// Add the token to the array
+					Array_push(lexer->tokens, token);
+				}
+
+				// Add string interpolation marker
+				{
+					TextRange range;
+					TextRange_constructor(&range, lexer->currentChar, lexer->currentChar, lexer->line, lexer->column);
+
+					fetch_next_whitespace(lexer);
+
+					// Create a token
+					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+					assertf(token != NULL);
+
+					// Add the token to the array
+					Array_push(lexer->tokens, token);
+				}
+
+				// Tokenize the interpolated expression
+				{
+					// Consume the opening paren
+					Lexer_advance(lexer);
+
+					LexerResult res = __Lexer_tokenizeUntilStringInterpolationTerminator(lexer);
+					if(!res.success) return res;
+
+					lexer->currentChar--; // Go back one character
+				}
+
+				// Add string interpolation marker
+				{
+					TextRange range;
+					TextRange_constructor(&range, lexer->currentChar, lexer->currentChar, lexer->line, lexer->column);
+
+					fetch_next_whitespace(lexer);
+
+					// Create a token
+					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+					assertf(token != NULL);
+
+					// Add the token to the array
+					Array_push(lexer->tokens, token);
+				}
+
+				// Start a new string literal
+				{
+					start = lexer->currentChar + 1; // +1 to fix the text range
+					string = String_alloc("");
+				}
+			} else {
+				char escaped = '\0';
+				bool res = __Lexer_resolveEscapedChar(toEscape, &escaped);
+
+				if(!res) return LexerError(
+						String_fromFormat("invalid escape sequence '\\%s' in literal", format_char(toEscape)),
+						Array_fromArgs(
+							1,
+							Token_alloc(
+								TOKEN_MARKER,
+								TOKEN_CARET,
+								WHITESPACE_NONE,
+								TextRange_construct(
+									lexer->currentChar - 1,
+									lexer->currentChar,
+									lexer->line,
+									lexer->column
+								),
+								(union TokenValue){0}
+							)
+						)
+				);
+
+				String_appendChar(string, escaped);
+			}
+		} else {
+			String_appendChar(string, ch);
+		}
 
 		ch = Lexer_advance(lexer);
 	}
