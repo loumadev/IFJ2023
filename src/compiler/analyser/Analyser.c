@@ -658,7 +658,11 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				default: {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("'%s' is not a %s unary operator", __Analyser_stringifyOperator(unary->operator), unary->isPrefix ? "prefix" : "postfix"),
+						String_fromFormat(
+							"'%s' is not a %s unary operator",
+							__Analyser_stringifyOperator(unary->operator),
+							unary->isPrefix ? "prefix" : "postfix"
+						),
 						NULL
 					);
 				} break;
