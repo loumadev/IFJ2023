@@ -208,10 +208,8 @@ typedef struct PatternASTNode {
 } PatternASTNode;
 
 typedef struct OptionalBindingConditionASTNode {
-	enum ASTNodeType _type;
-	PatternASTNode *pattern;
-	ExpressionASTNode *initializer;
-	bool isConstant;
+    enum ASTNodeType _type;
+    IdentifierASTNode *id;
 } OptionalBindingConditionASTNode;
 
 typedef struct IfStatementASTNode {
@@ -256,7 +254,7 @@ ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierAS
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
 PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
-OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
+OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(IdentifierASTNode* id);
 IfStatementASTNode* new_IfStatementASTNode(ASTNode *test,  BlockASTNode *body, ASTNode *alternate);
 WhileStatementASTNode* new_WhileStatementASTNode(ASTNode *test,  BlockASTNode *body);
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);

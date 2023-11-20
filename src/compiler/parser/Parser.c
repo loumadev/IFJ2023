@@ -435,31 +435,26 @@ ParserResult __Parser_parsePattern(Parser *parser) {
 ParserResult __Parser_parseOptionalBindingCondition(Parser *parser) {
 	assertf(parser != NULL);
 
+
+	// consume let
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
-
-	bool isConstant = result.token->kind == TOKEN_LET;
-
-	ParserResult patternResult = __Parser_parsePattern(parser);
-	if(!patternResult.success) return patternResult;
 
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
-	ExpressionASTNode *initializer = NULL;
-
-	if(peek.token->kind == TOKEN_EQUAL) {
-
-		// Skip the '=' token
-		LexerResult tmp = Lexer_nextToken(parser->lexer);
-		if(!tmp.success) return LexerToParserError(result);
-
-		ParserResult initializerResult = __Parser_parseExpression(parser);
-		if(!initializerResult.success) return initializerResult;
-		initializer = (ExpressionASTNode*)initializerResult.node;
+	if(peek.token->type != TOKEN_IDENTIFIER) {
+		return ParserError(
+			String_fromFormat("let must be followed by identifier"),
+			Array_fromArgs(1, peek.token));
 	}
 
-	OptionalBindingConditionASTNode *bindingCondition = new_OptionalBindingConditionASTNode((PatternASTNode*)patternResult.node, (ExpressionASTNode*)initializer, isConstant);
+	result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	IdentifierASTNode *id = new_IdentifierASTNode(result.token->value.string);
+
+	OptionalBindingConditionASTNode *bindingCondition = new_OptionalBindingConditionASTNode(id);
 
 	return ParserSuccess(bindingCondition);
 }
@@ -484,7 +479,13 @@ ParserResult __Parser_parseTest(Parser *parser) {
 	peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
-	if(peek.token->kind == TOKEN_LET || peek.token->kind == TOKEN_VAR) {
+	if(peek.token->kind == TOKEN_VAR) {
+		return ParserError(
+			String_fromFormat("cannot use var in optinal binding condition"),
+			Array_fromArgs(1, peek.token));
+	}
+
+	if(peek.token->kind == TOKEN_LET) {
 		if(hasOptionalParen) {
 			return ParserError(
 				String_fromFormat("cannot use optional binding in condition with parentheses"),

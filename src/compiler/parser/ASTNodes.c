@@ -164,14 +164,10 @@ PatternASTNode* new_PatternASTNode(
 }
 
 OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(
-	PatternASTNode *pattern,
-	ExpressionASTNode *initializer,
-	bool isConstant
+	IdentifierASTNode *id
 ) {
 	prepare_node_of(OptionalBindingConditionASTNode, NODE_OPTIONAL_BINDING_CONDITION)
-	node->pattern = pattern;
-	node->initializer = initializer;
-	node->isConstant = isConstant;
+	node->id = id;
 	return node;
 }
 

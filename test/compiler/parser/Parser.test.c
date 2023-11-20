@@ -651,7 +651,47 @@ DESCRIBE(if_statement, "If statement parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("Binding condition with parantheses") {
-		Lexer_setSource(&lexer, "if (let b = a) {}");
+		Lexer_setSource(&lexer, "if (let b) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition with initializer") {
+		Lexer_setSource(&lexer, "if let hello = world {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+
+	TEST_BEGIN("Binding condition with type and initializer") {
+		Lexer_setSource(&lexer, "if let hello: Int = 10 {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition with var") {
+		Lexer_setSource(&lexer, "if var hello = world {}");
 		result = Parser_parse(&parser);
 
 		EXPECT_FALSE(result.success);
@@ -664,7 +704,7 @@ DESCRIBE(if_statement, "If statement parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("Binding condition no body, no else") {
-		Lexer_setSource(&lexer, "if let b = a {}");
+		Lexer_setSource(&lexer, "if let b {}");
 		result = Parser_parse(&parser);
 
 		EXPECT_TRUE(result.success);
@@ -676,22 +716,10 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_TRUE(if_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
 		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)if_statement->test;
-		EXPECT_TRUE(binding_condition->isConstant);
 
-		PatternASTNode *pattern = binding_condition->pattern;
-		EXPECT_NOT_NULL(pattern);
-		EXPECT_NULL(pattern->type);
-
-		IdentifierASTNode *id = pattern->id;
+		IdentifierASTNode *id = binding_condition->id;
 		EXPECT_NOT_NULL(id);
 		EXPECT_TRUE(String_equals(id->name, "b"));
-
-		IdentifierASTNode *initializer = (IdentifierASTNode*)binding_condition->initializer;
-
-		EXPECT_NOT_NULL(initializer);
-		EXPECT_TRUE(initializer->_type == NODE_IDENTIFIER);
-		EXPECT_NOT_NULL(initializer->name);
-		EXPECT_TRUE(String_equals(initializer->name, "a"));
 
 		// if body
 		BlockASTNode *body = if_statement->body;
@@ -766,7 +794,46 @@ DESCRIBE(while_statement, "While statement parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("Binding condition with parantheses") {
-		Lexer_setSource(&lexer, "while (let hello = world) {}");
+		Lexer_setSource(&lexer, "while (let hello) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition with initializer") {
+		Lexer_setSource(&lexer, "while let hello = world {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition with type and initializer") {
+		Lexer_setSource(&lexer, "while let hello: Int = 10 {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+	} TEST_END();
+
+	TEST_BEGIN("Binding condition with var") {
+		Lexer_setSource(&lexer, "while var hello = world {}");
 		result = Parser_parse(&parser);
 
 		EXPECT_FALSE(result.success);
@@ -779,7 +846,7 @@ DESCRIBE(while_statement, "While statement parsing") {
 	} TEST_END();
 
 	TEST_BEGIN("Binding condition no body") {
-		Lexer_setSource(&lexer, "while let hello = world {}");
+		Lexer_setSource(&lexer, "while let hello {}");
 		result = Parser_parse(&parser);
 
 		EXPECT_TRUE(result.success);
@@ -791,22 +858,10 @@ DESCRIBE(while_statement, "While statement parsing") {
 		EXPECT_TRUE(while_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
 		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)while_statement->test;
-		EXPECT_TRUE(binding_condition->isConstant);
 
-		PatternASTNode *pattern = binding_condition->pattern;
-		EXPECT_NOT_NULL(pattern);
-		EXPECT_NULL(pattern->type);
-
-		IdentifierASTNode *id = pattern->id;
+		IdentifierASTNode *id = binding_condition->id;
 		EXPECT_NOT_NULL(id);
 		EXPECT_TRUE(String_equals(id->name, "hello"));
-
-		IdentifierASTNode *initializer = (IdentifierASTNode*)binding_condition->initializer;
-
-		EXPECT_NOT_NULL(initializer);
-		EXPECT_TRUE(initializer->_type == NODE_IDENTIFIER);
-		EXPECT_NOT_NULL(initializer->name);
-		EXPECT_TRUE(String_equals(initializer->name, "world"));
 
 		// while body
 		BlockASTNode *body = while_statement->body;
