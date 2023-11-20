@@ -50,6 +50,8 @@ VariableDeclaration* new_VariableDeclaration(
 		declaration->type.isNullable = node->pattern->type ? node->pattern->type->isNullable : false;
 		declaration->isUserDefined = true;
 		declaration->isInitialized = node->initializer != NULL;
+
+		node->pattern->id->id = declaration->id;
 	} else {
 		declaration->node = NULL;
 		declaration->name = name;
