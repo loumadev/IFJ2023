@@ -237,6 +237,18 @@ char* __Analyser_stringifyOperator(OperatorType operator) {
 	}
 }
 
+String* __Analyser_formatBooleanTestErrorMessage(ValueType type) {
+	return String_fromFormat(
+		"type '%s' cannot be used as a boolean%s",
+		__Analyser_stringifyType(type)->value,
+		type.isNullable ? "; test for '= nil' instead" :
+			type.type == TYPE_INT ? "; test for '!= 0' instead" :
+				type.type == TYPE_DOUBLE ? "; test for '!= 0.0' instead" :
+					type.type == TYPE_STRING ? "; test for '!= \"\"' instead" :
+						""
+	);
+}
+
 void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent) {
 	block->scope = BlockScope_alloc(parent);
 
@@ -479,15 +491,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						if(type.type != TYPE_BOOL) {
 							return AnalyserError(
 								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
-								String_fromFormat(
-									"type '%s' cannot be used as a boolean%s",
-									__Analyser_stringifyType(type)->value,
-									type.isNullable ? "; test for '= nil' instead" :
-										type.type == TYPE_INT ? "; test for '!= 0' instead" :
-											type.type == TYPE_DOUBLE ? "; test for '!= 0.0' instead" :
-												type.type == TYPE_STRING ? "; test for '!= \"\"' instead" :
-													""
-								),
+								__Analyser_formatBooleanTestErrorMessage(type),
 								NULL
 							);
 						}
@@ -644,6 +648,18 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 			switch(unary->operator) {
 				case OPERATOR_UNWRAP: {
+					if(!type.isNullable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_OTHER,
+							String_fromFormat("cannot force unwrap value of non-optional type '%s'", __Analyser_stringifyType(type)->value),
+							NULL
+						);
+					}
+
+					unary->type = (ValueType){.type = type.type, .isNullable = false};
+				} break;
+
+				case OPERATOR_NOT: {
 					if(!type.isNullable) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_OTHER,
