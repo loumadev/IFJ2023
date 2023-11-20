@@ -29,6 +29,7 @@ IdentifierASTNode* new_IdentifierASTNode(
 ) {
 	prepare_node_of(IdentifierASTNode, NODE_IDENTIFIER)
 	node->name = name;
+	node->id = 0;
 	return node;
 }
 
