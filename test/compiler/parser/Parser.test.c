@@ -1262,4 +1262,88 @@ DESCRIBE(function_calls, "Function call parsing") {
 
 		EXPECT_BINARY_NODE(argument->expression, OPERATOR_MUL, NODE_LITERAL_EXPRESSION, NODE_LITERAL_EXPRESSION, binary);
 	} TEST_END();
+
+	TEST_BEGIN("@Fothsid's function call") {
+		Lexer_setSource(
+			&lexer,
+			"a = foo(bar(100/bar(10))+50)" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		Array *arr = function_call->argumentList->arguments;
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arr, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+
+		EXPECT_BINARY_NODE(argument->expression, OPERATOR_PLUS, NODE_FUNCTION_CALL, NODE_LITERAL_EXPRESSION, binaryAdd);
+
+		FunctionCallASTNode *function_call2 = (FunctionCallASTNode*)binaryAdd->left;
+		EXPECT_NOT_NULL(function_call2);
+		EXPECT_TRUE(function_call2->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id2 = function_call2->id;
+		EXPECT_NOT_NULL(id2);
+		EXPECT_TRUE(String_equals(id2->name, "bar"));
+
+		Array *arr2 = function_call2->argumentList->arguments;
+		EXPECT_EQUAL_INT(arr2->size, 1);
+
+		ArgumentASTNode *argument2 = (ArgumentASTNode*)Array_get(arr2, 0);
+		EXPECT_NOT_NULL(argument2);
+		EXPECT_NULL(argument2->label);
+
+
+		EXPECT_BINARY_NODE(argument2->expression, OPERATOR_DIV, NODE_LITERAL_EXPRESSION, NODE_FUNCTION_CALL, binaryDiv);
+
+		LiteralExpressionASTNode *literal1 = (LiteralExpressionASTNode*)binaryDiv->left;
+		EXPECT_NOT_NULL(literal1);
+		EXPECT_TRUE(literal1->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal1->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(literal1->value.integer, 100);
+
+		FunctionCallASTNode *function_call3 = (FunctionCallASTNode*)binaryDiv->right;
+		EXPECT_NOT_NULL(function_call3);
+		EXPECT_TRUE(function_call3->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id3 = function_call3->id;
+		EXPECT_NOT_NULL(id3);
+		EXPECT_TRUE(String_equals(id3->name, "bar"));
+
+		Array *arr3 = function_call3->argumentList->arguments;
+		EXPECT_EQUAL_INT(arr3->size, 1);
+
+		ArgumentASTNode *argument3 = (ArgumentASTNode*)Array_get(arr3, 0);
+		EXPECT_NOT_NULL(argument3);
+		EXPECT_NULL(argument3->label);
+
+		LiteralExpressionASTNode *literal2 = (LiteralExpressionASTNode*)argument3->expression;
+		EXPECT_NOT_NULL(literal2);
+		EXPECT_TRUE(literal2->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal2->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(literal2->value.integer, 10);
+
+
+
+		LiteralExpressionASTNode *literal3 = (LiteralExpressionASTNode*)binaryAdd->right;
+		EXPECT_NOT_NULL(literal3);
+		EXPECT_TRUE(literal3->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal3->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(literal3->value.integer, 50);
+	} TEST_END();
 }
