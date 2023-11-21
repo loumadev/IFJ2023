@@ -34,23 +34,25 @@ typedef struct FunctionDeclaration {
 	enum DeclarationType _type;
 	size_t id;
 	struct FunctionDeclarationASTNode *node;
-	HashMap /*<String, VariableDeclaration>*/ *variables;
+	HashMap /*<id: String, VariableDeclaration>*/ *variables;
 	bool isUsed;
 	ValueType returnType;
 } FunctionDeclaration;
 
 typedef struct BlockScope {
 	struct BlockScope *parent;
-	HashMap /*<String, VariableDeclaration>*/ *variables;
+	HashMap /*<name: String, VariableDeclaration>*/ *variables;
+	FunctionDeclaration *function; // Defined when this is function body scope
 } BlockScope;
 
 typedef struct Analyser {
 	ProgramASTNode *ast;
 	BlockScope *globalScope;
-	HashMap /*<String, Array<FunctionDeclaration>>*/ *functions; // Relative to global scope
-	HashMap /*<String, VariableDeclaration>*/ *variables; // Relative to global scope //! Unused
+	HashMap /*<name: String, Array<FunctionDeclaration>>*/ *overloads; // Relative to global scope
+	HashMap /*<id: String, FunctionDeclaration>*/ *functions; // Relative to global scope //! Unused
+	HashMap /*<id: String, VariableDeclaration>*/ *variables; // Relative to global scope //! Unused
+	HashMap /*<id: String, Declaration>*/ *idsPool;
 	HashMap /*<String, String>*/ *types; // TODO: delete this
-	HashMap /*<String, Declaration>*/ *idsPool;
 	size_t idCounter;
 } Analyser;
 
