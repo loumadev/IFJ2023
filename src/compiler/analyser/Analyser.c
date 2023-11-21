@@ -528,6 +528,18 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				}
 			} break;
 
+			case NODE_WHILE_STATEMENT: {
+				WhileStatementASTNode *whileStatement = (WhileStatementASTNode*)statement;
+
+				// Resolve the condition of the while statement
+				AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)whileStatement, block->scope);
+				if(!result.success) return result;
+
+				// Analyse the body of the while statement
+				result = __Analyser_analyseBlock(analyser, whileStatement->body);
+				if(!result.success) return result;
+			} break;
+
 			default: {
 				warnf("TODO: Analyse statement %d", statement->_type);
 			} break;
