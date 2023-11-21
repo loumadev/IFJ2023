@@ -47,7 +47,7 @@ typedef struct BlockScope {
 typedef struct Analyser {
 	ProgramASTNode *ast;
 	BlockScope *globalScope;
-	HashMap /*<String, Array<FunctionDeclaration>>*/ *functions; // Relative to global scope
+	HashMap /*<String, Array<FunctionDeclaration>>*/ *overloads; // Relative to global scope
 	HashMap /*<String, VariableDeclaration>*/ *variables; // Relative to global scope //! Unused
 	HashMap /*<String, String>*/ *types; // TODO: delete this
 	HashMap /*<String, Declaration>*/ *idsPool;

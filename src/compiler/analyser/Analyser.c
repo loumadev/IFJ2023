@@ -1177,7 +1177,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 		// Query the hashmap for the function declaration
 		String *name = declarationNode->id->name;
-		Array *overloads = HashMap_get(analyser->functions, name->value);
+		Array *overloads = HashMap_get(analyser->overloads, name->value);
 
 		// No overloads yet, create a new array and add the function declaration
 		if(!overloads) {
@@ -1185,7 +1185,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 			overloads = Array_alloc(1);
 
 			// Add the array to the hashmap
-			HashMap_set(analyser->functions, name->value, overloads);
+			HashMap_set(analyser->overloads, name->value, overloads);
 
 			// Add the function declaration to the array
 			Array_push(overloads, declaration);
