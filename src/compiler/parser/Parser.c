@@ -617,7 +617,7 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 
 	ExpressionASTNode *expression = NULL;
 
-	if(peek.token->type != TOKEN_EOF) {
+	if(peek.token->type != TOKEN_EOF && peek.token->kind != TOKEN_RIGHT_BRACE) {
 		ParserResult expressionResult = __Parser_parseExpression(parser);
 		if(!expressionResult.success) return expressionResult;
 		expression = (ExpressionASTNode*)expressionResult.node;
