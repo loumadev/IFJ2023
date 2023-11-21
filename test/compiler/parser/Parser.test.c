@@ -501,6 +501,54 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 		EXPECT_TRUE(function_return->operator == OPERATOR_GREATER);
 
 	} TEST_END();
+
+	TEST_BEGIN("With return null") {
+		Lexer_setSource(
+			&lexer,
+			"func foo() {" LF
+			TAB "return" LF
+			"}" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_FUNCTION_DECLARATION);
+
+		FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)statement;
+
+		IdentifierASTNode *id = declaration->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "foo"));
+
+		// return type
+		EXPECT_NULL(declaration->returnType);
+
+		// parameters
+		ParameterListASTNode *list = declaration->parameterList;
+		EXPECT_NOT_NULL(list->parameters);
+
+		Array *arr = list->parameters;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+		// body
+		BlockASTNode *body = declaration->body;
+		EXPECT_NOT_NULL(body->statements);
+
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		StatementASTNode *body_statement = Array_get(arr, 0);
+		EXPECT_TRUE(body_statement->_type == NODE_RETURN_STATEMENT);
+		ReturnStatementASTNode *return_statement = (ReturnStatementASTNode*)body_statement;
+		EXPECT_NULL(return_statement->expression);
+
+	} TEST_END();
+
 }
 
 DESCRIBE(if_statement, "If statement parsing") {
@@ -1346,4 +1394,5 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_TRUE(literal3->type.type == TYPE_INT);
 		EXPECT_EQUAL_INT(literal3->value.integer, 50);
 	} TEST_END();
+
 }
