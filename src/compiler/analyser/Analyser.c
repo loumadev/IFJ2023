@@ -96,6 +96,7 @@ BlockScope* BlockScope_alloc(BlockScope *parent) {
 	BlockScope *scope = (BlockScope*)mem_alloc(sizeof(BlockScope));
 	scope->parent = parent;
 	scope->variables = HashMap_alloc();
+	scope->function = NULL;
 	return scope;
 }
 
