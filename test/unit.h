@@ -64,10 +64,10 @@ void unit_print_results();
 #define __location() __locationFormat(__FILE__, "%d")
 #define __string(format, ...) String_fromFormat(format, ## __VA_ARGS__)
 #define __string_init(name, value) String*__id(name) = (value)
-#define __string_free(name) String_free(__id(name))
+#define __string_free(name) String_free(__id(name)); __id(name) = NULL
 #define __error(format, ...) __string(RED format " " __location() RST, ## __VA_ARGS__, __LINE__)
 
-#define __UNIT_EXPECT(condition, message, id) __string_init(__concat(str, id), (message)); if(unit_assert(condition, #condition, __id(__concat(str, id))->value)) {__string_free(__concat(str, id)); break;} else {__string_free(__concat(str, id));}
+#define __UNIT_EXPECT(condition, message, id) __string_init(__concat(str, id), (message)); if(unit_assert(condition, #condition, __id(__concat(str, id))->value)) {break;} else {__string_free(__concat(str, id));}
 #define UNIT_EXPECT(condition, message) __UNIT_EXPECT(condition, message, __COUNTER__)
 #define UNIT_REGISTER_FILE(name) unit_register_file(name)
 #define UNIT_REGISTER_SUIT(func, desc, file, line) unit_run_test_suite(WHITE desc " " __locationFormat(file, line) RST, func)
