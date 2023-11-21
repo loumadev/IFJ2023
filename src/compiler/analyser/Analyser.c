@@ -12,6 +12,8 @@ void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
 AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser);
+bool __Analyser_isReturnReachable_processNode(Analyser *analyser, StatementASTNode *node);
+bool __Analyser_isReturnReachable(Analyser *analyser, BlockASTNode *block);
 
 
 ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind) {
@@ -183,6 +185,50 @@ FunctionDeclaration* Analyser_getNearestFunctionDeclaration(Analyser *analyser, 
 	}
 
 	return NULL;
+}
+
+bool __Analyser_isReturnReachable_processNode(Analyser *analyser, StatementASTNode *node) {
+	(void)analyser;
+
+	switch(node->_type) {
+		case NODE_RETURN_STATEMENT: return true;
+		case NODE_IF_STATEMENT: {
+			IfStatementASTNode *ifStatement = (IfStatementASTNode*)node;
+
+			bool isReachable = true;
+
+			// Every branch must have a return statement
+			isReachable &= __Analyser_isReturnReachable(analyser, ifStatement->body);
+
+			if(ifStatement->alternate) {
+				if(ifStatement->alternate->_type == NODE_BLOCK) {
+					isReachable &= __Analyser_isReturnReachable(analyser, (BlockASTNode*)ifStatement->alternate);
+				} else {
+					isReachable &= __Analyser_isReturnReachable_processNode(analyser, ifStatement->alternate);
+				}
+			} else {
+				isReachable = false;
+			}
+
+			return isReachable;
+		} break;
+
+		default: return false;
+	}
+}
+
+bool __Analyser_isReturnReachable(Analyser *analyser, BlockASTNode *block) {
+	(void)analyser;
+
+	for(size_t i = 0; i < block->statements->size; i++) {
+		StatementASTNode *statement = Array_get(block->statements, i);
+
+		if(__Analyser_isReturnReachable_processNode(analyser, statement)) return true;
+
+		// TODO: Cut off unreachable code here
+	}
+
+	return false;
 }
 
 enum BuiltInTypes Analyser_resolveBuiltInType(String *name) {
@@ -578,6 +624,80 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 				AnalyserResult result = __Analyser_analyseBlock(analyser, function->body);
 				if(!result.success) return result;
+
+				FunctionDeclaration *declaration = Analyser_getFunctionById(analyser, function->id->id);
+				assertf(declaration != NULL, "Cannot find function declaration with id %ld", function->id->id);
+
+				// TODO: handle implicit return
+
+				// Analyse the return statement reachability
+				if(declaration->returnType.type != TYPE_VOID && !__Analyser_isReturnReachable(analyser, function->body)) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat(
+							"missing return in global function expected to return '%s'",
+							__Analyser_stringifyType(declaration->returnType)->value
+						),
+						NULL
+					);
+				}
+			} break;
+
+			case NODE_RETURN_STATEMENT: {
+				ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statement;
+
+				// Try to find the nearest function scope
+				FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, block->scope);
+
+				// Return statement is not inside a function
+				if(!function) {
+					return AnalyserError(
+						RESULT_ERROR_SYNTACTIC_ANALYSIS, // This was requested by the examiner
+						String_fromFormat("return invalid outside of a func"),
+						NULL
+					);
+				}
+
+				// Function has no return type but returns something
+				if(function->returnType.type == TYPE_VOID && returnStatement->expression) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat("unexpected non-void return value in void function"),
+						NULL
+					);
+				}
+
+				// Function has a return type but returns nothing
+				if(function->returnType.type != TYPE_VOID && !returnStatement->expression) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat("non-void function should return a value"),
+						NULL
+					);
+				}
+
+				// Function has a return type but returns incompatible type
+				if(function->returnType.type != TYPE_VOID && returnStatement->expression) {
+					// Get the type of the return expression
+					ValueType type;
+					AnalyserResult result = Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, &type);
+					if(!result.success) return result;
+
+					// Validate the type of the return expression
+					if(!is_value_assignable(function->returnType, type)) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"cannot convert value of type '%s' to specified type '%s'",
+								__Analyser_stringifyType(type)->value,
+								__Analyser_stringifyType(function->returnType)->value
+							),
+							NULL
+						);
+					}
+				}
+
+				function->isUsed = true;
 			} break;
 
 			default: {
@@ -661,6 +781,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			// Resolve overload
 			// TODO: Resolve types of the arguments
 			// TODO: Match the resolved types with the available overloads
+			// TODO: Validate argument labels
 
 			Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
 

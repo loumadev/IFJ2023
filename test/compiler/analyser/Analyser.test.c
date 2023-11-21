@@ -1522,4 +1522,587 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 
 }
 
-// TODO: Nullable in expression
+DESCRIBE(return_statement, "Analysis of a return statement") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Valid simple return statement") {
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> Int {" LF
+			TAB "return 7" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> String {" LF
+			TAB "return \"hey!\"" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> Double {" LF
+			TAB "return 7.6" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> Bool {" LF
+			TAB "return true" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid simple return statement") {
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> Int {" LF
+			TAB "return true" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> String {" LF
+			TAB "return 10" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> Double {" LF
+			TAB "return \"hh\"" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func foo() -> Bool {" LF
+			TAB "return 1.0" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Valid return statement with expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 7" LF
+			"func foo() -> Int {" LF
+			TAB "return a * 3 + 2" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = \"hey\"" LF
+			"func foo() -> String {" LF
+			TAB "return a + \"!\"" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = 7.6" LF
+			"func foo() -> Double {" LF
+			TAB "return a * 3.2 + 2.1e-2" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = true" LF
+			"func foo() -> Bool {" LF
+			TAB "return a || false" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid return statement with expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 7" LF
+			"func foo() -> String {" LF
+			TAB "return a * 3 + 2" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = \"hey\"" LF
+			"func foo() -> Int {" LF
+			TAB "return a + \"!\"" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = 7.6" LF
+			"func foo() -> Bool {" LF
+			TAB "return a * 3.2 + 2.1e-2" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = true" LF
+			"func foo() -> Double {" LF
+			TAB "return a || false" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Valid return statement with nullable expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "return a * 3 + 2" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "return nil" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid return statement with nullable expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int {" LF
+			TAB "return a" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = 7" LF
+			"func foo() -> Int {" LF
+			TAB "return nil" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid return statement outside of function") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int {" LF
+			TAB "return a" LF
+			"}" LF
+			"" LF
+			"return a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = 7" LF
+			"return nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid return statement with expression inside of function with Void return type") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Void {" LF
+			TAB "return a" LF
+			"}" LF
+			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() {" LF
+			TAB "return a " LF
+			"}" LF
+			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Missing return value inside of function with non-Void return type") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int {" LF
+			TAB "return" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+}
+
+DESCRIBE(return_reachability, "Return reachability analysis") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Simple return statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "return a" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Return statement inside if statemtent") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(true) {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			TAB "return a" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Return statement in all branches of the if statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(true) {" LF
+			TAB TAB "return a" LF
+			TAB "} else {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Return statement in all branches of the multibranch if statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(true) {" LF
+			TAB TAB "return a" LF
+			TAB "} else if(false) {" LF
+			TAB TAB "return a" LF
+			TAB "} else {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Return statement in all branches of the multibranch, multilevel if statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(true) {" LF
+			TAB TAB "return a" LF
+			TAB "} else if(false) {" LF
+			TAB TAB "if(a == 2) {" LF
+			TAB TAB TAB "return a" LF
+			TAB TAB "} else {" LF
+			TAB TAB TAB "return a" LF
+			TAB TAB "}" LF
+			TAB "} else {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Return statement inside while loop") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "while(true) {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			TAB "return a" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Simple missing return statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "var b = a" LF
+			"}" LF
+			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Missing return statement inside else branch of if statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(false) {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Missing return statement inside one of the branches of if statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(false) {" LF
+			TAB TAB "return a" LF
+			TAB "} else {" LF
+			TAB TAB "var b = a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Missing return statement inside missing branch of if statement") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "if(true) {" LF
+			TAB TAB "return a" LF
+			TAB "} else if(false) {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Missing return statement inside inside statement with returning while loop") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 7" LF
+			"func foo() -> Int? {" LF
+			TAB "while(true) {" LF
+			TAB TAB "return a" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+}
