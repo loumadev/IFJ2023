@@ -132,10 +132,14 @@ void Analyser_destructor(Analyser *analyser) {
 }
 
 Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id) {
+	if(id == 0) return NULL;
+
 	return HashMap_get(analyser->idsPool, String_fromLong(id)->value);
 }
 
 FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id) {
+	if(id == 0) return NULL;
+
 	Declaration *declaration = Analyser_getDeclarationById(analyser, id);
 	if(!declaration) return NULL;
 	if(declaration->_type != DECLARATION_FUNCTION) return NULL;
@@ -144,6 +148,8 @@ FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id) {
 }
 
 VariableDeclaration* Analyser_getVariableById(Analyser *analyser, size_t id) {
+	if(id == 0) return NULL;
+
 	Declaration *declaration = Analyser_getDeclarationById(analyser, id);
 	if(!declaration) return NULL;
 	if(declaration->_type != DECLARATION_VARIABLE) return NULL;
