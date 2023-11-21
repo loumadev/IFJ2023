@@ -106,6 +106,7 @@ void BlockScope_free(BlockScope *scope) {
 
 void Analyser_constructor(Analyser *analyser) {
 	analyser->globalScope = BlockScope_alloc(NULL);
+	analyser->overloads = HashMap_alloc();
 	analyser->functions = HashMap_alloc();
 	analyser->variables = HashMap_alloc();
 	analyser->idsPool = HashMap_alloc();
@@ -158,6 +159,18 @@ VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, 
 	while(scope) {
 		declaration = HashMap_get(scope->variables, name);
 		if(declaration) return declaration;
+
+		scope = scope->parent;
+	}
+
+	return NULL;
+}
+
+FunctionDeclaration* Analyser_getNearestFunctionDeclaration(Analyser *analyser, BlockScope *scope) {
+	(void)analyser;
+
+	while(scope) {
+		if(scope->function) return scope->function;
 
 		scope = scope->parent;
 	}
@@ -369,18 +382,21 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				VariableDeclarationASTNode *declarationNode = (VariableDeclarationASTNode*)statement;
 				Array *declarators = declarationNode->declaratorList->declarators;
 
+				// Try to find the nearest function scope
+				FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, block->scope);
+
 				for(size_t j = 0; j < declarators->size; j++) {
 					VariableDeclaratorASTNode *declaratorNode = Array_get(declarators, j);
 
 					// In case the initializer is absent, the type annotation is required
 					// TODO: This might be also a syntax error?
-					if(!declaratorNode->initializer && !declaratorNode->pattern->type) {
-						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
-							String_fromFormat("type annotation missing in pattern"),
-							NULL
-						);
-					}
+					// if(!declaratorNode->initializer && !declaratorNode->pattern->type) {
+					// 	return AnalyserError(
+					// 		RESULT_ERROR_SEMANTIC_OTHER,
+					// 		String_fromFormat("type annotation missing in pattern"),
+					// 		NULL
+					// 	);
+					// }
 
 					// Cannot resolve type (provided type is not supported)
 					// TODO: This might be a syntax error as well? Others probably implemented it fixed, using grammar rules
@@ -455,7 +471,17 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						);
 					}
 
+					// Add the variable declaration to the current scope
 					HashMap_set(block->scope->variables, declaration->name->value, declaration);
+
+					// Register the variable declaration to the global/function scope
+					String *id = String_fromLong(declaration->id);
+
+					if(function) {
+						HashMap_set(function->variables, id->value, declaration);
+					} else {
+						HashMap_set(analyser->variables, id->value, declaration);
+					}
 				}
 			} break;
 
@@ -540,6 +566,13 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(!result.success) return result;
 			} break;
 
+			case NODE_FUNCTION_DECLARATION: {
+				FunctionDeclarationASTNode *function = (FunctionDeclarationASTNode*)statement;
+
+				AnalyserResult result = __Analyser_analyseBlock(analyser, function->body);
+				if(!result.success) return result;
+			} break;
+
 			default: {
 				warnf("TODO: Analyse statement %d", statement->_type);
 			} break;
@@ -608,7 +641,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				return AnalyserSuccess();
 			}
 
-			Array /*<FunctionDeclaration>*/ *declarations = HashMap_get(analyser->functions, call->id->name->value);
+			Array /*<FunctionDeclaration>*/ *declarations = HashMap_get(analyser->overloads, call->id->name->value);
 
 			if(!declarations) {
 				return AnalyserError(
@@ -1101,6 +1134,13 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 		FunctionDeclarationASTNode *declarationNode = (FunctionDeclarationASTNode*)statement;
 		FunctionDeclaration *declaration = new_FunctionDeclaration(analyser, declarationNode);
 
+		// Mark block scope as function scope
+		declarationNode->body->scope->function = declaration;
+
+		// Register the function declaration to the global scope
+		HashMap_set(analyser->functions, String_fromLong(declaration->id)->value, declaration);
+
+		// Resolve return type
 		if(declarationNode->returnType) {
 			declaration->returnType.type = Analyser_resolveBuiltInType(declarationNode->returnType->id->name);
 			declaration->returnType.isNullable = declarationNode->returnType->isNullable;
@@ -1112,8 +1152,6 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					NULL
 				);
 			}
-
-			declaration->returnType.isNullable = declarationNode->returnType->isNullable;
 		} else {
 			declaration->returnType = (ValueType){.type = TYPE_VOID, .isNullable = false};
 		}

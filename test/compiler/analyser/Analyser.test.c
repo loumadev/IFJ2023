@@ -1167,4 +1167,359 @@ DESCRIBE(if_statement_analysis, "Analysis of the if statements") {
 	} TEST_END();
 }
 
+DESCRIBE(type_compatibility_expr, "Type compatibility in expressions") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Incompatible types in expression") {
+
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: String = \"a\"" LF
+			"var b: String = \"b\"" LF
+			"var c = a + b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Incompatible types in expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 1 + true" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = 1.0 + false" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = \"hey\" + false" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a = \"hey\" + 0.5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var z = 1" LF
+			"var a = \"hey\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Nullably incompatible types in expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 1" LF
+			"var b = a + 1" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: String? = \"a\"" LF
+			"var b: String? = \"b\"" LF
+			"var c = a + b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+	} TEST_END();
+
+}
+
+DESCRIBE(declaration_registry, "Declaration registry") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Registration of global variables in global scope") {
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 2);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+			"" LF
+			"z = \"hi!\"" LF
+			"a = \"hey\\n\" + z" LF
+			"" LF
+			"var b = \"hey\\n\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 3);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+	} TEST_END();
+
+	TEST_BEGIN("Registration of global variables in local scope") {
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+			"" LF
+			"if(true) {" LF
+			TAB "var z = \"hi!\"" LF
+			TAB "var a = \"hey\\n\" + z" LF
+			TAB "var b = \"hey\\n\" + z" LF
+			"}" LF
+			"" LF
+			"var b = \"hey\\n\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 6);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+			"" LF
+			"if(true) {" LF
+			TAB "var z = \"hi!\"" LF
+			TAB "var a = \"hey\\n\" + z" LF
+			TAB "if(a == z) {" LF
+			TAB TAB "var b = \"hey\\n\" + z" LF
+			TAB "}" LF
+			TAB "var b = \"hey\\n\" + z" LF
+			"}" LF
+			"" LF
+			"var b = \"hey\\n\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 7);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+	} TEST_END();
+
+	TEST_BEGIN("Registration of functions in global scope") {
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+			"" LF
+			"func foo() {" LF
+			TAB "var z = \"hi!\"" LF
+			TAB "var a = \"hey\\n\" + z" LF
+			"}" LF
+			"" LF
+			"var b = \"hey\\n\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 3);
+		EXPECT_EQUAL_INT(analyser.functions->size, 1);
+
+		FunctionDeclaration *func1 = Array_get(HashMap_get(analyser.overloads, "foo"), 0);
+		EXPECT_NOT_NULL(func1);
+		EXPECT_TRUE(String_equals(func1->node->id->name, "foo"));
+		EXPECT_EQUAL_PTR(HashMap_get(analyser.functions, String_fromLong(func1->id)->value), func1);
+		EXPECT_EQUAL_INT(func1->variables->size, 2);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+			"" LF
+			"if(true) {" LF
+			TAB "var z = \"hi!\"" LF
+			TAB "var a = \"hey\\n\" + z" LF
+			TAB "if(a == z) {" LF
+			TAB TAB "var b = \"hey\\n\" + z" LF
+			TAB "}" LF
+			TAB "var b = \"hey\\n\" + z" LF
+			"}" LF
+			"" LF
+			"func foo() {" LF
+			TAB "var x = \"hi!\"" LF
+			TAB "var y = 7" LF
+			TAB "var z = false" LF
+			"}" LF
+			"" LF
+			"var b = \"hey\\n\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 7);
+		EXPECT_EQUAL_INT(analyser.functions->size, 1);
+
+		FunctionDeclaration *func2 = Array_get(HashMap_get(analyser.overloads, "foo"), 0);
+		EXPECT_NOT_NULL(func2);
+		EXPECT_TRUE(String_equals(func2->node->id->name, "foo"));
+		EXPECT_EQUAL_PTR(HashMap_get(analyser.functions, String_fromLong(func2->id)->value), func2);
+		EXPECT_EQUAL_INT(func2->variables->size, 3);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var z = \"hello\"" LF
+			"var a = \"hey\" + z" LF
+			"var q = true" LF
+			"" LF
+			"if(true) {" LF
+			TAB "var z = \"hi!\"" LF
+			TAB "var a = \"hey\\n\" + z" LF
+			TAB "if(a == z) {" LF
+			TAB TAB "var b = \"hey\\n\" + z" LF
+			TAB "}" LF
+			TAB "var b = \"hey\\n\" + z" LF
+			"}" LF
+			"" LF
+			"func foo() -> Bool {" LF
+			TAB "var x = \"hi!\"" LF
+			TAB "var y = 7" LF
+			TAB "var z = false || q" LF
+			TAB "return z" LF
+			"}" LF
+			"" LF
+			"func bar() {" LF
+			TAB "var i = 3.2" LF
+			TAB "var j = 4.5" LF
+			TAB "var k = false" LF
+			TAB "if(i == j) {" LF
+			TAB TAB "var l = foo() && q || k && j == i" LF
+			TAB TAB "while(i < j) {" LF
+			TAB TAB TAB "var m = i - j" LF
+			TAB TAB TAB "i = i + j * 5e-2" LF
+			TAB TAB "}" LF
+			TAB TAB "var r = i + j" LF
+			TAB "}" LF
+			"}" LF
+			"" LF
+			"var b = \"hey\\n\" + z" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_EQUAL_INT(analyser.variables->size, 8);
+		EXPECT_EQUAL_INT(analyser.functions->size, 2);
+
+		FunctionDeclaration *func3 = Array_get(HashMap_get(analyser.overloads, "foo"), 0);
+		EXPECT_NOT_NULL(func3);
+		EXPECT_TRUE(String_equals(func3->node->id->name, "foo"));
+		EXPECT_EQUAL_PTR(HashMap_get(analyser.functions, String_fromLong(func3->id)->value), func3);
+		EXPECT_EQUAL_INT(func3->variables->size, 3);
+
+		FunctionDeclaration *func4 = Array_get(HashMap_get(analyser.overloads, "bar"), 0);
+		EXPECT_NOT_NULL(func4);
+		EXPECT_TRUE(String_equals(func4->node->id->name, "bar"));
+		EXPECT_EQUAL_PTR(HashMap_get(analyser.functions, String_fromLong(func4->id)->value), func4);
+		EXPECT_EQUAL_INT(func4->variables->size, 6);
+	} TEST_END();
+
+}
+
 // TODO: Nullable in expression
