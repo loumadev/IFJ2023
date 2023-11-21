@@ -1140,6 +1140,9 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 		// Register the function declaration to the global scope
 		HashMap_set(analyser->functions, String_fromLong(declaration->id)->value, declaration);
 
+		// Add id to the function declaration node
+		declarationNode->id->id = declaration->id;
+
 		// Resolve return type
 		if(declarationNode->returnType) {
 			declaration->returnType.type = Analyser_resolveBuiltInType(declarationNode->returnType->id->name);
