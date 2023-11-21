@@ -650,7 +650,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				case OPERATOR_UNWRAP: {
 					if(!type.isNullable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat("cannot force unwrap value of non-optional type '%s'", __Analyser_stringifyType(type)->value),
 							NULL
 						);
@@ -660,15 +660,26 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				} break;
 
 				case OPERATOR_NOT: {
-					if(!type.isNullable) {
+					if(type.type != TYPE_BOOL) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
-							String_fromFormat("cannot force unwrap value of non-optional type '%s'", __Analyser_stringifyType(type)->value),
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							__Analyser_formatBooleanTestErrorMessage(type),
 							NULL
 						);
 					}
 
-					unary->type = (ValueType){.type = type.type, .isNullable = false};
+					if(type.isNullable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"value of optional type '%s' must be unwrapped to a value of type 'Bool'",
+								__Analyser_stringifyType(type)->value
+							),
+							NULL
+						);
+					}
+
+					unary->type = (ValueType){.type = TYPE_BOOL, .isNullable = false};
 				} break;
 
 				default: {
@@ -888,6 +899,31 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					}
 
 					binary->type.type = rightType.type;
+					*outType = binary->type;
+				} break;
+
+				case OPERATOR_AND:
+				case OPERATOR_OR: {
+					if(leftType.type != TYPE_BOOL || rightType.type != TYPE_BOOL) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							__Analyser_formatBooleanTestErrorMessage(leftType.type != TYPE_BOOL ? leftType : rightType),
+							NULL
+						);
+					}
+
+					if(leftType.isNullable || rightType.isNullable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"value of optional type '%s' must be unwrapped to a value of type 'Bool'",
+								__Analyser_stringifyType(leftType.isNullable ? leftType : rightType)->value
+							),
+							NULL
+						);
+					}
+
+					binary->type = (ValueType){.type = TYPE_BOOL, .isNullable = false};
 					*outType = binary->type;
 				} break;
 
