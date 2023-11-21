@@ -293,6 +293,73 @@ void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode
 	}
 }
 
+AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *node, BlockScope *scope) {
+	assertf(node->_type == NODE_IF_STATEMENT || node->_type == NODE_WHILE_STATEMENT, "Invalid node type %d", node->_type);
+
+	IfStatementASTNode *conditionalStatemnt = (IfStatementASTNode*)node;
+
+	if(conditionalStatemnt->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
+		OptionalBindingConditionASTNode *condition = (OptionalBindingConditionASTNode*)conditionalStatemnt->test;
+		IdentifierASTNode *identifier = condition->id;
+
+		VariableDeclaration *declaration = Analyser_getVariableByName(analyser, identifier->name->value, scope);
+
+		// Variable is not declared in reachable scopes
+		if(!declaration) {
+			return AnalyserError(
+				RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
+				String_fromFormat("cannot find '%s' in scope", identifier->name->value),
+				NULL
+			);
+		}
+
+		// Validate type of the variable
+		if(!declaration->type.isNullable) {
+			return AnalyserError(
+				RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+				String_fromFormat(
+					"initializer for conditional binding must have Optional type, not '%s'",
+					__Analyser_stringifyType(declaration->type)->value
+				),
+				NULL
+			);
+		}
+
+		// Create a new declaration for the variable
+		VariableDeclaration *newDeclaration = new_VariableDeclaration(
+			analyser,
+			NULL,
+			true,
+			(ValueType){.type = declaration->type.type, .isNullable = false},
+			declaration->name,
+			false,
+			true
+		);
+
+		// Add the new declaration to the scope of the while statement body
+		HashMap_set(conditionalStatemnt->body->scope->variables, newDeclaration->name->value, newDeclaration);
+
+		// Set the id of the identifier node to the id of the new declaration
+		identifier->id = newDeclaration->id;
+	} else {
+		// Get the type of the test expression
+		ValueType type;
+		AnalyserResult result = Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, &type);
+		if(!result.success) return result;
+
+		// Validate the type of the test expression
+		if(type.type != TYPE_BOOL) {
+			return AnalyserError(
+				RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+				__Analyser_formatBooleanTestErrorMessage(type),
+				NULL
+			);
+		}
+	}
+
+	return AnalyserSuccess();
+}
+
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) {
 	for(size_t i = 0; i < block->statements->size; i++) {
 		StatementASTNode *statement = Array_get(block->statements, i);
@@ -438,67 +505,11 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 				while(ifStatement->_type == NODE_IF_STATEMENT) {
 					// Resolve the condition of the if statement
-					if(ifStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
-						OptionalBindingConditionASTNode *condition = (OptionalBindingConditionASTNode*)ifStatement->test;
-						IdentifierASTNode *identifier = condition->id;
-
-						VariableDeclaration *declaration = Analyser_getVariableByName(analyser, identifier->name->value, block->scope);
-
-						// Variable is not declared in reachable scopes
-						if(!declaration) {
-							return AnalyserError(
-								RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
-								String_fromFormat("cannot find '%s' in scope", identifier->name->value),
-								NULL
-							);
-						}
-
-						// Validate type of the variable
-						if(!declaration->type.isNullable) {
-							return AnalyserError(
-								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
-								String_fromFormat(
-									"initializer for conditional binding must have Optional type, not '%s'",
-									__Analyser_stringifyType(declaration->type)->value
-								),
-								NULL
-							);
-						}
-
-						// Create a new declaration for the variable
-						VariableDeclaration *newDeclaration = new_VariableDeclaration(
-							analyser,
-							NULL,
-							true,
-							(ValueType){.type = declaration->type.type, .isNullable = false},
-							declaration->name,
-							false,
-							true
-						);
-
-						// Add the new declaration to the scope of the if statement body
-						HashMap_set(ifStatement->body->scope->variables, newDeclaration->name->value, newDeclaration);
-
-						// Set the id of the identifier node to the id of the new declaration
-						identifier->id = newDeclaration->id;
-					} else {
-						// Get the type of the test expression
-						ValueType type;
-						AnalyserResult result = Analyser_resolveExpressionType(analyser, ifStatement->test, block->scope, &type);
-						if(!result.success) return result;
-
-						// Validate the type of the test expression
-						if(type.type != TYPE_BOOL) {
-							return AnalyserError(
-								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
-								__Analyser_formatBooleanTestErrorMessage(type),
-								NULL
-							);
-						}
-					}
+					AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)ifStatement, block->scope);
+					if(!result.success) return result;
 
 					// Analyse the body of the if statement
-					AnalyserResult result = __Analyser_analyseBlock(analyser, ifStatement->body);
+					result = __Analyser_analyseBlock(analyser, ifStatement->body);
 					if(!result.success) return result;
 
 					// If the if statement has no alternate, we are done
@@ -506,7 +517,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 					// Process the alternate
 					if(ifStatement->alternate->_type == NODE_BLOCK) {
-						AnalyserResult result = __Analyser_analyseBlock(analyser, (BlockASTNode*)ifStatement->alternate);
+						result = __Analyser_analyseBlock(analyser, (BlockASTNode*)ifStatement->alternate);
 						if(!result.success) return result;
 
 						// There cannot be another if statement after the alternate, so we are done
@@ -515,6 +526,18 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						ifStatement = (IfStatementASTNode*)ifStatement->alternate;
 					}
 				}
+			} break;
+
+			case NODE_WHILE_STATEMENT: {
+				WhileStatementASTNode *whileStatement = (WhileStatementASTNode*)statement;
+
+				// Resolve the condition of the while statement
+				AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)whileStatement, block->scope);
+				if(!result.success) return result;
+
+				// Analyse the body of the while statement
+				result = __Analyser_analyseBlock(analyser, whileStatement->body);
+				if(!result.success) return result;
 			} break;
 
 			default: {
@@ -650,7 +673,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				case OPERATOR_UNWRAP: {
 					if(!type.isNullable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat("cannot force unwrap value of non-optional type '%s'", __Analyser_stringifyType(type)->value),
 							NULL
 						);
@@ -660,15 +683,26 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				} break;
 
 				case OPERATOR_NOT: {
-					if(!type.isNullable) {
+					if(type.type != TYPE_BOOL) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
-							String_fromFormat("cannot force unwrap value of non-optional type '%s'", __Analyser_stringifyType(type)->value),
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							__Analyser_formatBooleanTestErrorMessage(type),
 							NULL
 						);
 					}
 
-					unary->type = (ValueType){.type = type.type, .isNullable = false};
+					if(type.isNullable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"value of optional type '%s' must be unwrapped to a value of type 'Bool'",
+								__Analyser_stringifyType(type)->value
+							),
+							NULL
+						);
+					}
+
+					unary->type = (ValueType){.type = TYPE_BOOL, .isNullable = false};
 				} break;
 
 				default: {
@@ -888,6 +922,31 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					}
 
 					binary->type.type = rightType.type;
+					*outType = binary->type;
+				} break;
+
+				case OPERATOR_AND:
+				case OPERATOR_OR: {
+					if(leftType.type != TYPE_BOOL || rightType.type != TYPE_BOOL) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							__Analyser_formatBooleanTestErrorMessage(leftType.type != TYPE_BOOL ? leftType : rightType),
+							NULL
+						);
+					}
+
+					if(leftType.isNullable || rightType.isNullable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"value of optional type '%s' must be unwrapped to a value of type 'Bool'",
+								__Analyser_stringifyType(leftType.isNullable ? leftType : rightType)->value
+							),
+							NULL
+						);
+					}
+
+					binary->type = (ValueType){.type = TYPE_BOOL, .isNullable = false};
 					*outType = binary->type;
 				} break;
 
