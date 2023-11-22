@@ -99,7 +99,7 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
-	while((!requireBraces && !Parser_isAtEnd(parser)) || (requireBraces && peek.token->kind != TOKEN_RIGHT_BRACE)) {
+	while(!Parser_isAtEnd(parser) && (!requireBraces || (requireBraces && peek.token->kind != TOKEN_RIGHT_BRACE))) {
 		ParserResult result = __Parser_parseStatement(parser);
 		if(!result.success) return result;
 
@@ -185,11 +185,19 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 	if(result.token->type == TOKEN_IDENTIFIER) {
 		LexerResult tmp = Lexer_peekToken(parser->lexer, 1);
 		if(!tmp.success) return LexerToParserError(tmp);
+
 		if(tmp.token->kind == TOKEN_EQUAL) {
 			ParserResult assignmentStatementResult = __Parser_parseAssignmentStatement(parser);
 			if(!assignmentStatementResult.success) return assignmentStatementResult;
 			return ParserSuccess(assignmentStatementResult.node);
+		} else if(tmp.token->kind == TOKEN_LEFT_PAREN) {
+			// function call
+			ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
+			if(!functionCallExpression.success) return functionCallExpression;
+			ExpressionStatementASTNode *expressionStatement = new_ExpressionStatementASTNode((ExpressionASTNode*)functionCallExpression.node);
+			return ParserSuccess(expressionStatement);
 		}
+
 	}
 
 	return ParserNoMatch();
@@ -780,10 +788,20 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser) {
 	assertf(parser != NULL);
+	LexerResult result;
+	LexerResult peek = Lexer_peekToken(parser->lexer, 0);
 
-	// identifier
-	LexerResult result = Lexer_nextToken(parser->lexer);
-	if(!result.success) return LexerToParserError(result);
+	if(!peek.success) return LexerToParserError(peek);
+
+	if(peek.token->type != TOKEN_IDENTIFIER) {
+
+		// identifier
+		result = Lexer_nextToken(parser->lexer);
+		if(!result.success) return LexerToParserError(result);
+
+	} else {
+		result = peek;
+	}
 
 	IdentifierASTNode *funcId = new_IdentifierASTNode(result.token->value.string);
 

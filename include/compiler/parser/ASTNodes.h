@@ -261,6 +261,7 @@ OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(IdentifierA
 IfStatementASTNode* new_IfStatementASTNode(ASTNode *test,  BlockASTNode *body, ASTNode *alternate);
 WhileStatementASTNode* new_WhileStatementASTNode(ASTNode *test,  BlockASTNode *body);
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);
+ExpressionStatementASTNode* new_ExpressionStatementASTNode(ExpressionASTNode *expression);
 
 // TODO: Add more AST node constructors
 
