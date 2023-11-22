@@ -432,7 +432,8 @@ LexerResult Lexer_peekToken(Lexer *lexer, int offset) {
 	int index = lexer->currentTokenIndex + offset;
 
 	// If there are no tokens yet, move the index to the first one
-	if(lexer->currentTokenIndex == -1) index++;
+	// EDIT: This is would always skip the first token, which is incorrect
+	// if(lexer->currentTokenIndex == -1) index++;
 
 	// Peeking before the start of the token stream
 	if(index < 0) {
