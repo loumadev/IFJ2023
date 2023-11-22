@@ -105,26 +105,26 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 
 		Array_push(statements, result.node);
 
-		// Check for delimiter after statement
-		peek = Lexer_peekToken(parser->lexer, 0);
-		if(!peek.success) return LexerToParserError(peek);
-
-		// They don't want us to have semicolons :(
-		if(peek.token->kind == TOKEN_SEMICOLON) {
-			return ParserError(
-				String_fromFormat("';' is not supported after statement, use new line instead"),
-				Array_fromArgs(1, peek.token)
-			);
-		} else if(!(peek.token->whitespace & WHITESPACE_RIGHT_NEWLINE) && !Lexer_isAtEnd(parser->lexer)) {
-			return ParserError(
-				String_fromFormat("expected new line after statement"),
-				Array_fromArgs(1, peek.token)
-			);
-		}
-
 		if(requireBraces) {
 			peek = Lexer_peekToken(parser->lexer, 1);
 			if(!peek.success) return LexerToParserError(peek);
+		}
+
+		// Check for delimiter after statement
+		LexerResult spacePeek = Lexer_peekToken(parser->lexer, 0);
+		if(!peek.success) return LexerToParserError(spacePeek);
+
+		// They don't want us to have semicolons :(
+		if(spacePeek.token->kind == TOKEN_SEMICOLON) {
+			return ParserError(
+				String_fromFormat("';' is not supported after statement, use new line instead"),
+				Array_fromArgs(1, spacePeek.token)
+			);
+		} else if(!(spacePeek.token->whitespace & WHITESPACE_RIGHT_NEWLINE) && !Lexer_isAtEnd(parser->lexer) && !requireBraces && spacePeek.token->kind != TOKEN_RIGHT_BRACE) {
+			return ParserError(
+				String_fromFormat("expected new line after statement"),
+				Array_fromArgs(1, spacePeek.token)
+			);
 		}
 	}
 

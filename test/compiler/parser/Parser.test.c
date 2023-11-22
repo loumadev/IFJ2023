@@ -950,6 +950,30 @@ DESCRIBE(statement_separation, "Validity of statement separation") {
 		EXPECT_STATEMENTS(result.node, 2);
 	} TEST_END();
 
+	TEST_BEGIN("Multiple statements on new lines") {
+		Lexer_setSource(
+			&lexer,
+			"func a() {return}" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENTS(result.node, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Multiple statements on new lines") {
+		Lexer_setSource(
+			&lexer,
+			"func a() {" LF
+			TAB "var a = 10" LF
+			TAB "return}" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENTS(result.node, 1);
+	} TEST_END();
+
 	TEST_BEGIN("Multiple statements on same line") {
 		Lexer_setSource(
 			&lexer,
