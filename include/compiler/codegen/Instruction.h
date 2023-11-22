@@ -1,14 +1,13 @@
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
 
-
-// TODO: This is ugly, need a rethink
+#include "internal/String.h"
 
 #define INSTRUCTION_NULLARY(ins) \
 	fprintf(stdout, "%s\n", ins);
 
 #define INSTRUCTION_UNARY(ins, arg1) \
-	fprintf(stdout, "%s %s\n", ins, arg1);
+	fprintf(stdout, "%s %lu\n", ins, arg1);
 
 #define INSTRUCTION_BINARY(ins, arg1, arg2) \
 	fprintf(stdout, "%s %s %s\n", ins, arg1, arg2);
@@ -22,10 +21,15 @@
 #define COMMENT(comment) \
     fprintf(stdout, "# %s\n", comment);
 
+#define COMMENT_VAR(id) \
+    fprintf(stdout, "# Variable %lu\n", id);
+
 #define HEADER \
     fprintf(stdout, ".IFJcode23\n");
 
-void Instruction_move(char *var, char *symb);
+void Instruction_move(size_t targetVar, char* targetFrame, size_t sourceVar, char* sourceFrame);
+
+void Instruction_move_value(size_t targetVar, char* targetFrame, char* value);
 
 void Instruction_createframe();
 
@@ -33,13 +37,23 @@ void Instruction_pushframe();
 
 void Instruction_popframe();
 
-void Instruction_defvar(char *var);
+void Instruction_defvar(size_t id, char *frame);
 
 void Instruction_call(char *label);
 
 void Instruction_return();
 
 void Instruction_pushs(char *symb);
+
+void Instruction_pushs_nil();
+
+void Instruction_pushs_bool(bool value);
+
+void Instruction_pushs_int(long value);
+
+void Instruction_pushs_float(double value);
+
+void Instruction_pushs_string(String * string);
 
 void Instruction_pops(char *var);
 
