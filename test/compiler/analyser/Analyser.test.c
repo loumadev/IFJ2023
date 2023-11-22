@@ -80,19 +80,102 @@ DESCRIBE(variable_declaraion, "Analysis of variable declaration") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 
-	// TEST_BEGIN("Re-initialisation of a declared constant variable") {
-	// 	Lexer_setSource(
-	// 		&lexer,
-	// 		"let a: Int" LF
-	// 		"a = 7" LF
-	// 		"a = 8" LF
-	// 	);
-	// 	parserResult = Parser_parse(&parser);
-	// 	EXPECT_TRUE(parserResult.success);
+	TEST_BEGIN("Type cast of a initializer of constant variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Double = 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
 
-	// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-	// 	EXPECT_FALSE(analyserResult.success);
-	// } TEST_END();
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Type cast of a declared constant variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Double" LF
+			"a = 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Re-initialisation of a declared constant variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Int" LF
+			"a = 7" LF
+			"a = 8" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Use of uninitialized variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Int" LF
+			"let b: Int = a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Use of uninitialized nullable variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Int?" LF
+			"let b: Int? = a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Use of partially initialized variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Int" LF
+			"if(true) {" LF
+			TAB "a = 7" LF
+			"}" LF
+			"let b: Int = a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Use of partially initialized nullable variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Int?" LF
+			"if(true) {" LF
+			TAB "a = 7" LF
+			"}" LF
+			"let b: Int? = a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
 
 	TEST_BEGIN("Re-initialisation of a declared & initialized constant variable") {
 		Lexer_setSource(
@@ -1288,10 +1371,876 @@ DESCRIBE(type_compatibility_expr, "Type compatibility in expressions") {
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+}
 
+DESCRIBE(function_dec_analysis, "Function declaration analysis") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Valid function declaration") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() {}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Void {}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int? {return 1}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"" LF
+				"a(a: 12)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return a + b}" LF
+				"" LF
+				"a(a: 1, b: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a a: Int, b b: Int) -> Int {return a + b}" LF
+				"" LF
+				"a(a: 1, b: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int, y b: Int) -> Int {return a + b}" LF
+				"" LF
+				"a(x: 1, y: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int, _ b: Int) -> Int {return a + b}" LF
+				"" LF
+				"a(x: 1, 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Invalid function declaration") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return false}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return nil}" LF
+				"" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Void {return 1}" LF
+				"" LF
+				"a(a: 12)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) {return 1}" LF
+				"" LF
+				"a(a: 12)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Bool) -> Int {return a + b}" LF
+				"" LF
+				"a(a: 1, b: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a a: Int, b b: Int) -> Bool {return a + b}" LF
+				"" LF
+				"a(a: 1, b: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int, y b: Int) -> Int {return x + y}" LF
+				"" LF
+				"a(x: 1, y: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+	} TEST_END();
+}
+
+DESCRIBE(function_overloading, "Function overload resolution") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Resolution of non-overloaded function") {
+		Lexer_setSource(
+			&lexer,
+			"func a() {}" LF
+			"" LF
+			"a()" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2);
+
+		ExpressionStatementASTNode *expression = (ExpressionStatementASTNode*)Array_get(statements, 1);
+		FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->expression;
+		EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+		FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+		EXPECT_NOT_NULL(function);
+
+		FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+		EXPECT_EQUAL_PTR(function->node, declaration);
+	} TEST_END();
+
+	TEST_BEGIN("Resolution of non-overloaded function inside an expression") {
+		Lexer_setSource(
+			&lexer,
+			"func a() -> Int {return 1}" LF
+			"" LF
+			"let v1 = a() + 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2);
+	} TEST_END();
+
+	TEST_BEGIN("Resolution of overloaded function inside an expression with multiple parameters") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a: Bool) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(a: false) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(b: Bool) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(b: false) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(a: 1) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return 1}" LF
+				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Int = a(a: 15, b: 8) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return 1}" LF
+				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(a: 15, b: 8) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return 1}" LF
+				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(a: 15.5, b: 8.5) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return 1}" LF
+				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(a: 15, b: 8.5) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Invalid resolution of overloaded function inside an expression with multiple parameters") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Int = a() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a: Bool) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Int = a(a: false) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(b: Bool) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(c: false) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(b: Bool) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(c: \"hh\") + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Bool = a(a: 1) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return 1}" LF
+				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(a: 15, b: true) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a: Int, b: Int) -> Int {return 1}" LF
+				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a(b: 15, a: 8) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Resolution of overloaded function inside an expression with type hint") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = 5 + a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->right;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Resolution of overloaded function inside an expression without type hint") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"let v1 = a() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"let v1 = 5 + a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->right;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
+
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"func b() -> Int {return 1}" LF
+				"func b() -> Double {return 1.5}" LF
+				"" LF
+				"let v1 = a() + b() * 6" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Resolution of multiple overloaded functions inside an expression with type hint") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"func b() -> Int {return 1}" LF
+				"func b() -> Double {return 1.5}" LF
+				"" LF
+				"let v1: Double = a() + b()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 5);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+
+			FunctionCallASTNode *functionCall1 = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall1->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function1 = Analyser_getFunctionById(&analyser, functionCall1->id->id);
+			EXPECT_NOT_NULL(function1);
+
+			FunctionDeclarationASTNode *declaration1 = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			EXPECT_EQUAL_PTR(function1->node, declaration1);
+
+
+			FunctionCallASTNode *functionCall2 = (FunctionCallASTNode*)expression->right;
+			EXPECT_TRUE(functionCall2->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function2 = Analyser_getFunctionById(&analyser, functionCall2->id->id);
+			EXPECT_NOT_NULL(function2);
+
+			FunctionDeclarationASTNode *declaration2 = (FunctionDeclarationASTNode*)Array_get(statements, 3);
+			EXPECT_EQUAL_PTR(function2->node, declaration2);
+		}
 
 	} TEST_END();
 
+	TEST_BEGIN("Invalid use of multiple overloaded functions inside an expression without type hint") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"func b() -> Int {return 1}" LF
+				"func b() -> Double {return 1.5}" LF
+				"" LF
+				"let v1 = a() + b()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+
+	} TEST_END();
 }
 
 DESCRIBE(declaration_registry, "Declaration registry") {
@@ -2105,4 +3054,30 @@ DESCRIBE(return_reachability, "Return reachability analysis") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_FALSE(analyserResult.success);
 	} TEST_END();
+}
+
+DESCRIBE(type_conversion, "Implicit type conversion") {
+	// Lexer lexer;
+	// Lexer_constructor(&lexer);
+
+	// Parser parser;
+	// Parser_constructor(&parser, &lexer);
+
+	// Analyser analyser;
+	// Analyser_constructor(&analyser);
+
+	// ParserResult parserResult;
+	// AnalyserResult analyserResult;
+
+	// TEST_BEGIN("Conversion of literals inside a complex expression") {
+	// 	Lexer_setSource(
+	// 		&lexer,
+	// 		"var a = 1 * (2 * 2) + 8 - 1.5" LF
+	// 	);
+	// 	parserResult = Parser_parse(&parser);
+	// 	EXPECT_TRUE(parserResult.success);
+
+	// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+	// 	EXPECT_TRUE(analyserResult.success);
+	// } TEST_END();
 }

@@ -67,7 +67,7 @@ VariableDeclaration* Analyser_getVariableById(Analyser *analyser, size_t id);
 VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, BlockScope *scope);
 
 enum BuiltInTypes Analyser_resolveBuiltInType(String *name);
-AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType *outType);
+AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType);
 
 VariableDeclaration* new_VariableDeclaration(Analyser *analyser, struct VariableDeclaratorASTNode *node, bool isConstant, ValueType type, String *name, bool isUserDefined, bool isInitialized);
 FunctionDeclaration* new_FunctionDeclaration(Analyser *analyser, struct FunctionDeclarationASTNode *node);
