@@ -259,7 +259,8 @@ AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast) {
 	__Analyser_createBlockScopeChaining(analyser, ast->block, NULL);
 	analyser->globalScope = ast->block->scope;
 
-	__Analyser_collectFunctionDeclarations(analyser);
+	AnalyserResult result = __Analyser_collectFunctionDeclarations(analyser);
+	if(!result.success) return result;
 
 	return __Analyser_analyseBlock(analyser, ast->block);
 }
