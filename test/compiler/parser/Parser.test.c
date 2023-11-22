@@ -1560,6 +1560,58 @@ DESCRIBE(function_calls, "Function call parsing") {
 
 }
 
+DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
+
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Underscore in expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5 + _" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Underscore as function name") {
+		Lexer_setSource(
+			&lexer,
+			"func _() {}" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Underscore as function call") {
+		Lexer_setSource(
+			&lexer,
+			"_(1)" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Underscore as type name") {
+		Lexer_setSource(
+			&lexer,
+			"var a: _ = 5" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+}
+
 DESCRIBE(simple_programs, "Simple program parsing") {
 
 	Lexer lexer;

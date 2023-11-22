@@ -346,6 +346,14 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 		// check if there is a function call in expression
 		if(current.token->type == TOKEN_IDENTIFIER){
+			// Check for '_' identifier
+			if(String_equals(current.token->value.string, "_")) {
+				return ParserError(
+					String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+					Array_fromArgs(1, current.token)
+				);
+			}
+
 			leftParen = Lexer_peekToken(parser->lexer, offset + 1);
 			if(!leftParen.success) return LexerToParserError(current);
 

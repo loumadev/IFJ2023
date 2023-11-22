@@ -190,6 +190,14 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 			if(!assignmentStatementResult.success) return assignmentStatementResult;
 			return ParserSuccess(assignmentStatementResult.node);
 		} else if(tmp.token->kind == TOKEN_LEFT_PAREN) {
+			// Check for '_' identifier
+			if(String_equals(peek.token->value.string, "_")) {
+				return ParserError(
+					String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+					Array_fromArgs(1, peek.token)
+				);
+			}
+
 			// function call
 			ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
 			if(!functionCallExpression.success) return functionCallExpression;
@@ -221,6 +229,14 @@ ParserResult __Parser_parseTypeReference(Parser *parser) {
 		return ParserError(
 			String_fromFormat("expected type reference in function declaration"),
 			Array_fromArgs(1, result.token));
+	}
+
+	// Check for '_' identifier
+	if(String_equals(result.token->value.string, "_")) {
+		return ParserError(
+			String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+			Array_fromArgs(1, result.token)
+		);
 	}
 
 
@@ -384,6 +400,14 @@ ParserResult __Parser_parseFuncStatement(Parser *parser) {
 		return ParserError(
 			String_fromFormat("expected identifier in function declaration"),
 			Array_fromArgs(1, result.token));
+	}
+
+	// Check for '_' identifier
+	if(String_equals(result.token->value.string, "_")) {
+		return ParserError(
+			String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+			Array_fromArgs(1, result.token)
+		);
 	}
 
 	IdentifierASTNode *funcId = new_IdentifierASTNode(result.token->value.string);
@@ -848,20 +872,13 @@ ParserResult __Parser_parseFunctionCallExpression(Parser *parser) {
 			Array_fromArgs(1, identifier.token));
 	}
 
-	// LexerResult result;
-	// LexerResult peek = Lexer_peekToken(parser->lexer, 0);
-
-	// if(!peek.success) return LexerToParserError(peek);
-
-	// if(peek.token->type != TOKEN_IDENTIFIER) {
-
-	// 	// identifier
-	// 	result = Lexer_nextToken(parser->lexer);
-	// 	if(!result.success) return LexerToParserError(result);
-
-	// } else {
-	// 	result = peek;
-	// }
+	// Check for '_' identifier
+	if(String_equals(identifier.token->value.string, "_")) {
+		return ParserError(
+			String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+			Array_fromArgs(1, identifier.token)
+		);
+	}
 
 	IdentifierASTNode *funcId = new_IdentifierASTNode(identifier.token->value.string);
 
