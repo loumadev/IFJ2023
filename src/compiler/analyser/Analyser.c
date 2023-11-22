@@ -1307,7 +1307,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					);
 				}
 
-				String *typeName = parameter->internalId->name;
+				String *typeName = parameter->type->id->name;
 				enum BuiltInTypes resolvedType = Analyser_resolveBuiltInType(typeName);
 
 				if(!is_type_valid(resolvedType)) {
