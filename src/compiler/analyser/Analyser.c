@@ -1046,6 +1046,49 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				}
 			}
 
+			// Handle built-in 'write' function differently
+			if(!declaration && String_equals(call->id->name, "write")) {
+				Array /*<FunctionDeclaration>*/ *writeCandidates = Analyser_getFunctionDeclarationsByName(analyser, "write");
+				assertf(writeCandidates && writeCandidates->size > 0, "Cannot find built-in 'write' function");
+
+				// First function should be the built-in 'write' function
+				FunctionDeclaration *writeFunc = Array_get(writeCandidates, 0);
+				assertf(writeFunc);
+
+				if(writeFunc->node->builtin == FUNCTION_WRITE) {
+					declaration = writeFunc;
+
+					// Resolve all the arguments
+					Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
+
+					for(size_t i = 0; i < arguments->size; i++) {
+						ArgumentASTNode *argument = Array_get(arguments, i);
+
+						ValueType type;
+						AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, (ValueType){.type = TYPE_UNKNOWN, .isNullable = false}, &type);
+						if(!result.success) return result;
+
+						if(!is_type_valid(type.type) || type.type == TYPE_VOID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat(
+									"cannot convert value of type '%s' to expected argument type 'Int? | Double? | String? | Bool?'",
+									__Analyser_stringifyType(type)->value
+								),
+								NULL
+							);
+						}
+					}
+
+					// Set properties of the call node
+					call->id->id = declaration->id;
+					declaration->isUsed = true;
+					*outType = declaration->returnType;
+
+					return AnalyserSuccess();
+				}
+			}
+
 			Array_free(candidates);
 			candidates = NULL;
 
