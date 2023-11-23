@@ -439,6 +439,7 @@ LexerResult Lexer_peekToken(Lexer *lexer, int offset) {
 	if(index < 0) {
 		LexerResult result = LexerSuccess();
 		result.token = NULL;
+		warnf("Peeking before the start of the token stream, returning NULL");
 		return result;
 	}
 
