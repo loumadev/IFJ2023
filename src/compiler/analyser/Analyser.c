@@ -1047,6 +1047,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			}
 
 			Array_free(candidates);
+			candidates = NULL;
 
 			if(!declaration) {
 				return AnalyserError(
