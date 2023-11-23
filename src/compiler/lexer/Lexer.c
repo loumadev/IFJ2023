@@ -1091,10 +1091,27 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 					)
 				);
 			}
-			if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
-			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerErrorCustom(
-					RESULT_ERROR_SYNTACTIC_ANALYSIS,
-					String_fromFormat("expected member name following '.'"),
+			// if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			// if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
+			// 		String_fromFormat("expected member name following '.'"),
+			// 		Array_fromArgs(
+			// 			1,
+			// 			Token_alloc(
+			// 				TOKEN_MARKER,
+			// 				TOKEN_CARET,
+			// 				WHITESPACE_NONE,
+			// 				TextRange_construct(
+			// 					lexer->currentChar,
+			// 					lexer->currentChar + 1,
+			// 					lexer->line,
+			// 					lexer->column
+			// 				),
+			// 				(union TokenValue){0}
+			// 			)
+			// 		)
+			// );
+			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
+					String_fromFormat("invalid character in floating point literal after '.'"),
 					Array_fromArgs(
 						1,
 						Token_alloc(
