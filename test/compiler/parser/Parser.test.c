@@ -1604,6 +1604,24 @@ DESCRIBE(function_calls, "Function call parsing") {
 		result = Parser_parse(&parser);
 		EXPECT_TRUE(result.success);
 	} TEST_END();
+
+	TEST_BEGIN("Function call directly after statement containing expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2 + 7" LF
+			"f()" LF
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		Lexer_setSource(
+			&lexer,
+			"var a = x" LF
+			"f()" LF
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
 }
 
 DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
