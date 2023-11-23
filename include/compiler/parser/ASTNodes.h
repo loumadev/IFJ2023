@@ -237,6 +237,7 @@ typedef struct PatternASTNode {
 typedef struct OptionalBindingConditionASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
+	size_t fromId;
 } OptionalBindingConditionASTNode;
 
 typedef struct IfStatementASTNode {

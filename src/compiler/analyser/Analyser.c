@@ -527,6 +527,9 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 
 		// Set the id of the identifier node to the id of the new declaration
 		identifier->id = newDeclaration->id;
+
+		// Set the id from which the value is unwrapped
+		condition->fromId = declaration->id;
 	} else {
 		// Get the type of the test expression
 		ValueType type;

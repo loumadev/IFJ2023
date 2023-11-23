@@ -171,6 +171,7 @@ OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(
 ) {
 	prepare_node_of(OptionalBindingConditionASTNode, NODE_OPTIONAL_BINDING_CONDITION)
 	node->id = id;
+	node->fromId = 0;
 	return node;
 }
 
