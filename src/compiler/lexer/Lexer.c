@@ -1091,28 +1091,10 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 					)
 				);
 			}
-			// if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
-			// if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
-			// 		String_fromFormat("expected member name following '.'"),
-			// 		Array_fromArgs(
-			// 			1,
-			// 			Token_alloc(
-			// 				TOKEN_MARKER,
-			// 				TOKEN_CARET,
-			// 				WHITESPACE_NONE,
-			// 				TextRange_construct(
-			// 					lexer->currentChar,
-			// 					lexer->currentChar + 1,
-			// 					lexer->line,
-			// 					lexer->column
-			// 				),
-			// 				(union TokenValue){0}
-			// 			)
-			// 		)
-			// );
-			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) {
-				return LexerError(
-					String_fromFormat("expected floating point part of the floating point literal after '.'"),
+			if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerErrorCustom(
+					RESULT_ERROR_SYNTACTIC_ANALYSIS,
+					String_fromFormat("expected member name following '.'"),
 					Array_fromArgs(
 						1,
 						Token_alloc(
@@ -1128,8 +1110,7 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 							(union TokenValue){0}
 						)
 					)
-				);
-			}
+			);
 
 			hasDot = true;
 		}
@@ -1145,7 +1126,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 			if(ch == '+' || ch == '-') ch = Lexer_advance(lexer);       // Consume the sign character if present
 
 			// Missing exponent
-			if(!is_decimal_digit(ch)) return LexerError(
+			if(!is_decimal_digit(ch)) return LexerErrorCustom(
+					RESULT_ERROR_SYNTACTIC_ANALYSIS,
 					String_fromFormat("expected a digit in floating point exponent"),
 					Array_fromArgs(
 						1,
@@ -1170,7 +1152,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 
 		// Invalid character in exponent
 		if(!is_decimal_digit(ch) && hasExponent) {
-			return LexerError(
+			return LexerErrorCustom(
+				RESULT_ERROR_SYNTACTIC_ANALYSIS,
 				String_fromFormat(
 					"'%s' is not a valid character in floating point exponent",
 					format_char(ch)
@@ -1195,7 +1178,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 
 		// Invalid character in integer literal
 		if(!is_decimal_digit(ch)) {
-			return LexerError(
+			return LexerErrorCustom(
+				RESULT_ERROR_SYNTACTIC_ANALYSIS,
 				String_fromFormat(
 					"'%s' is not a valid digit in integer literal",
 					format_char(ch)
