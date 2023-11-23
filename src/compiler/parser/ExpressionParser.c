@@ -16,6 +16,7 @@
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
 ParserResult __Parser_parseStringInterpolation(Parser *parser);
 PrefixStatus prefix = P_UNRESOLVED;
+bool isPostfix = false;
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
 	// +-|*/| x!|??|r |i |( |)| !x||||&&|$
@@ -60,6 +61,14 @@ int Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser *parser, PrefixS
 			}
 			// x!
 			if(!whitespace_left(token->whitespace)) {
+				if(isIdentifier){
+					isPostfix = true;
+					return I_UNWRAP_OP;
+				}
+				if(isPostfix){
+					isPostfix = false;
+					return I_UNWRAP_OP;
+				}
 				postfixPrefix = Lexer_peekToken(parser->lexer, 0);
 				if(postfixPrefix.success) {
 					if((postfixPrefix.token->type == TOKEN_IDENTIFIER) ||
@@ -341,67 +350,68 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 		if(!current.success) return LexerToParserError(current);
 		isIdentifier = false;
 
-		// check if there is a function call in expression
-		if(current.token->type == TOKEN_IDENTIFIER) {
-			// Check for '_' identifier
-			if(String_equals(current.token->value.string, "_")) {
-				return ParserError(
-					String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
-					Array_fromArgs(1, current.token)
-				);
-			}
-
-			LexerResult next = Lexer_peekToken(parser->lexer, offset + 1);
-			if(!next.success) return LexerToParserError(current);
-
-			if(next.token->kind == TOKEN_LEFT_PAREN) {
-				ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
-				if(!functionCallExpression.success) return functionCallExpression;
-
-				isIdentifier = true;
-
-				StackItem *function = mem_alloc(sizeof(StackItem));
-				function->node = functionCallExpression.node;
-				function->Stype = S_TERMINAL;
-				function->token = NULL;
-				function->isPrefix = P_UNRESOLVED;
-				Expr_pushAfterTopTerminal(stack);
-				Array_push(stack, function);
-
-				current = Lexer_peekToken(parser->lexer, offset);
-				if(!current.success) return LexerToParserError(current);
-			}
-		}
-
-		// check for string interpolation
-		if(current.token->kind == TOKEN_STRING) {
-			LexerResult next = Lexer_peekToken(parser->lexer, offset + 1);
-			if(!next.success) return LexerToParserError(current);
-
-			if(next.token->kind == TOKEN_STRING_HEAD) {
-				ParserResult stringInterpolation = __Parser_parseStringInterpolation(parser);
-				if(!stringInterpolation.success) return stringInterpolation;
-
-				isIdentifier = true;
-
-				StackItem *string = mem_alloc(sizeof(StackItem));
-				string->node = stringInterpolation.node;
-				string->Stype = S_TERMINAL;
-				string->token = NULL;
-				string->isPrefix = P_UNRESOLVED;
-				Expr_pushAfterTopTerminal(stack);
-				Array_push(stack, string);
-
-				current = Lexer_peekToken(parser->lexer, offset);
-				if(!current.success) return LexerToParserError(current);
-			}
-		}
-
 		if(operation != X) {
+			// check if there is a function call in expression
+			if(current.token->type == TOKEN_IDENTIFIER) {
+				// Check for '_' identifier
+				if(String_equals(current.token->value.string, "_")) {
+					return ParserError(
+						String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+						Array_fromArgs(1, current.token)
+					);
+				}
+
+				LexerResult next = Lexer_peekToken(parser->lexer, offset + 1);
+				if(!next.success) return LexerToParserError(current);
+
+				if(next.token->kind == TOKEN_LEFT_PAREN) {
+					ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
+					if(!functionCallExpression.success) return functionCallExpression;
+
+					isIdentifier = true;
+
+					StackItem *function = mem_alloc(sizeof(StackItem));
+					function->node = functionCallExpression.node;
+					function->Stype = S_TERMINAL;
+					function->token = NULL;
+					function->isPrefix = P_UNRESOLVED;
+					Expr_pushAfterTopTerminal(stack);
+					Array_push(stack, function);
+
+					current = Lexer_peekToken(parser->lexer, offset);
+					if(!current.success) return LexerToParserError(current);
+				}
+			}
+
+			// check for string interpolation
+			if(current.token->kind == TOKEN_STRING) {
+				LexerResult next = Lexer_peekToken(parser->lexer, offset + 1);
+				if(!next.success) return LexerToParserError(current);
+
+				if(next.token->kind == TOKEN_STRING_HEAD) {
+					ParserResult stringInterpolation = __Parser_parseStringInterpolation(parser);
+					if(!stringInterpolation.success) return stringInterpolation;
+
+					isIdentifier = true;
+
+					StackItem *string = mem_alloc(sizeof(StackItem));
+					string->node = stringInterpolation.node;
+					string->Stype = S_TERMINAL;
+					string->token = NULL;
+					string->isPrefix = P_UNRESOLVED;
+					Expr_pushAfterTopTerminal(stack);
+					Array_push(stack, string);
+
+					current = Lexer_peekToken(parser->lexer, offset);
+					if(!current.success) return LexerToParserError(current);
+				}
+			}
+
+		
 			StackItem *topTerminal = Expr_getTopTerminal(stack);
 
 			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, isIdentifier, parser, topTerminal->isPrefix);
-			int currentTokenIndex = Expr_getPrecTbIndex(current.token, false, parser, P_UNRESOLVED);
+			int currentTokenIndex = Expr_getPrecTbIndex(current.token, isIdentifier, parser, P_UNRESOLVED);
 
 			operation = precedence_table[topTerminalIndex][currentTokenIndex];
 		}
