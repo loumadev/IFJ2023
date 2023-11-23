@@ -4,6 +4,7 @@
 #include "compiler/lexer/Lexer.h"
 #include "internal/String.h"
 #include "internal/Array.h"
+#include "internal/Utils.h"
 #include "inspector.h"
 #include "assertf.h"
 
@@ -128,10 +129,6 @@ bool Lexer_isAtEnd(Lexer *lexer) {
 
 #define fetch_next_whitespace(lexer) enum WhitespaceType __wh_bit = lexer->whitespace; LexerResult __wh_res = __Lexer_tokenizeWhitespace(lexer); if(!__wh_res.success) return __wh_res; __wh_bit |= left_to_right_whitespace(lexer->whitespace);
 
-// TODO: Move this somewhere else (to some utility file)
-int max(int a, int b) {
-	return a > b ? a : b;
-}
 
 LexerResult __Lexer_tokenizeWhitespace(Lexer *lexer) {
 	if(!lexer) return LexerNoMatch();
