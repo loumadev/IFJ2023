@@ -49,7 +49,7 @@ typedef enum OperatorType {
 	OPERATOR_LESS,
 	OPERATOR_GREATER,
 	OPERATOR_LESS_EQUAL,
-	OPERATOR_GREATER_EQUAL, 
+	OPERATOR_GREATER_EQUAL,
 	OPERATOR_NOT,
 	OPERATOR_OR,
 	OPERATOR_AND
@@ -133,6 +133,7 @@ typedef struct ExpressionStatementASTNode {
 typedef struct ReturnStatementASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *expression;
+	size_t id;
 } ReturnStatementASTNode;
 
 typedef struct ParameterASTNode {
@@ -211,21 +212,23 @@ typedef struct PatternASTNode {
 } PatternASTNode;
 
 typedef struct OptionalBindingConditionASTNode {
-    enum ASTNodeType _type;
-    IdentifierASTNode *id;
+	enum ASTNodeType _type;
+	IdentifierASTNode *id;
 } OptionalBindingConditionASTNode;
 
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
-    ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
+	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
 	BlockASTNode *body;
 	ASTNode /* BlockASTNode | IfStatementASTNode | null */ *alternate;
+	size_t id;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
-    ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
+	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
 	BlockASTNode *body;
+	size_t id;
 } WhileStatementASTNode;
 
 typedef struct AssignmentStatementASTNode {
@@ -257,10 +260,11 @@ ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierAS
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
 PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
-OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(IdentifierASTNode* id);
+OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(IdentifierASTNode *id);
 IfStatementASTNode* new_IfStatementASTNode(ASTNode *test,  BlockASTNode *body, ASTNode *alternate);
 WhileStatementASTNode* new_WhileStatementASTNode(ASTNode *test,  BlockASTNode *body);
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);
+ExpressionStatementASTNode* new_ExpressionStatementASTNode(ExpressionASTNode *expression);
 
 // TODO: Add more AST node constructors
 

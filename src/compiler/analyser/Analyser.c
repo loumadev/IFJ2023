@@ -12,6 +12,8 @@ void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
 AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser);
+bool __Analyser_isReturnReachable_processNode(Analyser *analyser, StatementASTNode *node);
+bool __Analyser_isReturnReachable(Analyser *analyser, BlockASTNode *block);
 
 
 ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind) {
@@ -23,6 +25,10 @@ ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind) {
 		case TOKEN_NIL: return (ValueType){.type = TYPE_NIL, .isNullable = true};
 		default: return (ValueType){.type = TYPE_INVALID, .isNullable = false};
 	}
+}
+
+size_t Analyser_nextId(Analyser *analyser) {
+	return analyser->idCounter++;
 }
 
 VariableDeclaration* new_VariableDeclaration(
@@ -37,7 +43,7 @@ VariableDeclaration* new_VariableDeclaration(
 	VariableDeclaration *declaration = (VariableDeclaration*)mem_alloc(sizeof(VariableDeclaration));
 
 	declaration->_type = DECLARATION_VARIABLE;
-	declaration->id = analyser ? analyser->idCounter++ : 0;
+	declaration->id = analyser ? Analyser_nextId(analyser) : 0;
 	declaration->isConstant = isConstant;
 	declaration->isUsed = false;
 
@@ -70,7 +76,7 @@ FunctionDeclaration* new_FunctionDeclaration(Analyser *analyser, FunctionDeclara
 	FunctionDeclaration *declaration = (FunctionDeclaration*)mem_alloc(sizeof(FunctionDeclaration));
 
 	declaration->_type = DECLARATION_FUNCTION;
-	declaration->id = analyser ? analyser->idCounter++ : 0;
+	declaration->id = analyser ? Analyser_nextId(analyser) : 0;
 	declaration->node = node;
 	declaration->variables = HashMap_alloc();
 	declaration->isUsed = false;
@@ -96,6 +102,7 @@ BlockScope* BlockScope_alloc(BlockScope *parent) {
 	BlockScope *scope = (BlockScope*)mem_alloc(sizeof(BlockScope));
 	scope->parent = parent;
 	scope->variables = HashMap_alloc();
+	scope->function = NULL;
 	return scope;
 }
 
@@ -132,10 +139,14 @@ void Analyser_destructor(Analyser *analyser) {
 }
 
 Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id) {
+	if(id == 0) return NULL;
+
 	return HashMap_get(analyser->idsPool, String_fromLong(id)->value);
 }
 
 FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id) {
+	if(id == 0) return NULL;
+
 	Declaration *declaration = Analyser_getDeclarationById(analyser, id);
 	if(!declaration) return NULL;
 	if(declaration->_type != DECLARATION_FUNCTION) return NULL;
@@ -144,6 +155,8 @@ FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id) {
 }
 
 VariableDeclaration* Analyser_getVariableById(Analyser *analyser, size_t id) {
+	if(id == 0) return NULL;
+
 	Declaration *declaration = Analyser_getDeclarationById(analyser, id);
 	if(!declaration) return NULL;
 	if(declaration->_type != DECLARATION_VARIABLE) return NULL;
@@ -178,6 +191,104 @@ FunctionDeclaration* Analyser_getNearestFunctionDeclaration(Analyser *analyser, 
 	return NULL;
 }
 
+bool __Analyser_isReturnReachable_processNode(Analyser *analyser, StatementASTNode *node) {
+	switch(node->_type) {
+		case NODE_RETURN_STATEMENT: return true;
+		case NODE_IF_STATEMENT: {
+			IfStatementASTNode *ifStatement = (IfStatementASTNode*)node;
+
+			bool isReachable = true;
+
+			// Every branch must have a return statement
+			isReachable &= __Analyser_isReturnReachable(analyser, ifStatement->body);
+
+			if(ifStatement->alternate) {
+				if(ifStatement->alternate->_type == NODE_BLOCK) {
+					isReachable &= __Analyser_isReturnReachable(analyser, (BlockASTNode*)ifStatement->alternate);
+				} else {
+					isReachable &= __Analyser_isReturnReachable_processNode(analyser, ifStatement->alternate);
+				}
+			} else {
+				isReachable = false;
+			}
+
+			return isReachable;
+		} break;
+
+		default: return false;
+	}
+}
+
+bool __Analyser_isReturnReachable(Analyser *analyser, BlockASTNode *block) {
+	for(size_t i = 0; i < block->statements->size; i++) {
+		StatementASTNode *statement = Array_get(block->statements, i);
+
+		if(__Analyser_isReturnReachable_processNode(analyser, statement)) return true;
+
+		// TODO: Cut off unreachable code here
+	}
+
+	return false;
+}
+
+AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
+	Analyser *analyser,
+	FunctionCallASTNode *node,
+	BlockScope *scope,
+	Array /*<FunctionDeclaration>*/ **outCandidates
+) {
+	Array *overloads = HashMap_get(analyser->overloads, node->id->name->value);
+	if(!overloads) {
+		return AnalyserError(
+			RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+			String_fromFormat("cannot find function '%s' in scope", node->id->name->value),
+			NULL
+		);
+	}
+
+	Array *candidates = Array_alloc(0);
+
+	// Loop over possible candidates
+	for(size_t i = 0; i < overloads->size; i++) {
+		FunctionDeclaration *overload = Array_get(overloads, i);
+
+		Array *parameters = overload->node->parameterList->parameters;
+		Array *arguments = node->argumentList->arguments;
+
+		// Non-matching parameter count
+		if(parameters->size != arguments->size) continue;
+
+		// Loop over parameters
+		bool hasMatched = true;
+		for(size_t j = 0; j < parameters->size; j++) {
+			ParameterASTNode *parameter = Array_get(parameters, j);
+			ArgumentASTNode *argument = Array_get(arguments, j);
+
+			ValueType parameterType = parameter->type->type;
+			ValueType argumentType;
+
+			AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, parameterType, &argumentType);
+			if(!result.success) {
+				Array_free(candidates);
+				return result;
+			}
+
+			// Non-matching parameter type
+			// TODO: try casting an argument to the parameter type
+			if(!is_value_assignable(parameterType, argumentType)) {
+				hasMatched = false;
+				break;
+			}
+		}
+
+		if(hasMatched) Array_push(candidates, overload);
+	}
+
+	*outCandidates = candidates;
+
+	return AnalyserSuccess();
+}
+
 enum BuiltInTypes Analyser_resolveBuiltInType(String *name) {
 	if(String_equals(name, "Int")) return TYPE_INT;
 	if(String_equals(name, "Double")) return TYPE_DOUBLE;
@@ -206,7 +317,8 @@ AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast) {
 	__Analyser_createBlockScopeChaining(analyser, ast->block, NULL);
 	analyser->globalScope = ast->block->scope;
 
-	__Analyser_collectFunctionDeclarations(analyser);
+	AnalyserResult result = __Analyser_collectFunctionDeclarations(analyser);
+	if(!result.success) return result;
 
 	return __Analyser_analyseBlock(analyser, ast->block);
 }
@@ -357,7 +469,7 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 	} else {
 		// Get the type of the test expression
 		ValueType type;
-		AnalyserResult result = Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, &type);
+		AnalyserResult result = Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, (ValueType){.type = TYPE_BOOL, .isNullable = false}, &type);
 		if(!result.success) return result;
 
 		// Validate the type of the test expression
@@ -399,14 +511,26 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					// }
 
 					// Cannot resolve type (provided type is not supported)
-					// TODO: This might be a syntax error as well? Others probably implemented it fixed, using grammar rules
-					if(declaratorNode->pattern->type && !HashMap_has(analyser->types, declaratorNode->pattern->type->id->name->value)) {
-						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
-							String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
-							NULL
-						);
+					if(declaratorNode->pattern->type) {
+						declaratorNode->pattern->type->type.type = Analyser_resolveBuiltInType(declaratorNode->pattern->type->id->name);
+						declaratorNode->pattern->type->type.isNullable = declaratorNode->pattern->type->isNullable;
+
+						if(declaratorNode->pattern->type->type.type == TYPE_INVALID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
+								NULL
+							);
+						}
 					}
+					// TODO: This might be a syntax error as well? Others probably implemented it fixed, using grammar rules
+					// if(declaratorNode->pattern->type && !HashMap_has(analyser->types, declaratorNode->pattern->type->id->name->value)) {
+					// 	return AnalyserError(
+					// 		RESULT_ERROR_SEMANTIC_OTHER,
+					// 		String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
+					// 		NULL
+					// 	);
+					// }
 
 					VariableDeclaration *declaration = new_VariableDeclaration(
 						analyser,
@@ -419,7 +543,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					// Validate/infer the type based on the initializer
 					if(declaratorNode->initializer) {
 						ValueType type;
-						AnalyserResult result = Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, &type);
+						AnalyserResult result = Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, declaration->type, &type);
 						if(!result.success) return result;
 
 						if(declaratorNode->pattern->type) {
@@ -508,7 +632,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				}
 
 				ValueType type;
-				AnalyserResult result = Analyser_resolveExpressionType(analyser, assignment->expression, block->scope, &type);
+				AnalyserResult result = Analyser_resolveExpressionType(analyser, assignment->expression, block->scope, variable->type, &type);
 				if(!result.success) return result;
 
 				if(!is_value_assignable(variable->type, type)) {
@@ -523,6 +647,8 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					);
 				}
 
+				if(HashMap_has(block->scope->variables, variable->name->value)) variable->isInitialized = true; // This is too much strict
+				variable->isUsed = true;
 				assignment->id->id = variable->id;
 			} break;
 
@@ -533,6 +659,9 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					// Resolve the condition of the if statement
 					AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)ifStatement, block->scope);
 					if(!result.success) return result;
+
+					// Assign the id to the if statement for the codegen
+					ifStatement->id = Analyser_nextId(analyser);
 
 					// Analyse the body of the if statement
 					result = __Analyser_analyseBlock(analyser, ifStatement->body);
@@ -561,6 +690,9 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)whileStatement, block->scope);
 				if(!result.success) return result;
 
+				// Assign the id to the while statement for the codegen
+				whileStatement->id = Analyser_nextId(analyser);
+
 				// Analyse the body of the while statement
 				result = __Analyser_analyseBlock(analyser, whileStatement->body);
 				if(!result.success) return result;
@@ -570,6 +702,97 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				FunctionDeclarationASTNode *function = (FunctionDeclarationASTNode*)statement;
 
 				AnalyserResult result = __Analyser_analyseBlock(analyser, function->body);
+				if(!result.success) return result;
+
+				FunctionDeclaration *declaration = Analyser_getFunctionById(analyser, function->id->id);
+				assertf(declaration != NULL, "Cannot find function declaration with id %ld", function->id->id);
+
+				// TODO: handle implicit return
+
+				// Analyse the return statement reachability
+				if(declaration->returnType.type != TYPE_VOID && !__Analyser_isReturnReachable(analyser, function->body)) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat(
+							"missing return in global function expected to return '%s'",
+							__Analyser_stringifyType(declaration->returnType)->value
+						),
+						NULL
+					);
+				}
+			} break;
+
+			case NODE_RETURN_STATEMENT: {
+				ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statement;
+
+				// Try to find the nearest function scope
+				FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, block->scope);
+
+				// Return statement is not inside a function
+				if(!function) {
+					return AnalyserError(
+						RESULT_ERROR_SYNTACTIC_ANALYSIS, // This was requested by the examiner
+						String_fromFormat("return invalid outside of a func"),
+						NULL
+					);
+				}
+
+				// Function has no return type but returns something
+				if(function->returnType.type == TYPE_VOID && returnStatement->expression) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat("unexpected non-void return value in void function"),
+						NULL
+					);
+				}
+
+				// Function has a return type but returns nothing
+				if(function->returnType.type != TYPE_VOID && !returnStatement->expression) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat("non-void function should return a value"),
+						NULL
+					);
+				}
+
+				// Function has a return type but returns incompatible type
+				if(function->returnType.type != TYPE_VOID && returnStatement->expression) {
+					// Get the type of the return expression
+					ValueType type;
+					AnalyserResult result = Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, function->returnType, &type);
+					if(!result.success) return result;
+
+					// Validate the type of the return expression
+					if(!is_value_assignable(function->returnType, type)) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"cannot convert value of type '%s' to specified type '%s'",
+								__Analyser_stringifyType(type)->value,
+								__Analyser_stringifyType(function->returnType)->value
+							),
+							NULL
+						);
+					}
+				}
+
+				// Assign the id of the function to the return statement for the codegen
+				returnStatement->id = function->id;
+
+				function->isUsed = true;
+			} break;
+
+			case NODE_EXPRESSION_STATEMENT: {
+				ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statement;
+
+				ValueType type;
+				AnalyserResult result = Analyser_resolveExpressionType(
+					analyser,
+					expressionStatement->expression,
+					block->scope,
+					(ValueType){.type = TYPE_UNKNOWN, .isNullable = false},
+					&type
+				);
 				if(!result.success) return result;
 			} break;
 
@@ -584,11 +807,19 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 	return AnalyserSuccess();
 }
 
-AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType *outType) {
+AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType) {
 	switch(node->_type) {
 		case NODE_LITERAL_EXPRESSION: {
-			// Literals are handled by parser
-			*outType = ((LiteralExpressionASTNode*)node)->type;
+			// Literals are handled by parser, we just might need to retype them if requested
+			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)node;
+
+			// Can only retype int literals to double
+			if(prefferedType.type == TYPE_DOUBLE && literal->type.type == TYPE_INT) {
+				literal->value.floating = (double)literal->value.integer;
+				literal->type.type = TYPE_DOUBLE;
+			}
+
+			*outType = literal->type;
 		} break;
 
 		case NODE_IDENTIFIER: {
@@ -624,6 +855,14 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				);
 			}
 
+			if(!declaration->type.isNullable && !declaration->isInitialized) {
+				return AnalyserError(
+					RESULT_ERROR_SEMANTIC_OTHER,
+					String_fromFormat("variable '%s' used before being initialized", identifier->name->value),
+					NULL
+				);
+			}
+
 			identifier->id = declaration->id;
 			declaration->isUsed = true;
 			*outType = declaration->type;
@@ -641,65 +880,149 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				return AnalyserSuccess();
 			}
 
-			Array /*<FunctionDeclaration>*/ *declarations = HashMap_get(analyser->overloads, call->id->name->value);
+			// Array /*<FunctionDeclaration>*/ *declarations = HashMap_get(analyser->overloads, call->id->name->value);
 
-			if(!declarations) {
+			// if(!declarations) {
+			// 	return AnalyserError(
+			// 		RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+			// 		String_fromFormat("cannot find '%s' in scope", call->id->name->value),
+			// 		NULL
+			// 	);
+			// }
+
+			// // Resolve overload
+			// // TODO: Resolve types of the arguments
+			// // TODO: Match the resolved types with the available overloads
+			// // TODO: Validate argument labels
+
+			// Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
+
+			// for(size_t i = 0; i < declarations->size; i++) {
+			// 	FunctionDeclaration *declaration = Array_get(declarations, i);
+
+			// 	if(declaration->node->parameterList->parameters->size != arguments->size) continue;
+
+			// 	bool match = true;
+
+			// 	Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
+
+			// 	for(size_t j = 0; j < arguments->size; j++) {
+			// 		ArgumentASTNode *argument = Array_get(arguments, j);
+			// 		ParameterASTNode *parameter = Array_get(declaration->node->parameterList->parameters, j);
+
+			// 		ValueType argumentType;
+			// 		AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, &argumentType);
+			// 		if(!result.success) return result;
+
+			// 		if(argumentType.type != parameter->type->type.type) {
+			// 			match = false;
+			// 			break;
+			// 		}
+			// 	}
+
+			// 	if(!match) continue;
+
+			// 	call->id->id = declaration->id;
+			// 	*outType = declaration->returnType;
+
+			// 	return AnalyserSuccess();
+			// }
+
+			Array /*<FunctionDeclaration>*/ *candidates = NULL;
+			AnalyserResult result = __Analyser_resolveFunctionOverloadCandidates(analyser, call, scope, &candidates);
+			if(!result.success) return result;
+
+			// Try to find the candidate with preffered return type
+			bool hasMultipleCandidates = false;
+			FunctionDeclaration *declaration = NULL;
+			for(size_t i = 0; i < candidates->size; i++) {
+				FunctionDeclaration *candidate = Array_get(candidates, i);
+
+				if(prefferedType.type == TYPE_UNKNOWN || is_value_assignable(prefferedType, candidate->returnType)) {
+					// Multiple candidates matching
+					if(declaration) {
+						hasMultipleCandidates = true;
+						break;
+					}
+
+					declaration = candidate;
+				}
+			}
+
+			Array_free(candidates);
+
+			if(!declaration) {
 				return AnalyserError(
 					RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-					String_fromFormat("cannot find '%s' in scope", call->id->name->value),
+					String_fromFormat("no exact matches in call to global function '%s'", call->id->name->value),
 					NULL
 				);
 			}
 
-			// Resolve overload
-			// TODO: Resolve types of the arguments
-			// TODO: Match the resolved types with the available overloads
-
-			Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
-
-			for(size_t i = 0; i < declarations->size; i++) {
-				FunctionDeclaration *declaration = Array_get(declarations, i);
-
-				if(declaration->node->parameterList->parameters->size != arguments->size) continue;
-
-				bool match = true;
-
-				Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
-
-				for(size_t j = 0; j < arguments->size; j++) {
-					ArgumentASTNode *argument = Array_get(arguments, j);
-					ParameterASTNode *parameter = Array_get(declaration->node->parameterList->parameters, j);
-
-					ValueType argumentType;
-					AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, &argumentType);
-					if(!result.success) return result;
-
-					if(argumentType.type != parameter->type->type.type) {
-						match = false;
-						break;
-					}
-				}
-
-				if(!match) continue;
-
-				call->id->id = declaration->id;
-				*outType = declaration->returnType;
-
-				return AnalyserSuccess();
+			if(hasMultipleCandidates) {
+				return AnalyserError(
+					RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+					String_fromFormat("ambiguous use of '%s'", call->id->name->value),
+					NULL
+				);
 			}
 
-			return AnalyserError(
-				RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-				String_fromFormat("no exact matches in call to global function '%s'", call->id->name->value),
-				NULL
-			);
+			// Check for correct label names
+			Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
+			Array /*<ParameterASTNode>*/ *parameters = declaration->node->parameterList->parameters;
+
+			for(size_t i = 0; i < arguments->size; i++) {
+				ArgumentASTNode *argument = Array_get(arguments, i);
+				ParameterASTNode *parameter = Array_get(parameters, i);
+
+				String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
+				assertf(externalName, "Parameter has no external or internal name");
+
+				// Parameter is labeless, but argument has a label
+				if(parameter->isLabeless && argument->label) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						String_fromFormat("extraneous argument label '%s' in call", argument->label->name),
+						NULL
+					);
+				}
+
+				// Parameter has a label, but argument has no label
+				if(!parameter->isLabeless && !argument->label) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						String_fromFormat("missing argument label '%s' in call", externalName),
+						NULL
+					);
+				}
+
+				// Parameter has a label, but argument has a different label
+				if(!parameter->isLabeless && argument->label && !String_equals(externalName, argument->label->name->value)) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						String_fromFormat(
+							"incorrect argument label in call (have '%s', expected '%s')",
+							argument->label->name,
+							externalName
+						),
+						NULL
+					);
+				}
+			}
+
+			// TODO: Might need to retype all the parameters to match the overload
+			call->id->id = declaration->id;
+			declaration->isUsed = true;
+			*outType = declaration->returnType;
+
+			return AnalyserSuccess();
 		} break;
 
 		case NODE_UNARY_EXPRESSION: {
 			UnaryExpressionASTNode *unary = (UnaryExpressionASTNode*)node;
 
 			ValueType type;
-			AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, &type);
+			AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, prefferedType, &type);
 			if(!result.success) return result;
 
 			switch(unary->operator) {
@@ -757,13 +1080,55 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 		case NODE_BINARY_EXPRESSION: {
 			BinaryExpressionASTNode *binary = (BinaryExpressionASTNode*)node;
 
+			AnalyserResult result;
 			ValueType leftType;
-			AnalyserResult result = Analyser_resolveExpressionType(analyser, binary->left, scope, &leftType);
-			if(!result.success) return result;
-
 			ValueType rightType;
-			result = Analyser_resolveExpressionType(analyser, binary->right, scope, &rightType);
-			if(!result.success) return result;
+
+			if(prefferedType.type != TYPE_UNKNOWN) {
+				result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+				if(!result.success) return result;
+
+				result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
+				if(!result.success) return result;
+			} else {
+				// Try to correctly suggest function overload candidates
+				bool isLeftFunctionCall = binary->left->_type == NODE_FUNCTION_CALL;
+				bool isRightFunctionCall = binary->right->_type == NODE_FUNCTION_CALL;
+
+				// Left first (right function call)
+				if((!isLeftFunctionCall && !isRightFunctionCall) || (!isLeftFunctionCall && isRightFunctionCall)) {
+					result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+					if(!result.success) return result;
+
+					result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+					if(!result.success) return result;
+				}
+				// Right first (left function call)
+				else if(isLeftFunctionCall && !isRightFunctionCall) {
+					result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
+					if(!result.success) return result;
+
+					result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+					if(!result.success) return result;
+				}
+				// Left, then right (both function calls)
+				else if(isLeftFunctionCall && isRightFunctionCall) {
+					// Try to resolve the left side first
+					result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+					if(result.success) {
+						result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+					} else {
+						// Try to resolve the right side after the left side failed
+						result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
+						if(result.success) {
+							result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+						} else {
+							// Both sides failed, return the error from the left side
+							return result;
+						}
+					}
+				}
+			}
 
 			switch(binary->operator) {
 				case OPERATOR_PLUS:
@@ -1140,6 +1505,9 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 		// Register the function declaration to the global scope
 		HashMap_set(analyser->functions, String_fromLong(declaration->id)->value, declaration);
 
+		// Add id to the function declaration node
+		declarationNode->id->id = declaration->id;
+
 		// Resolve return type
 		if(declarationNode->returnType) {
 			declaration->returnType.type = Analyser_resolveBuiltInType(declarationNode->returnType->id->name);
@@ -1175,7 +1543,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					);
 				}
 
-				String *typeName = parameter->internalId->name;
+				String *typeName = parameter->type->id->name;
 				enum BuiltInTypes resolvedType = Analyser_resolveBuiltInType(typeName);
 
 				if(!is_type_valid(resolvedType)) {
@@ -1196,6 +1564,10 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					false,
 					true
 				);
+
+				// Update the parameter with resolved type and id
+				parameter->type->type = variable->type;
+				parameter->type->id->id = variable->id;
 
 				// If the parameter is not in the hashmap yet
 				if(!HashMap_has(variables, name->value)) {

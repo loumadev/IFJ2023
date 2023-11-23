@@ -1,13 +1,14 @@
 #include "assertf.h"
 #include "allocator/MemoryAllocator.h"
 #include "allocator/PointerSet.h"
+#include "compiler/Result.h"
 
 #define PREFIX "[Allocator] "
 
 // Private
 void Allocator_handleFailure() {
 	fprintf(stderr, "Memory allocation failed!\n");
-	exit(1);
+	exit(RESULT_ERROR_INTERNAL);
 }
 
 // Private
