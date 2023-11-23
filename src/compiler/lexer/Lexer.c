@@ -367,8 +367,8 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 	}
 	// Match numbers
 	else if(
-		is_decimal_digit(ch) ||
-		(ch == '.' && is_decimal_digit(Lexer_peekChar(lexer, 1)))         // Error state
+		is_decimal_digit(ch)// ||
+		// (ch == '.' && is_decimal_digit(Lexer_peekChar(lexer, 1)))         // Error state
 	) {
 		return __Lexer_tokenizeNumberLiteral(lexer);
 	}
@@ -376,7 +376,7 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 	else {
 		// Try to match punctuators and operators
 		LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(lexer);
-		if(result.success) return result;
+		if(result.success && result.type != RESULT_NO_MATCH) return result;
 
 		// Invalid character
 		return LexerError(
@@ -1066,10 +1066,14 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 	while(is_decimal_digit(ch) || ch == '.' || ch == '_') {
 		// Handle fractional part
 		if(ch == '.') {
-			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
-			if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
-			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
-					String_fromFormat("expected member name following '.'"),
+			// '...' and '..<' operators
+			if(Lexer_compare(lexer, "...") || Lexer_compare(lexer, "..<")) break;
+
+			// Accessor (ex. 10.123.toFixed())
+			if(hasDot) {
+				// break;
+				return LexerError(
+					String_fromFormat("number literal can only contain one floating point dot '.'"),
 					Array_fromArgs(
 						1,
 						Token_alloc(
@@ -1085,7 +1089,47 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 							(union TokenValue){0}
 						)
 					)
-			);
+				);
+			}
+			// if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			// if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
+			// 		String_fromFormat("expected member name following '.'"),
+			// 		Array_fromArgs(
+			// 			1,
+			// 			Token_alloc(
+			// 				TOKEN_MARKER,
+			// 				TOKEN_CARET,
+			// 				WHITESPACE_NONE,
+			// 				TextRange_construct(
+			// 					lexer->currentChar,
+			// 					lexer->currentChar + 1,
+			// 					lexer->line,
+			// 					lexer->column
+			// 				),
+			// 				(union TokenValue){0}
+			// 			)
+			// 		)
+			// );
+			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) {
+				return LexerError(
+					String_fromFormat("expected floating point part of the floating point literal after '.'"),
+					Array_fromArgs(
+						1,
+						Token_alloc(
+							TOKEN_MARKER,
+							TOKEN_CARET,
+							WHITESPACE_NONE,
+							TextRange_construct(
+								lexer->currentChar,
+								lexer->currentChar + 1,
+								lexer->line,
+								lexer->column
+							),
+							(union TokenValue){0}
+						)
+					)
+				);
+			}
 
 			hasDot = true;
 		}
@@ -1282,7 +1326,7 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("}", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACE);
 	// else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
 	// else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
-	else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
+	// else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
 	else match_as(",", TOKEN_PUNCTUATOR, TOKEN_COMMA);
 	else match_as(":", TOKEN_PUNCTUATOR, TOKEN_COLON);
 	else match_as(";", TOKEN_PUNCTUATOR, TOKEN_SEMICOLON);
@@ -1292,6 +1336,7 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	// else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
 	else match_as("?", TOKEN_PUNCTUATOR, TOKEN_QUESTION);
 	else match_as("!", TOKEN_PUNCTUATOR, TOKEN_EXCLAMATION);
+	else return LexerNoMatch();
 
 	#undef match_as
 
