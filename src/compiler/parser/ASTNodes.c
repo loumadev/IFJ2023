@@ -85,6 +85,7 @@ ReturnStatementASTNode* new_ReturnStatementASTNode(
 ) {
 	prepare_node_of(ReturnStatementASTNode, NODE_RETURN_STATEMENT)
 	node->expression = expression;
+	node->id = 0;
 	return node;
 }
 
@@ -181,6 +182,7 @@ IfStatementASTNode* new_IfStatementASTNode(
 	node->test = test;
 	node->body = body;
 	node->alternate = alternate;
+	node->id = 0;
 	return node;
 }
 
@@ -191,6 +193,7 @@ WhileStatementASTNode* new_WhileStatementASTNode(
 	prepare_node_of(WhileStatementASTNode, NODE_WHILE_STATEMENT)
 	node->test = test;
 	node->body = body;
+	node->id = 0;
 	return node;
 }
 

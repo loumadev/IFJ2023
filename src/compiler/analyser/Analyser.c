@@ -27,6 +27,10 @@ ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind) {
 	}
 }
 
+size_t Analyser_nextId(Analyser *analyser) {
+	return analyser->idCounter++;
+}
+
 VariableDeclaration* new_VariableDeclaration(
 	Analyser *analyser,
 	VariableDeclaratorASTNode *node,
@@ -39,7 +43,7 @@ VariableDeclaration* new_VariableDeclaration(
 	VariableDeclaration *declaration = (VariableDeclaration*)mem_alloc(sizeof(VariableDeclaration));
 
 	declaration->_type = DECLARATION_VARIABLE;
-	declaration->id = analyser ? analyser->idCounter++ : 0;
+	declaration->id = analyser ? Analyser_nextId(analyser) : 0;
 	declaration->isConstant = isConstant;
 	declaration->isUsed = false;
 
@@ -72,7 +76,7 @@ FunctionDeclaration* new_FunctionDeclaration(Analyser *analyser, FunctionDeclara
 	FunctionDeclaration *declaration = (FunctionDeclaration*)mem_alloc(sizeof(FunctionDeclaration));
 
 	declaration->_type = DECLARATION_FUNCTION;
-	declaration->id = analyser ? analyser->idCounter++ : 0;
+	declaration->id = analyser ? Analyser_nextId(analyser) : 0;
 	declaration->node = node;
 	declaration->variables = HashMap_alloc();
 	declaration->isUsed = false;
@@ -656,6 +660,9 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)ifStatement, block->scope);
 					if(!result.success) return result;
 
+					// Assign the id to the if statement for the codegen
+					ifStatement->id = Analyser_nextId(analyser);
+
 					// Analyse the body of the if statement
 					result = __Analyser_analyseBlock(analyser, ifStatement->body);
 					if(!result.success) return result;
@@ -682,6 +689,9 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				// Resolve the condition of the while statement
 				AnalyserResult result = __Analyser_validateTestCondition(analyser, (ASTNode*)whileStatement, block->scope);
 				if(!result.success) return result;
+
+				// Assign the id to the while statement for the codegen
+				whileStatement->id = Analyser_nextId(analyser);
 
 				// Analyse the body of the while statement
 				result = __Analyser_analyseBlock(analyser, whileStatement->body);
@@ -765,6 +775,9 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						);
 					}
 				}
+
+				// Assign the id of the function to the return statement for the codegen
+				returnStatement->id = function->id;
 
 				function->isUsed = true;
 			} break;
