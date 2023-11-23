@@ -242,7 +242,7 @@ DESCRIBE(variable_resolution, "Resolution of variable references") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
 
-		EXPECT_STATEMENTS(parserResult.node, 2);
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 
 		VariableDeclaration *a = Analyser_getVariableByName(&analyser, "a", analyser.globalScope);
 		EXPECT_NOT_NULL(a);
@@ -276,7 +276,7 @@ DESCRIBE(variable_resolution, "Resolution of variable references") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
 
-		EXPECT_STATEMENTS(parserResult.node, 2);
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 
 		VariableDeclaration *a = Analyser_getVariableByName(&analyser, "a", analyser.globalScope);
 		EXPECT_NOT_NULL(a);
@@ -309,7 +309,7 @@ DESCRIBE(variable_resolution, "Resolution of variable references") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
 
-		EXPECT_STATEMENTS(parserResult.node, 2);
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 
 		VariableDeclaration *a = Analyser_getVariableByName(&analyser, "a", analyser.globalScope);
 		EXPECT_NOT_NULL(a);
@@ -1737,16 +1737,16 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
 
-		EXPECT_STATEMENTS(parserResult.node, 2);
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 
-		ExpressionStatementASTNode *expression = (ExpressionStatementASTNode*)Array_get(statements, 1);
+		ExpressionStatementASTNode *expression = (ExpressionStatementASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 		FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->expression;
 		EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
 
 		FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 		EXPECT_NOT_NULL(function);
 
-		FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+		FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
 		EXPECT_EQUAL_PTR(function->node, declaration);
 	} TEST_END();
 
@@ -1763,7 +1763,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
 
-		EXPECT_STATEMENTS(parserResult.node, 2);
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 	} TEST_END();
 
 	TEST_BEGIN("Resolution of overloaded function inside an expression with multiple parameters") {
@@ -1781,7 +1781,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1795,7 +1795,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1812,7 +1812,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1826,7 +1826,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1843,7 +1843,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1857,7 +1857,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1874,7 +1874,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1888,7 +1888,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1905,7 +1905,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1919,7 +1919,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1936,7 +1936,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1950,7 +1950,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1967,7 +1967,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -1981,7 +1981,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 		{
@@ -1998,7 +1998,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -2012,7 +2012,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 	} TEST_END();
@@ -2133,7 +2133,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -2147,7 +2147,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 
@@ -2165,7 +2165,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -2179,7 +2179,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 	} TEST_END();
@@ -2199,7 +2199,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -2213,7 +2213,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 
@@ -2231,7 +2231,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 3);
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -2245,7 +2245,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
 			EXPECT_NOT_NULL(function);
 
-			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0);
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
 
@@ -2286,7 +2286,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 
-			EXPECT_STATEMENTS(parserResult.node, 5);
+			EXPECT_STATEMENTS(parserResult.node, 5 + FUNCTIONS_COUNT);
 
 			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
 			EXPECT_NOT_NULL(variable);
@@ -2301,7 +2301,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function1 = Analyser_getFunctionById(&analyser, functionCall1->id->id);
 			EXPECT_NOT_NULL(function1);
 
-			FunctionDeclarationASTNode *declaration1 = (FunctionDeclarationASTNode*)Array_get(statements, 1);
+			FunctionDeclarationASTNode *declaration1 = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function1->node, declaration1);
 
 
@@ -2311,7 +2311,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclaration *function2 = Analyser_getFunctionById(&analyser, functionCall2->id->id);
 			EXPECT_NOT_NULL(function2);
 
-			FunctionDeclarationASTNode *declaration2 = (FunctionDeclarationASTNode*)Array_get(statements, 3);
+			FunctionDeclarationASTNode *declaration2 = (FunctionDeclarationASTNode*)Array_get(statements, 3 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function2->node, declaration2);
 		}
 
@@ -2365,7 +2365,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 2);
-		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0 + FUNCTIONS_COUNT);
 
 
 		Lexer_setSource(
@@ -2385,7 +2385,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 3);
-		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0 + FUNCTIONS_COUNT);
 	} TEST_END();
 
 	TEST_BEGIN("Registration of global variables in local scope") {
@@ -2409,7 +2409,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 6);
-		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0 + FUNCTIONS_COUNT);
 
 
 		Lexer_setSource(
@@ -2435,7 +2435,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 7);
-		EXPECT_EQUAL_INT(analyser.functions->size, 0);
+		EXPECT_EQUAL_INT(analyser.functions->size, 0 + FUNCTIONS_COUNT);
 	} TEST_END();
 
 	TEST_BEGIN("Registration of functions in global scope") {
@@ -2458,7 +2458,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 3);
-		EXPECT_EQUAL_INT(analyser.functions->size, 1);
+		EXPECT_EQUAL_INT(analyser.functions->size, 1 + FUNCTIONS_COUNT);
 
 		FunctionDeclaration *func1 = Array_get(HashMap_get(analyser.overloads, "foo"), 0);
 		EXPECT_NOT_NULL(func1);
@@ -2496,7 +2496,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 7);
-		EXPECT_EQUAL_INT(analyser.functions->size, 1);
+		EXPECT_EQUAL_INT(analyser.functions->size, 1 + FUNCTIONS_COUNT);
 
 		FunctionDeclaration *func2 = Array_get(HashMap_get(analyser.overloads, "foo"), 0);
 		EXPECT_NOT_NULL(func2);
@@ -2550,7 +2550,7 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_TRUE(analyserResult.success);
 
 		EXPECT_EQUAL_INT(analyser.variables->size, 8);
-		EXPECT_EQUAL_INT(analyser.functions->size, 2);
+		EXPECT_EQUAL_INT(analyser.functions->size, 2 + FUNCTIONS_COUNT);
 
 		FunctionDeclaration *func3 = Array_get(HashMap_get(analyser.overloads, "foo"), 0);
 		EXPECT_NOT_NULL(func3);
@@ -3297,4 +3297,168 @@ DESCRIBE(str_interp_analysis, "String interpolation analysis") {
 			EXPECT_FALSE(analyserResult.success);
 		}
 	} TEST_END();
+}
+
+DESCRIBE(use_of_builtin_funcs, "Use of built-in functions") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Corrent link between declaration and enum value") {
+		Lexer_setSource(
+			&lexer,
+			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		// readString
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "readString");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_READ_STRING);
+		}
+
+		// readInt
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "readInt");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_READ_INT);
+		}
+
+		// readDouble
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "readDouble");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_READ_DOUBLE);
+		}
+
+		// write
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "write");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_WRITE);
+		}
+
+		// Int2Double
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "Int2Double");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_INT_TO_DOUBLE);
+		}
+
+		// Double2Int
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "Double2Int");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_DOUBLE_TO_INT);
+		}
+
+		// length
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "length");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_LENGTH);
+		}
+
+		// substring
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "substring");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_SUBSTRING);
+		}
+
+		// ord
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "ord");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_ORD);
+		}
+
+		// chr
+		{
+			Array *declarations = Analyser_getFunctionDeclarationsByName(&analyser, "chr");
+			EXPECT_NOT_NULL(declarations);
+
+			FunctionDeclaration *function = Array_get(declarations, 0);
+			EXPECT_NOT_NULL(function);
+
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_CHR);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Valid use of built-in functions") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = readInt()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 5" LF
+				"var b = Int2Double(a)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Invalid use of built-in functions") {} TEST_END();
 }

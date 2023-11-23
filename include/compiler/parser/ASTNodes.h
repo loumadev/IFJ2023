@@ -67,6 +67,21 @@ enum BuiltInTypes {
 	TYPE_VOID
 };
 
+enum BuiltInFunction {
+	FUNCTION_NONE = -1,
+	FUNCTION_READ_STRING = 0,
+	FUNCTION_READ_INT,
+	FUNCTION_READ_DOUBLE,
+	FUNCTION_WRITE,
+	FUNCTION_INT_TO_DOUBLE,
+	FUNCTION_DOUBLE_TO_INT,
+	FUNCTION_LENGTH,
+	FUNCTION_SUBSTRING,
+	FUNCTION_ORD,
+	FUNCTION_CHR,
+	FUNCTIONS_COUNT
+};
+
 #define is_type_valid(type) ((type) > TYPE_INVALID)
 #define is_value_assignable(dst, src) (((dst).type == (src).type || (src).type == TYPE_NIL) && ((dst).isNullable || !(src).isNullable))
 
@@ -157,6 +172,7 @@ typedef struct FunctionDeclarationASTNode {
 	ParameterListASTNode *parameterList;
 	TypeReferenceASTNode *returnType;
 	BlockASTNode *body;
+	enum BuiltInFunction builtin;
 } FunctionDeclarationASTNode;
 
 typedef struct ArgumentASTNode {

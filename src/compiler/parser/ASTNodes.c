@@ -124,6 +124,7 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 	node->parameterList = parameterList;
 	node->returnType = returnType;
 	node->body = block;
+	node->builtin = FUNCTION_NONE;
 	return node;
 }
 

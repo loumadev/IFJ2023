@@ -5,9 +5,12 @@
 #include "internal/HashMap.h"
 #include "compiler/analyser/AnalyserResult.h"
 #include "compiler/lexer/Token.h"
+#include "compiler/lexer/Lexer.h"
+#include "compiler/parser/Parser.h"
 
 
 String* __Analyser_stringifyType(ValueType type);
+void __Analyser_registerBuiltInFunctions(Analyser *analyser);
 void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent);
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
@@ -29,6 +32,15 @@ ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind) {
 
 size_t Analyser_nextId(Analyser *analyser) {
 	return analyser->idCounter++;
+}
+
+size_t Analyser_registerId(Analyser *analyser, size_t id) {
+	assertf(id != 0, "Cannot register id 0");
+	assertf(id < analyser->idCounter, "Cannot register id %zu, next available id is %zu", id, analyser->idCounter);
+
+	analyser->idCounter = id + 1;
+
+	return id;
 }
 
 VariableDeclaration* new_VariableDeclaration(
@@ -321,6 +333,9 @@ AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast) {
 
 	analyser->ast = ast;
 
+	// Register built-in functions
+	__Analyser_registerBuiltInFunctions(analyser);
+
 	__Analyser_createBlockScopeChaining(analyser, ast->block, NULL);
 	analyser->globalScope = ast->block->scope;
 
@@ -379,6 +394,45 @@ String* __Analyser_formatBooleanTestErrorMessage(ValueType type) {
 					type.type == TYPE_STRING ? "; test for '!= \"\"' instead" :
 						""
 	);
+}
+
+void __Analyser_registerBuiltInFunctions(Analyser *analyser) {
+	assertf(analyser->ast != NULL);
+
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Lexer_setSource(
+		&lexer,
+		#define LF "\n"
+		"func readString() -> String? {return nil}" LF
+		"func readInt() -> Int? {return nil}" LF
+		"func readDouble() -> Double? {return nil}" LF
+		"func write() {}" LF // Parameters handled internally
+		"func Int2Double(_ term: Int) -> Double {return 0.0}" LF
+		"func Double2Int(_ term: Double) -> Int {return 0}" LF
+		"func length(_ s: String) -> Int {return 0}" LF
+		"func substring(of s: String, startingAt i: Int, endingBefore j: Int) -> String? {return nil}" LF
+		"func ord(_ c: String) -> Int {return 0}" LF
+		"func chr(_ i: Int) -> String {return \"\"}" LF
+		#undef LF
+	);
+	ParserResult result = Parser_parse(&parser);
+	assertf(result.success, "Failed to parse built-in function declarations: %s", result.message->value);
+
+	ProgramASTNode *ast = (ProgramASTNode*)result.node;
+	Array *statements = ast->block->statements;
+
+	for(size_t i = 0; i < FUNCTIONS_COUNT; i++) {
+		FunctionDeclarationASTNode *functionNode = (FunctionDeclarationASTNode*)Array_get(statements, i);
+
+		functionNode->builtin = (enum BuiltInFunction)i;
+
+		Array_unshift(analyser->ast->block->statements, functionNode);
+	}
 }
 
 void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent) {
