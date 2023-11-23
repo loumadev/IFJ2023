@@ -89,8 +89,6 @@ ParserResult Parser_parse(Parser *parser) {
 	assertf(parser != NULL);
 	assertf(parser->lexer != NULL);
 
-	FLUSH_ERROR_BUFFER(parser);
-
 	return __Parser_parseProgram(parser);
 }
 
@@ -104,6 +102,8 @@ ParserResult __Parser_parseProgram(Parser *parser) {
 
 	ParserResult result = __Parser_parseBlock(parser, false);
 	if(!result.success) return result;
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	ProgramASTNode *program = new_ProgramASTNode((BlockASTNode*)result.node);
 	return ParserSuccess(program);
