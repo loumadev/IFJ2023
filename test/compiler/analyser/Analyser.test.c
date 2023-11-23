@@ -2017,6 +2017,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		}
 	} TEST_END();
 
+
 	TEST_BEGIN("Invalid resolution of overloaded function inside an expression with multiple parameters") {
 		{
 			Lexer_setSource(
@@ -2336,6 +2337,65 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			EXPECT_FALSE(analyserResult.success);
 		}
 
+	} TEST_END();
+
+	TEST_BEGIN("Resolution of overloaded built-in 'write' function") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func write(_ a: Int) -> Int {return 1}" LF
+				"" LF
+				"let v1 = write(4) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func write(_ a: Int) -> Int {return 1}" LF
+				"" LF
+				"write(4.0)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func write(_ a: Int) -> Int {return 1}" LF
+				"" LF
+				"let v1 = write(4.0) + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func write(_ a: Int) -> Int {return 1}" LF
+				"" LF
+				"write(true)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+		}
 	} TEST_END();
 }
 
@@ -3451,6 +3511,96 @@ DESCRIBE(use_of_builtin_funcs, "Use of built-in functions") {
 				&lexer,
 				"var a = 5" LF
 				"var b = Int2Double(a)" LF
+				"var c = Double2Int(b)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = readInt()" LF
+				"var b = readDouble()" LF
+				"var c = Int2Double(a!)" LF
+				"var d = c + b!" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = readString()" LF
+				"var x = readInt()!" LF
+				"var b = length(a!)" LF
+				"var c = substring(of: a!, startingAt: 0 + x, endingBefore: b)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 10" LF
+				"" LF
+				"write(a)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 10" LF
+				"var b = 1.5" LF
+				"" LF
+				"write(a, b)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 10" LF
+				"var b = 1.5" LF
+				"var c = \"hey\"" LF
+				"var d = true" LF
+				"var e: Int? = nil" LF
+				"" LF
+				"write(a, b, c, d, e)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 10" LF
+				"var b = 1.5" LF
+				"var c = \"hey\"" LF
+				"var d = true" LF
+				"var e: Int? = nil" LF
+				"" LF
+				"write(1, \"str\", d || false, b + 4, e, a - 10)" LF
 			);
 			parserResult = Parser_parse(&parser);
 			EXPECT_TRUE(parserResult.success);
