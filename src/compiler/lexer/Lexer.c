@@ -859,11 +859,6 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	// if(ch) lexer->currentChar--;
 
 	// In case the string contains the interpolation, mark the last span marker as tail
-	// printf("??????????????????\n");
-	// Token_print(Array_get(lexer->tokens, -3), 0, 0);
-	// Token_print(Array_get(lexer->tokens, -2), 0, 0);
-	// Token_print(Array_get(lexer->tokens, -1), 0, 0);
-
 	Token *marker = Array_get(lexer->tokens, -1);
 	if(marker && marker->kind == TOKEN_STRING_SPAN) marker->kind = TOKEN_STRING_TAIL;
 
