@@ -21,6 +21,7 @@ char *__Instruction_getFrame(enum Frame frame) {
     }
 }
 
+/// --- UTILS ---
 void Instruction_label_while_start(size_t id) {
     fprintf(stdout, "LABEL $while_start_%lu\n", id);
 }
@@ -36,6 +37,16 @@ void Instruction_jumpifneqs_while_end(size_t id) {
 void Instruction_jump_while_start(size_t id){
     fprintf(stdout, "JUMP $while_start_%lu\n", id);
 }
+
+void Instruction_jumpifneqs_if_end(size_t id) {
+    fprintf(stdout, "JUMPIFNEQS $if_end_%lu\n", id);
+}
+
+void Instruction_label_if_end(size_t id) {
+    fprintf(stdout, "LABEL $if_end_%lu\n", id);
+}
+
+// --- INSTUCTIONS ---
 
 void Instruction_pushframe() {
     INSTRUCTION_NULLARY("PUSHFRAME")

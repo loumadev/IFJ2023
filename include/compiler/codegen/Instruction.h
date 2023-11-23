@@ -16,6 +16,18 @@
 #define COMMENT_VAR(id) \
     fprintf(stdout, "# Variable %lu\n", id);
 
+#define COMMENT_WHILE(id) \
+    fprintf(stdout, "# While statement %lu\n", id);
+
+#define COMMENT_IF(id) \
+    fprintf(stdout, "# If statement %lu\n", id);
+
+#define COMMENT_IF_BLOCK(id) \
+    fprintf(stdout, "# If %lu block\n", id);
+
+#define COMMENT_ELSE_BLOCK(id) \
+    fprintf(stdout, "# If %lu else\n", id);
+
 #define COMMENT_FUNC(id) \
     fprintf(stdout, "# Function %lu\n", id);
 
@@ -32,6 +44,9 @@ void Instruction_jumpifneqs_while_end(size_t id);
 
 void Instruction_jump_while_start(size_t id);
 
+void Instruction_jumpifneqs_if_end(size_t id);
+
+void Instruction_label_if_end(size_t id);
 
 // --- INSTUCTIONS ---
 
