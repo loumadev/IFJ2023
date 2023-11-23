@@ -241,6 +241,16 @@ LiteralExpressionASTNode* new_LiteralExpressionASTNode(
 	return node;
 }
 
+InterpolationExpressionASTNode* new_InterpolationExpressionASTNode(
+	Array /*<String>*/ *strings,
+	Array /*<ExpressionASTNode>*/ *expressions
+) {
+	prepare_node_of(InterpolationExpressionASTNode, NODE_INTERPOLATION_EXPRESSION)
+	node->strings = strings;
+	node->expressions = expressions;
+	return node;
+}
+
 // TODO: Add more ASTNode constructors
 
 

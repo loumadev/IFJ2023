@@ -914,6 +914,62 @@ ParserResult __Parser_parseAssignmentStatement(Parser *parser) {
 	AssignmentStatementASTNode *assignmentStatement = new_AssignmentStatementASTNode(variableId, (ExpressionASTNode*)assignmentResult.node);
 	return ParserSuccess(assignmentStatement);
 }
+
+ParserResult __Parser_parseStringInterpolation(Parser *parser) {
+	assertf(parser != NULL);
+
+	Array /*<String>*/ *strings = Array_alloc(2);
+	Array /*<ExpressionASTNode>*/ *expressions = Array_alloc(1);
+
+	LexerResult result = Lexer_nextToken(parser->lexer);
+	if(!result.success) return LexerToParserError(result);
+
+	if(result.token->kind != TOKEN_STRING) {
+		return ParserError(
+			String_fromFormat("expected string in string interpolation"),
+			Array_fromArgs(1, result.token));
+	}
+
+	// Consume the first string
+	Array_push(strings, result.token->value.string);
+
+	LexerResult marker = Lexer_peekToken(parser->lexer, 1);
+	if(!marker.success) return LexerToParserError(marker);
+
+	while(marker.token->type == TOKEN_STRING_INTERPOLATION_MARKER && marker.token->kind != TOKEN_STRING_TAIL) {
+		// Consume the interpolation marker
+		LexerResult tmp = Lexer_nextToken(parser->lexer);
+		if(!tmp.success) return LexerToParserError(tmp);
+
+		// Consume the expression
+		ParserResult expressionResult = __Parser_parseExpression(parser);
+		if(!expressionResult.success) return expressionResult;
+		Array_push(expressions, expressionResult.node);
+
+		// Consume the marker (this is kinda redundant, but whatever)
+		LexerResult markerResult = Lexer_nextToken(parser->lexer);
+		if(!markerResult.success) return LexerToParserError(markerResult);
+		assertf(markerResult.token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+
+		// Consume the string
+		LexerResult stringResult = Lexer_nextToken(parser->lexer);
+		if(!stringResult.success) return LexerToParserError(stringResult);
+		if(stringResult.token->kind != TOKEN_STRING) {
+			return ParserError(
+				String_fromFormat("expected string in string interpolation"),
+				Array_fromArgs(1, stringResult.token));
+		}
+		Array_push(strings, stringResult.token->value.string);
+
+		// Peek the next token
+		marker = Lexer_peekToken(parser->lexer, 1);
+		if(!marker.success) return LexerToParserError(marker);
+	}
+
+	InterpolationExpressionASTNode *stringInterpolation = new_InterpolationExpressionASTNode(strings, expressions);
+	return ParserSuccess(stringInterpolation);
+}
+
 /* How to walk/traverse parsed AST or decide what kind of node the ASTNode
  * pointer refers to in general? */
 

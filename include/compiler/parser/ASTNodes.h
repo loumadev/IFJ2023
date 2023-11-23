@@ -27,6 +27,7 @@ enum ASTNodeType {
 	NODE_BINARY_EXPRESSION,
 	NODE_UNARY_EXPRESSION,
 	NODE_LITERAL_EXPRESSION,
+	NODE_INTERPOLATION_EXPRESSION,
 	NODE_ARGUMENT_LIST,
 	NODE_FUNCTION_CALL,
 	NODE_IF_STATEMENT,
@@ -205,6 +206,12 @@ typedef struct LiteralExpressionASTNode {
 	struct ValueType type;
 } LiteralExpressionASTNode;
 
+typedef struct InterpolationExpressionASTNode {
+	enum ASTNodeType _type;
+	Array /*<String>*/ *strings;
+	Array /*<ExpressionASTNode>*/ *expressions; // Always has one less element than strings
+} InterpolationExpressionASTNode;
+
 typedef struct PatternASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
@@ -256,6 +263,7 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator, bool isPrefix);
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(ValueType type, union TokenValue value);
+InterpolationExpressionASTNode* new_InterpolationExpressionASTNode(Array /*<String>*/ *strings, Array /*<ExpressionASTNode>*/ *expressions);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);

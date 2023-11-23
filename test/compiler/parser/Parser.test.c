@@ -1612,6 +1612,198 @@ DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
 
 }
 
+DESCRIBE(str_interp_parsing, "String interpolation parsing") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Simple string containing no interpolation") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"str\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Simple string containing single interpolation expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(expr) post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 1);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " post"));
+
+		IdentifierASTNode *identifier = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(identifier);
+		EXPECT_TRUE(identifier->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier->name, "expr"));
+	} TEST_END();
+
+	TEST_BEGIN("Simple string containing multiple interpolation expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(expr) in \\(expr2) post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 3);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 2);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " in "));
+
+		String *string3 = Array_get(interpolation->strings, 2);
+		EXPECT_NOT_NULL(string3);
+		EXPECT_TRUE(String_equals(string3, " post"));
+
+		IdentifierASTNode *identifier1 = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(identifier1);
+		EXPECT_TRUE(identifier1->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier1->name, "expr"));
+
+		IdentifierASTNode *identifier2 = Array_get(interpolation->expressions, 1);
+		EXPECT_NOT_NULL(identifier2);
+		EXPECT_TRUE(identifier2->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier2->name, "expr2"));
+	} TEST_END();
+
+	TEST_BEGIN("String containing single interpolation string expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(\"in\") post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 1);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " post"));
+
+		LiteralExpressionASTNode *literal = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(literal);
+		EXPECT_TRUE(literal->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(literal->value.string, "in"));
+	} TEST_END();
+
+	TEST_BEGIN("String containing nested interpolation string expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(\"in_pre \\(expr) in_post\") post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 1);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " post"));
+
+		InterpolationExpressionASTNode *interpolation2 = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(interpolation2);
+		EXPECT_TRUE(interpolation2->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation2->strings);
+		EXPECT_NOT_NULL(interpolation2->expressions);
+
+		EXPECT_EQUAL_INT(interpolation2->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation2->expressions->size, 1);
+
+		String *string21 = Array_get(interpolation2->strings, 0);
+		EXPECT_NOT_NULL(string21);
+		EXPECT_TRUE(String_equals(string21, "in_pre "));
+
+		String *string22 = Array_get(interpolation2->strings, 1);
+		EXPECT_NOT_NULL(string22);
+		EXPECT_TRUE(String_equals(string22, " in_post"));
+
+		IdentifierASTNode *identifier = Array_get(interpolation2->expressions, 0);
+		EXPECT_NOT_NULL(identifier);
+		EXPECT_TRUE(identifier->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier->name, "expr"));
+	} TEST_END();
+}
+
 DESCRIBE(simple_programs, "Simple program parsing") {
 
 	Lexer lexer;

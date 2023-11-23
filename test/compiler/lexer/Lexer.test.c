@@ -1654,6 +1654,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1661,6 +1662,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1677,6 +1679,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1684,6 +1687,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1700,6 +1704,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1707,6 +1712,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1723,6 +1729,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1730,10 +1737,52 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
 		EXPECT_TRUE(String_equals(token->value.string, ""));
+	})
+
+	TEST("Interpolated string containing multiple interpolations", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(expr1) in \\(expr2) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr1"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_SPAN);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " in "));
+
+		token = (Token*)Array_get(lexer.tokens, 5);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 6);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr2"));
+
+		token = (Token*)Array_get(lexer.tokens, 7);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 8);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
 	})
 
 	TEST("Interpolated string contining parentheses in expression", {
@@ -1746,6 +1795,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1777,6 +1827,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 9);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 10);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1793,6 +1844,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1800,6 +1852,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1816,6 +1869,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1823,6 +1877,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1830,6 +1885,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 5);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 6);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1837,6 +1893,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 7);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 8);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);

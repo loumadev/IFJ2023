@@ -787,7 +787,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 					fetch_next_whitespace(lexer);
 
 					// Create a token
-					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_STRING_HEAD, __wh_bit, range, (union TokenValue){0});
 					assertf(token != NULL);
 
 					// Add the token to the array
@@ -813,7 +813,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 					fetch_next_whitespace(lexer);
 
 					// Create a token
-					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_STRING_SPAN, __wh_bit, range, (union TokenValue){0});
 					assertf(token != NULL);
 
 					// Add the token to the array
@@ -857,6 +857,15 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 		ch = Lexer_advance(lexer);
 	}
 	// if(ch) lexer->currentChar--;
+
+	// In case the string contains the interpolation, mark the last span marker as tail
+	// printf("??????????????????\n");
+	// Token_print(Array_get(lexer->tokens, -3), 0, 0);
+	// Token_print(Array_get(lexer->tokens, -2), 0, 0);
+	// Token_print(Array_get(lexer->tokens, -1), 0, 0);
+
+	Token *marker = Array_get(lexer->tokens, -1);
+	if(marker && marker->kind == TOKEN_STRING_SPAN) marker->kind = TOKEN_STRING_TAIL;
 
 	// Consume the closing quote
 	Lexer_advance(lexer);
