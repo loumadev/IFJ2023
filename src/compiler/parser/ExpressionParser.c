@@ -319,6 +319,8 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 ParserResult __Parser_parseExpression(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	Array *stack = Array_alloc(STACK_SIZE);
 	StackItem *bottom = mem_alloc(sizeof(StackItem));
 

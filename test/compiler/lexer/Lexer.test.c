@@ -2023,6 +2023,14 @@ DESCRIBE(nextToken, "Token stream (nextToken)") {
 		EXPECT_TRUE(result.token->type == TOKEN_EOF);
 	} TEST_END();
 
+	TEST_BEGIN("Next token from the empty source") {
+		Lexer_setSource(&lexer, "");
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+	} TEST_END();
+
 	TEST_BEGIN("Next token after EOF") {
 		Lexer_setSource(&lexer, "10");
 
@@ -2344,5 +2352,55 @@ DESCRIBE(peekToken, "Peeking tokens (peekToken)") {
 		EXPECT_TRUE(result.success);
 		EXPECT_TRUE(result.token->type == TOKEN_EOF);
 
+	} TEST_END();
+
+	TEST_BEGIN("Next token from the empty source") {
+		Lexer_setSource(&lexer, "");
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+	} TEST_END();
+
+	TEST_BEGIN("Next token after EOF") {
+		Lexer_setSource(&lexer, "10");
+
+		EXPECT_FALSE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_NULL(result.token);
+
+		EXPECT_FALSE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_NOT_NULL(result.token);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 2);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 3);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		// Now consume the token
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
 	} TEST_END();
 }

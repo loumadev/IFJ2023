@@ -38,8 +38,8 @@ void Parser_constructor(Parser *parser, Lexer *lexer) {
 	assertf(parser != NULL);
 	assertf(lexer != NULL);
 
-	// TODO: Symbol table management
 	parser->lexer = lexer;
+	parser->lastLexerError = LexerErrorCustom(RESULT_INVALID, NULL, NULL);
 }
 
 void Parser_destructor(Parser *parser) {
@@ -50,16 +50,46 @@ void Parser_setLexer(Parser *parser, Lexer *lexer) {
 	parser->lexer = lexer;
 }
 
+bool Parser_hasLexerError(Parser *parser) {
+	assertf(parser != NULL);
+	assertf(parser->lexer != NULL);
+
+	return parser->lastLexerError.type != RESULT_INVALID;
+}
+
+LexerResult Parser_flushLastLexerError(Parser *parser) {
+	assertf(parser != NULL);
+	assertf(parser->lexer != NULL);
+	assertf(Parser_hasLexerError(parser), "Cannot flush lexer error if there is none");
+
+	// Save the error
+	LexerResult result = parser->lastLexerError;
+
+	// Reset the error
+	parser->lastLexerError = LexerErrorCustom(RESULT_INVALID, NULL, NULL);
+
+	// Return the saved error
+	return result;
+}
+
 bool Parser_isAtEnd(Parser *parser) {
 	assertf(parser != NULL);
 	assertf(parser->lexer != NULL);
 
-	return Lexer_isAtEnd(parser->lexer);
+	LexerResult result = Lexer_peekToken(parser->lexer, 1);
+	if(!result.success) {
+		parser->lastLexerError = result;
+		return false;
+	}
+
+	return result.token->type == TOKEN_EOF;
 }
 
 ParserResult Parser_parse(Parser *parser) {
 	assertf(parser != NULL);
 	assertf(parser->lexer != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	return __Parser_parseProgram(parser);
 }
@@ -70,6 +100,8 @@ ParserResult Parser_parse(Parser *parser) {
 ParserResult __Parser_parseProgram(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	ParserResult result = __Parser_parseBlock(parser, false);
 	if(!result.success) return result;
 
@@ -79,6 +111,8 @@ ParserResult __Parser_parseProgram(Parser *parser) {
 
 ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	// Check for left brace
 	if(requireBraces) {
@@ -127,7 +161,7 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 				String_fromFormat("';' is not supported after statement, use new line instead"),
 				Array_fromArgs(1, spacePeek.token)
 			);
-		} else if(!(spacePeek.token->whitespace & WHITESPACE_RIGHT_NEWLINE) && !Lexer_isAtEnd(parser->lexer) && !requireBraces && spacePeek.token->kind != TOKEN_RIGHT_BRACE) {
+		} else if(!(spacePeek.token->whitespace & WHITESPACE_RIGHT_NEWLINE) && !Parser_isAtEnd(parser) && !requireBraces && spacePeek.token->kind != TOKEN_RIGHT_BRACE) {
 			return ParserError(
 				String_fromFormat("expected new line after statement"),
 				Array_fromArgs(1, spacePeek.token)
@@ -154,6 +188,8 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 
 ParserResult __Parser_parseStatement(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
@@ -227,6 +263,9 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 ParserResult __Parser_parseTypeReference(Parser *parser) {
 	// TODO: Add logic to output correct error messages
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
+
 	int nullable = false;
 
 	LexerResult result = Lexer_nextToken(parser->lexer);
@@ -267,6 +306,8 @@ ParserResult __Parser_parseTypeReference(Parser *parser) {
 
 ParserResult __Parser_parseParameter(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	bool isLabeless = false;
 	IdentifierASTNode *paramLocalId = NULL;
@@ -339,6 +380,8 @@ ParserResult __Parser_parseParameter(Parser *parser) {
 ParserResult __Parser_parseParameterList(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
@@ -385,6 +428,8 @@ ParserResult __Parser_parseParameterList(Parser *parser) {
 ParserResult __Parser_parseFuncStatement(Parser *parser) {
 	// TODO: Symbol table management
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	// Check for the keyword
 	LexerResult keyword = Lexer_nextToken(parser->lexer);
@@ -451,6 +496,8 @@ ParserResult __Parser_parseFuncStatement(Parser *parser) {
 ParserResult __Parser_parsePattern(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
@@ -484,6 +531,7 @@ ParserResult __Parser_parsePattern(Parser *parser) {
 ParserResult __Parser_parseOptionalBindingCondition(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
 
 	// consume let
 	LexerResult result = Lexer_nextToken(parser->lexer);
@@ -510,6 +558,8 @@ ParserResult __Parser_parseOptionalBindingCondition(Parser *parser) {
 
 ParserResult __Parser_parseTest(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	ASTNode *test = NULL;
 
@@ -570,6 +620,8 @@ ParserResult __Parser_parseTest(Parser *parser) {
 
 ParserResult __Parser_parseIfStatement(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	// Check for the keyword
 	LexerResult keyword = Lexer_nextToken(parser->lexer);
@@ -637,6 +689,8 @@ ParserResult __Parser_parseIfStatement(Parser *parser) {
 ParserResult __Parser_parseWhileStatement(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	// Check for the keyword
 	LexerResult keyword = Lexer_nextToken(parser->lexer);
 	if(!keyword.success) return LexerToParserError(keyword);
@@ -677,6 +731,8 @@ ParserResult __Parser_parseWhileStatement(Parser *parser) {
 ParserResult __Parser_parseReturnStatement(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	// Check for the keyword
 	LexerResult keyword = Lexer_nextToken(parser->lexer);
 	if(!keyword.success) return LexerToParserError(keyword);
@@ -705,6 +761,8 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 
 ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	ParserResult patternResult = __Parser_parsePattern(parser);
 	if(!patternResult.success) return patternResult;
@@ -737,6 +795,9 @@ ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 
 ParserResult __Parser_parseVariableDeclarationList(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
+
 	LexerResult peek;
 	LexerResult result;
 
@@ -770,6 +831,8 @@ ParserResult __Parser_parseVariableDeclarationList(Parser *parser) {
 ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	// Check for the keyword
 	LexerResult keyword = Lexer_nextToken(parser->lexer);
 	if(!keyword.success) return LexerToParserError(keyword);
@@ -791,6 +854,8 @@ ParserResult __Parser_parseVariableDeclarationStatement(Parser *parser) {
 
 ParserResult __Parser_parseArgument(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	IdentifierASTNode *argumentLabel = NULL;
 	ExpressionASTNode *expression = NULL;
@@ -825,6 +890,8 @@ ParserResult __Parser_parseArgument(Parser *parser) {
 
 ParserResult __Parser_parseArgumentList(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	// Skip the '(' token
 	LexerResult result = Lexer_nextToken(parser->lexer);
@@ -869,6 +936,8 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	// Get the identifier
 	LexerResult identifier = Lexer_nextToken(parser->lexer);
 	if(!identifier.success) return LexerToParserError(identifier);
@@ -900,6 +969,8 @@ ParserResult __Parser_parseFunctionCallExpression(Parser *parser) {
 ParserResult __Parser_parseAssignmentStatement(Parser *parser) {
 	assertf(parser != NULL);
 
+	FLUSH_ERROR_BUFFER(parser);
+
 	// identifier
 	LexerResult peek = Lexer_nextToken(parser->lexer);
 	if(!peek.success) return LexerToParserError(peek);
@@ -924,6 +995,8 @@ ParserResult __Parser_parseAssignmentStatement(Parser *parser) {
 
 ParserResult __Parser_parseStringInterpolation(Parser *parser) {
 	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
 
 	Array /*<String>*/ *strings = Array_alloc(2);
 	Array /*<ExpressionASTNode>*/ *expressions = Array_alloc(1);

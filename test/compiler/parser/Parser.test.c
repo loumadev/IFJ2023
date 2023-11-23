@@ -1968,11 +1968,13 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 
 	ParserResult result;
 
-	TEST_BEGIN("Empty") {
+	TEST_BEGIN("Empty program") {
 		Lexer_setSource(&lexer, "");
+
+		result = Parser_parse(&parser);
+
 		EXPECT_TRUE(result.success);
-	}
-	TEST_END();
+	} TEST_END();
 
 	TEST_BEGIN("Factorial iterative") {
 		Lexer_setSource(
