@@ -191,6 +191,16 @@ VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, 
 	return NULL;
 }
 
+enum BuiltInFunction Analyser_getBuiltInFunctionById(Analyser *analyser, size_t id) {
+	if(id == 0) return FUNCTION_NONE;
+
+	// Get the function declaration
+	FunctionDeclaration *declaration = Analyser_getFunctionById(analyser, id);
+	if(!declaration) return FUNCTION_NONE;
+
+	return declaration->node->builtin;
+}
+
 Array /*<FunctionDeclaration> | NULL*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name) {
 	Array *overloads = HashMap_get(analyser->overloads, name);
 	if(!overloads) return NULL;
