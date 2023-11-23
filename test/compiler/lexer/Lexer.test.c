@@ -1756,6 +1756,56 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 		EXPECT_TRUE(String_equals(token->value.string, ""));
 	})
 
+	TEST("Interpolation containing whitespace", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(\n\texpr\n) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	})
+
+	TEST("Interpolation containing comment", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(/*comment*/\nexpr\n/*hi!*/\n) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	})
+
 	TEST("Interpolated string starts & ends with expression", {
 		result = Lexer_tokenize(&lexer, "\"\\(expr)\"");
 		EXPECT_TRUE(result.success);
