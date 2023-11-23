@@ -34,7 +34,7 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input
 	{S, S, S, S, S, S, S, X, S, S, S, X}  // $
 };
 
-int Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser *parser, PrefixStatus status) {
+enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser *parser, PrefixStatus status) {
 	prefix = P_UNRESOLVED;
 	if(!token) {
 		if(isIdentifier) {
@@ -365,21 +365,26 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				if(!next.success) return LexerToParserError(current);
 
 				if(next.token->kind == TOKEN_LEFT_PAREN) {
-					ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
-					if(!functionCallExpression.success) return functionCallExpression;
+					StackItem *identifier = Expr_getTopTerminal(stack);
+					enum PrecTableIndex identifierIndex = Expr_getPrecTbIndex(identifier->token, isIdentifier, parser, identifier->isPrefix);
+					
+					if(identifierIndex != I_ID){
+						ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
+						if(!functionCallExpression.success) return functionCallExpression;
 
-					isIdentifier = true;
+						isIdentifier = true;
 
-					StackItem *function = mem_alloc(sizeof(StackItem));
-					function->node = functionCallExpression.node;
-					function->Stype = S_TERMINAL;
-					function->token = NULL;
-					function->isPrefix = P_UNRESOLVED;
-					Expr_pushAfterTopTerminal(stack);
-					Array_push(stack, function);
+						StackItem *function = mem_alloc(sizeof(StackItem));
+						function->node = functionCallExpression.node;
+						function->Stype = S_TERMINAL;
+						function->token = NULL;
+						function->isPrefix = P_UNRESOLVED;
+						Expr_pushAfterTopTerminal(stack);
+						Array_push(stack, function);
 
-					current = Lexer_peekToken(parser->lexer, offset);
-					if(!current.success) return LexerToParserError(current);
+						current = Lexer_peekToken(parser->lexer, offset);
+						if(!current.success) return LexerToParserError(current);
+					}
 				}
 			}
 
@@ -389,29 +394,34 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				if(!next.success) return LexerToParserError(current);
 
 				if(next.token->kind == TOKEN_STRING_HEAD) {
-					ParserResult stringInterpolation = __Parser_parseStringInterpolation(parser);
-					if(!stringInterpolation.success) return stringInterpolation;
+					StackItem *id = Expr_getTopTerminal(stack);
+					enum PrecTableIndex idIndex = Expr_getPrecTbIndex(id->token, isIdentifier, parser, id->isPrefix);
+					
+					if(idIndex != I_ID){
+						ParserResult stringInterpolation = __Parser_parseStringInterpolation(parser);
+						if(!stringInterpolation.success) return stringInterpolation;
 
-					isIdentifier = true;
+						isIdentifier = true;
 
-					StackItem *string = mem_alloc(sizeof(StackItem));
-					string->node = stringInterpolation.node;
-					string->Stype = S_TERMINAL;
-					string->token = NULL;
-					string->isPrefix = P_UNRESOLVED;
-					Expr_pushAfterTopTerminal(stack);
-					Array_push(stack, string);
+						StackItem *string = mem_alloc(sizeof(StackItem));
+						string->node = stringInterpolation.node;
+						string->Stype = S_TERMINAL;
+						string->token = NULL;
+						string->isPrefix = P_UNRESOLVED;
+						Expr_pushAfterTopTerminal(stack);
+						Array_push(stack, string);
 
-					current = Lexer_peekToken(parser->lexer, offset);
-					if(!current.success) return LexerToParserError(current);
+						current = Lexer_peekToken(parser->lexer, offset);
+						if(!current.success) return LexerToParserError(current);
+					}
 				}
 			}
 
 		
 			StackItem *topTerminal = Expr_getTopTerminal(stack);
 
-			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, isIdentifier, parser, topTerminal->isPrefix);
-			int currentTokenIndex = Expr_getPrecTbIndex(current.token, isIdentifier, parser, P_UNRESOLVED);
+			enum PrecTableIndex topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, isIdentifier, parser, topTerminal->isPrefix);
+			enum PrecTableIndex currentTokenIndex = Expr_getPrecTbIndex(current.token, isIdentifier, parser, P_UNRESOLVED);
 
 			operation = precedence_table[topTerminalIndex][currentTokenIndex];
 		}
