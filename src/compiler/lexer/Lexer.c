@@ -1238,14 +1238,14 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	#define match_as(str, _type, _kind) if(Lexer_match(lexer, str)) type = _type, kind = _kind
 
 	// Swift operators (sorted by length)
-	match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
-	else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
-	else match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
+	// match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
+	// else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
+	/*else*/ match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
 	else match_as("..<", TOKEN_OPERATOR, TOKEN_HALF_OPEN_RANGE);
 	// else match_as("===", TOKEN_OPERATOR, TOKEN_IDENTITY);
 	// else match_as("!==", TOKEN_OPERATOR, TOKEN_NOT_IDENTITY);
-	else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
-	else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
+	// else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
+	// else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
 	else match_as("&&", TOKEN_OPERATOR, TOKEN_LOG_AND);
 	else match_as("||", TOKEN_OPERATOR, TOKEN_LOG_OR);
 	else match_as("??", TOKEN_OPERATOR, TOKEN_NULL_COALESCING);
@@ -1254,14 +1254,14 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("!=", TOKEN_OPERATOR, TOKEN_NOT_EQUALITY);
 	else match_as(">=", TOKEN_OPERATOR, TOKEN_GREATER_EQUAL);
 	else match_as("<=", TOKEN_OPERATOR, TOKEN_LESS_EQUAL);
-	else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
-	else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
-	else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
-	else match_as("/=", TOKEN_OPERATOR, TOKEN_DIV_ASSIGN);
-	else match_as("%%=", TOKEN_OPERATOR, TOKEN_MOD_ASSIGN);
-	else match_as("&=", TOKEN_OPERATOR, TOKEN_BIT_AND_ASSIGN);
-	else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
-	else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
+	// else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
+	// else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
+	// else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
+	// else match_as("/=", TOKEN_OPERATOR, TOKEN_DIV_ASSIGN);
+	// else match_as("%%=", TOKEN_OPERATOR, TOKEN_MOD_ASSIGN);
+	// else match_as("&=", TOKEN_OPERATOR, TOKEN_BIT_AND_ASSIGN);
+	// else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
+	// else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
 	else match_as("->", TOKEN_PUNCTUATOR, TOKEN_ARROW);
 	else match_as("=", TOKEN_OPERATOR, TOKEN_EQUAL);
 	else match_as(">", TOKEN_OPERATOR, TOKEN_GREATER);
@@ -1270,27 +1270,26 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("-", TOKEN_OPERATOR, TOKEN_MINUS);
 	else match_as("*", TOKEN_OPERATOR, TOKEN_STAR);
 	else match_as("/", TOKEN_OPERATOR, TOKEN_SLASH);
-	else match_as("%%", TOKEN_OPERATOR, TOKEN_PERCENT);
-	else match_as("&", TOKEN_OPERATOR, TOKEN_AMPERSAND);
-	else match_as("|", TOKEN_OPERATOR, TOKEN_PIPE);
-	else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
-	else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
+	// else match_as("%%", TOKEN_OPERATOR, TOKEN_PERCENT);
+	// else match_as("&", TOKEN_OPERATOR, TOKEN_AMPERSAND);
+	// else match_as("|", TOKEN_OPERATOR, TOKEN_PIPE);
+	// else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
+	// else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
 
 	else match_as("(", TOKEN_PUNCTUATOR, TOKEN_LEFT_PAREN);
 	else match_as(")", TOKEN_PUNCTUATOR, TOKEN_RIGHT_PAREN);
 	else match_as("{", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACE);
 	else match_as("}", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACE);
-	else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
-	else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
+	// else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
+	// else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
 	else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
 	else match_as(",", TOKEN_PUNCTUATOR, TOKEN_COMMA);
 	else match_as(":", TOKEN_PUNCTUATOR, TOKEN_COLON);
 	else match_as(";", TOKEN_PUNCTUATOR, TOKEN_SEMICOLON);
 	else match_as("=", TOKEN_PUNCTUATOR, TOKEN_EQUAL);
-	else match_as("@", TOKEN_PUNCTUATOR, TOKEN_AT);
-	else match_as("#", TOKEN_PUNCTUATOR, TOKEN_HASH);
-	else match_as("&", TOKEN_PUNCTUATOR, TOKEN_AMPERSAND);
-	else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
+	// else match_as("@", TOKEN_PUNCTUATOR, TOKEN_AT);
+	// else match_as("#", TOKEN_PUNCTUATOR, TOKEN_HASH);
+	// else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
 	else match_as("?", TOKEN_PUNCTUATOR, TOKEN_QUESTION);
 	else match_as("!", TOKEN_PUNCTUATOR, TOKEN_EXCLAMATION);
 
