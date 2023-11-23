@@ -1595,6 +1595,15 @@ DESCRIBE(function_calls, "Function call parsing") {
 		EXPECT_BINARY_NODE(assignment->expression, OPERATOR_PLUS, NODE_UNARY_EXPRESSION, NODE_UNARY_EXPRESSION, binary);
 	} TEST_END();
 
+	TEST_BEGIN("Function call directly after statement containing function call") {
+		Lexer_setSource(
+			&lexer,
+			"var a = f()" LF
+			"f()" LF
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
 }
 
 DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
