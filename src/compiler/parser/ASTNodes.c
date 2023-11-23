@@ -124,6 +124,7 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(
 	node->parameterList = parameterList;
 	node->returnType = returnType;
 	node->body = block;
+	node->builtin = FUNCTION_NONE;
 	return node;
 }
 
@@ -170,6 +171,7 @@ OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(
 ) {
 	prepare_node_of(OptionalBindingConditionASTNode, NODE_OPTIONAL_BINDING_CONDITION)
 	node->id = id;
+	node->fromId = 0;
 	return node;
 }
 
@@ -238,6 +240,16 @@ LiteralExpressionASTNode* new_LiteralExpressionASTNode(
 	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
 	node->type = type;
 	node->value = value;
+	return node;
+}
+
+InterpolationExpressionASTNode* new_InterpolationExpressionASTNode(
+	Array /*<String>*/ *strings,
+	Array /*<ExpressionASTNode>*/ *expressions
+) {
+	prepare_node_of(InterpolationExpressionASTNode, NODE_INTERPOLATION_EXPRESSION)
+	node->strings = strings;
+	node->expressions = expressions;
 	return node;
 }
 

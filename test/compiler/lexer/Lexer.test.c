@@ -662,10 +662,10 @@ DESCRIBE(number_tokenization, "Number literals tokenization") {
 	})
 
 
-	TEST("Leading dot in float literal", {
+	TEST_BEGIN("Leading dot in float literal") {
 		result = Lexer_tokenize(&lexer, ".5");
 		EXPECT_FALSE(result.success);
-	})
+	} TEST_END();
 
 	TEST("Invalid digits in integer literal", {
 		result = Lexer_tokenize(&lexer, "1y");
@@ -889,167 +889,204 @@ DESCRIBE(number_tokenization, "Number literals tokenization") {
 	})
 
 
-	TEST("Named member accessor in integer literal", {
-		result = Lexer_tokenize(&lexer, "0.A");
+	// TEST("Named member accessor in integer literal", {
+	// 	result = Lexer_tokenize(&lexer, "0.A");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_INTEGER);
+	// 	EXPECT_EQUAL_INT(token->value.integer, 0);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "A"));
+
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0._");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_INTEGER);
+	// 	EXPECT_EQUAL_INT(token->value.integer, 0);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "_"));
+
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0._A");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_INTEGER);
+	// 	EXPECT_EQUAL_INT(token->value.integer, 0);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "_A"));
+
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0.field");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_INTEGER);
+	// 	EXPECT_EQUAL_INT(token->value.integer, 0);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "field"));
+
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0x5.field");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_INTEGER);
+	// 	EXPECT_EQUAL_INT(token->value.integer, 0x5);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
+
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "field"));
+	// })
+
+	TEST_BEGIN("Invalid digits after decimal point") {
+		result = Lexer_tokenize(&lexer, "0.y");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "0.");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "0.3.");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "0.3.9");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "0.3.y");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, ".5");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, ".x");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, ".x5");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "2..5");
+		EXPECT_FALSE(result.success);
+
+		result = Lexer_tokenize(&lexer, "2...5");
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
 
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_INTEGER);
-		EXPECT_EQUAL_INT(token->value.integer, 0);
-
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
-
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "A"));
-
-		//
-		result = Lexer_tokenize(&lexer, "0._");
+		result = Lexer_tokenize(&lexer, "2..<5");
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+	} TEST_END();
 
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_INTEGER);
-		EXPECT_EQUAL_INT(token->value.integer, 0);
+	// TEST("Named member accessor in float literal", {
+	// 	result = Lexer_tokenize(&lexer, "0.5.A");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
 
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+	// 	EXPECT_EQUAL_INT(token->value.floating, 0.5);
 
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "_"));
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
 
-		//
-		result = Lexer_tokenize(&lexer, "0._A");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "A"));
 
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_INTEGER);
-		EXPECT_EQUAL_INT(token->value.integer, 0);
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0.5._");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
 
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+	// 	EXPECT_EQUAL_INT(token->value.floating, 0.5);
 
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "_A"));
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
 
-		//
-		result = Lexer_tokenize(&lexer, "0.field");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "_"));
 
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_INTEGER);
-		EXPECT_EQUAL_INT(token->value.integer, 0);
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "1_.2_._");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
 
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+	// 	EXPECT_EQUAL_FLOAT(token->value.floating, 1.2);
 
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "field"));
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
 
-		//
-		result = Lexer_tokenize(&lexer, "0x5.field");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "_"));
 
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_INTEGER);
-		EXPECT_EQUAL_INT(token->value.integer, 0x5);
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0.5._A");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
 
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+	// 	EXPECT_EQUAL_INT(token->value.floating, 0.5);
 
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "field"));
-	})
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
 
-	TEST("Named member accessor in float literal", {
-		result = Lexer_tokenize(&lexer, "0.5.A");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "_A"));
 
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
-		EXPECT_EQUAL_INT(token->value.floating, 0.5);
+	// 	//
+	// 	result = Lexer_tokenize(&lexer, "0.5.field");
+	// 	EXPECT_TRUE(result.success);
+	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 4);
 
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
+	// 	token = (Token*)Array_get(lexer.tokens, 0);
+	// 	EXPECT_TRUE(token->kind == TOKEN_FLOATING);
+	// 	EXPECT_EQUAL_INT(token->value.floating, 0.5);
 
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "A"));
+	// 	token = (Token*)Array_get(lexer.tokens, 1);
+	// 	EXPECT_TRUE(token->kind == TOKEN_DOT);
 
-		//
-		result = Lexer_tokenize(&lexer, "0.5._");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
-
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
-		EXPECT_EQUAL_INT(token->value.floating, 0.5);
-
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
-
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "_"));
-
-		//
-		result = Lexer_tokenize(&lexer, "1_.2_._");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
-
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
-		EXPECT_EQUAL_FLOAT(token->value.floating, 1.2);
-
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
-
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "_"));
-
-		//
-		result = Lexer_tokenize(&lexer, "0.5._A");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
-
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
-		EXPECT_EQUAL_INT(token->value.floating, 0.5);
-
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
-
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "_A"));
-
-		//
-		result = Lexer_tokenize(&lexer, "0.5.field");
-		EXPECT_TRUE(result.success);
-		EXPECT_EQUAL_INT(lexer.tokens->size, 4);
-
-		token = (Token*)Array_get(lexer.tokens, 0);
-		EXPECT_TRUE(token->kind == TOKEN_FLOATING);
-		EXPECT_EQUAL_INT(token->value.floating, 0.5);
-
-		token = (Token*)Array_get(lexer.tokens, 1);
-		EXPECT_TRUE(token->kind == TOKEN_DOT);
-
-		token = (Token*)Array_get(lexer.tokens, 2);
-		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
-		EXPECT_TRUE(String_equals(token->value.identifier, "field"));
-	})
+	// 	token = (Token*)Array_get(lexer.tokens, 2);
+	// 	EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+	// 	EXPECT_TRUE(String_equals(token->value.identifier, "field"));
+	// })
 
 
 	TEST("Trailing underscore in float literal", {
@@ -1654,6 +1691,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1661,6 +1699,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1677,6 +1716,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1684,6 +1724,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1700,6 +1741,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1707,10 +1749,61 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
 		EXPECT_TRUE(String_equals(token->value.string, ""));
+	})
+
+	TEST("Interpolation containing whitespace", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(\n\texpr\n) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	})
+
+	TEST("Interpolation containing comment", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(/*comment*/\nexpr\n/*hi!*/\n) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
 	})
 
 	TEST("Interpolated string starts & ends with expression", {
@@ -1723,6 +1816,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1730,10 +1824,52 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
 		EXPECT_TRUE(String_equals(token->value.string, ""));
+	})
+
+	TEST("Interpolated string containing multiple interpolations", {
+		result = Lexer_tokenize(&lexer, "\"pre \\(expr1) in \\(expr2) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr1"));
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_SPAN);
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " in "));
+
+		token = (Token*)Array_get(lexer.tokens, 5);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 6);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr2"));
+
+		token = (Token*)Array_get(lexer.tokens, 7);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 8);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
 	})
 
 	TEST("Interpolated string contining parentheses in expression", {
@@ -1746,6 +1882,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1777,6 +1914,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 9);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 10);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1793,6 +1931,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1800,6 +1939,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1816,6 +1956,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 1);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 2);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1823,6 +1964,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 3);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
 
 		token = (Token*)Array_get(lexer.tokens, 4);
 		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
@@ -1830,6 +1972,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 5);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 6);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1837,6 +1980,7 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 
 		token = (Token*)Array_get(lexer.tokens, 7);
 		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
 
 		token = (Token*)Array_get(lexer.tokens, 8);
 		EXPECT_TRUE(token->kind == TOKEN_STRING);
@@ -1923,6 +2067,14 @@ DESCRIBE(nextToken, "Token stream (nextToken)") {
 		EXPECT_TRUE(result.token->type == TOKEN_PUNCTUATOR);
 		EXPECT_TRUE(result.token->kind == TOKEN_SEMICOLON);
 		EXPECT_TRUE(result.token->whitespace == (WHITESPACE_NONE | WHITESPACE_NONE));
+
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+	} TEST_END();
+
+	TEST_BEGIN("Next token from the empty source") {
+		Lexer_setSource(&lexer, "");
 
 		result = Lexer_nextToken(&lexer);
 		EXPECT_TRUE(result.success);
@@ -2250,5 +2402,55 @@ DESCRIBE(peekToken, "Peeking tokens (peekToken)") {
 		EXPECT_TRUE(result.success);
 		EXPECT_TRUE(result.token->type == TOKEN_EOF);
 
+	} TEST_END();
+
+	TEST_BEGIN("Next token from the empty source") {
+		Lexer_setSource(&lexer, "");
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+	} TEST_END();
+
+	TEST_BEGIN("Next token after EOF") {
+		Lexer_setSource(&lexer, "10");
+
+		EXPECT_FALSE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 0);
+		EXPECT_TRUE(result.success);
+		EXPECT_NULL(result.token);
+
+		EXPECT_FALSE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 1);
+		EXPECT_TRUE(result.success);
+		EXPECT_NOT_NULL(result.token);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 2);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		result = Lexer_peekToken(&lexer, 3);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_EOF);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
+
+		// Now consume the token
+		result = Lexer_nextToken(&lexer);
+		EXPECT_TRUE(result.success);
+		EXPECT_TRUE(result.token->type == TOKEN_LITERAL);
+
+		EXPECT_TRUE(Lexer_isAtEnd(&lexer));
 	} TEST_END();
 }

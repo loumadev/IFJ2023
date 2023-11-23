@@ -724,7 +724,6 @@ DESCRIBE(if_statement, "If statement parsing") {
 
 	} TEST_END();
 
-
 	TEST_BEGIN("Binding condition with type and initializer") {
 		Lexer_setSource(&lexer, "if let hello: Int = 10 {}");
 		result = Parser_parse(&parser);
@@ -1558,6 +1557,44 @@ DESCRIBE(function_calls, "Function call parsing") {
 
 	} TEST_END();
 
+	TEST_BEGIN("Unwrap operator containing function call") {
+		Lexer_setSource(
+			&lexer,
+			"a = min()!"
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		UnaryExpressionASTNode *unwrap = (UnaryExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(unwrap);
+		EXPECT_TRUE(unwrap->_type == NODE_UNARY_EXPRESSION);
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)unwrap->argument;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "min"));
+	} TEST_END();
+
+	TEST_BEGIN("Multiple unwrap operators in a single expression") {
+		Lexer_setSource(
+			&lexer,
+			"a = x! + y!"
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		EXPECT_BINARY_NODE(assignment->expression, OPERATOR_PLUS, NODE_UNARY_EXPRESSION, NODE_UNARY_EXPRESSION, binary);
+	} TEST_END();
+
 }
 
 DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
@@ -1612,6 +1649,405 @@ DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
 
 }
 
+DESCRIBE(invalid_equals, "Invalid use of equals sign") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Equals sign in if body") {
+		Lexer_setSource(&lexer, "if (true) {=}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in program body") {
+		Lexer_setSource(&lexer, "=");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in condition") {
+		Lexer_setSource(&lexer, "if = {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in parameter") {
+		Lexer_setSource(&lexer, "func (a: Int, =) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in return") {
+		Lexer_setSource(&lexer, "func () -> Int {return = }");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in argument") {
+		Lexer_setSource(&lexer, "write(=,\"hello\")");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in varible daclaration expression") {
+		Lexer_setSource(&lexer, "let a = =");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in varible daclaration") {
+		Lexer_setSource(&lexer, "let = a = 10");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in assignment expression") {
+		Lexer_setSource(&lexer, "a = =");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in assignment") {
+		Lexer_setSource(&lexer, "= a = 10");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in assignment expression") {
+		Lexer_setSource(&lexer, "while (=) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+}
+
+
+DESCRIBE(str_interp_parsing, "String interpolation parsing") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Simple string containing no interpolation") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"str\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Simple string containing single interpolation expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(expr) post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 1);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " post"));
+
+		IdentifierASTNode *identifier = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(identifier);
+		EXPECT_TRUE(identifier->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier->name, "expr"));
+	} TEST_END();
+
+	TEST_BEGIN("Simple string containing multiple interpolation expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(expr) in \\(expr2) post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 3);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 2);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " in "));
+
+		String *string3 = Array_get(interpolation->strings, 2);
+		EXPECT_NOT_NULL(string3);
+		EXPECT_TRUE(String_equals(string3, " post"));
+
+		IdentifierASTNode *identifier1 = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(identifier1);
+		EXPECT_TRUE(identifier1->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier1->name, "expr"));
+
+		IdentifierASTNode *identifier2 = Array_get(interpolation->expressions, 1);
+		EXPECT_NOT_NULL(identifier2);
+		EXPECT_TRUE(identifier2->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier2->name, "expr2"));
+	} TEST_END();
+
+	TEST_BEGIN("String containing single interpolation string expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(\"in\") post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 1);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " post"));
+
+		LiteralExpressionASTNode *literal = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(literal);
+		EXPECT_TRUE(literal->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(literal->value.string, "in"));
+	} TEST_END();
+
+	TEST_BEGIN("String containing nested interpolation string expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\(\"in_pre \\(expr) in_post\") post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(interpolation);
+		EXPECT_TRUE(interpolation->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation->strings);
+		EXPECT_NOT_NULL(interpolation->expressions);
+
+		EXPECT_EQUAL_INT(interpolation->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation->expressions->size, 1);
+
+		String *string1 = Array_get(interpolation->strings, 0);
+		EXPECT_NOT_NULL(string1);
+		EXPECT_TRUE(String_equals(string1, "pre "));
+
+		String *string2 = Array_get(interpolation->strings, 1);
+		EXPECT_NOT_NULL(string2);
+		EXPECT_TRUE(String_equals(string2, " post"));
+
+		InterpolationExpressionASTNode *interpolation2 = Array_get(interpolation->expressions, 0);
+		EXPECT_NOT_NULL(interpolation2);
+		EXPECT_TRUE(interpolation2->_type == NODE_INTERPOLATION_EXPRESSION);
+
+		EXPECT_NOT_NULL(interpolation2->strings);
+		EXPECT_NOT_NULL(interpolation2->expressions);
+
+		EXPECT_EQUAL_INT(interpolation2->strings->size, 2);
+		EXPECT_EQUAL_INT(interpolation2->expressions->size, 1);
+
+		String *string21 = Array_get(interpolation2->strings, 0);
+		EXPECT_NOT_NULL(string21);
+		EXPECT_TRUE(String_equals(string21, "in_pre "));
+
+		String *string22 = Array_get(interpolation2->strings, 1);
+		EXPECT_NOT_NULL(string22);
+		EXPECT_TRUE(String_equals(string22, " in_post"));
+
+		IdentifierASTNode *identifier = Array_get(interpolation2->expressions, 0);
+		EXPECT_NOT_NULL(identifier);
+		EXPECT_TRUE(identifier->_type == NODE_IDENTIFIER);
+		EXPECT_TRUE(String_equals(identifier->name, "expr"));
+	} TEST_END();
+
+
+}
+
+DESCRIBE(invalid_lexical, "Lexical error propagation") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("In global scope") {
+		Lexer_setSource(&lexer, ".14c20 ");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("In if block") {
+		Lexer_setSource(&lexer, "if true { .14 }");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("In expression") {
+		Lexer_setSource(&lexer, "let a: Int = .10y10");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+}
+
 DESCRIBE(simple_programs, "Simple program parsing") {
 
 	Lexer lexer;
@@ -1621,6 +2057,14 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 	Parser_constructor(&parser, &lexer);
 
 	ParserResult result;
+
+	TEST_BEGIN("Empty program") {
+		Lexer_setSource(&lexer, "");
+
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+	} TEST_END();
 
 	TEST_BEGIN("Factorial iterative") {
 		Lexer_setSource(
@@ -1738,3 +2182,5 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 	} TEST_END();
 
 }
+
+

@@ -23,6 +23,44 @@ void Array_destructor(Array *array) {
 	array->capacity = 0;
 }
 
+void Array_unshift(Array *array, void *value) {
+	if(!array) return;
+
+	// If size exceeds capacity, resize the array to fit more elements
+	if(array->size >= array->capacity) {
+		Array_resize(array, (array->capacity ? array->capacity : 1) << 1);
+	}
+
+	// Shift all elements one to the right
+	for(size_t i = array->size; i > 0; i--) {
+		array->data[i] = array->data[i - 1];
+	}
+
+	array->data[0] = value;
+	array->size++;
+}
+
+void* Array_shift(Array *array) {
+	if(!array) return NULL;
+	if(array->size == 0) return NULL;
+
+	void *value = array->data[0];
+
+	// Shift all elements one to the left
+	for(size_t i = 0; i < array->size - 1; i++) {
+		array->data[i] = array->data[i + 1];
+	}
+
+	array->size--;
+
+	// If size is less than a quarter of capacity, resize the array to save memory
+	if(array->size <= array->capacity >> 2) {
+		Array_resize(array, array->capacity >> 1);
+	}
+
+	return value;
+}
+
 void Array_push(Array *array, void *value) {
 	if(!array) return;
 	// If size exceeds capacity, resize the array to fit more elements

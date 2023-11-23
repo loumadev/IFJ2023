@@ -65,6 +65,7 @@ Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id);
 FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id);
 VariableDeclaration* Analyser_getVariableById(Analyser *analyser, size_t id);
 VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, BlockScope *scope);
+Array /*<FunctionDeclaration> | NULL*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name);
 
 enum BuiltInTypes Analyser_resolveBuiltInType(String *name);
 AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType);

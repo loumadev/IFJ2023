@@ -27,6 +27,7 @@ enum ASTNodeType {
 	NODE_BINARY_EXPRESSION,
 	NODE_UNARY_EXPRESSION,
 	NODE_LITERAL_EXPRESSION,
+	NODE_INTERPOLATION_EXPRESSION,
 	NODE_ARGUMENT_LIST,
 	NODE_FUNCTION_CALL,
 	NODE_IF_STATEMENT,
@@ -64,6 +65,21 @@ enum BuiltInTypes {
 	TYPE_BOOL,
 	TYPE_STRING,
 	TYPE_VOID
+};
+
+enum BuiltInFunction {
+	FUNCTION_NONE = -1,
+	FUNCTION_READ_STRING = 0,
+	FUNCTION_READ_INT,
+	FUNCTION_READ_DOUBLE,
+	FUNCTION_WRITE,
+	FUNCTION_INT_TO_DOUBLE,
+	FUNCTION_DOUBLE_TO_INT,
+	FUNCTION_LENGTH,
+	FUNCTION_SUBSTRING,
+	FUNCTION_ORD,
+	FUNCTION_CHR,
+	FUNCTIONS_COUNT
 };
 
 #define is_type_valid(type) ((type) > TYPE_INVALID)
@@ -156,6 +172,7 @@ typedef struct FunctionDeclarationASTNode {
 	ParameterListASTNode *parameterList;
 	TypeReferenceASTNode *returnType;
 	BlockASTNode *body;
+	enum BuiltInFunction builtin;
 } FunctionDeclarationASTNode;
 
 typedef struct ArgumentASTNode {
@@ -205,6 +222,12 @@ typedef struct LiteralExpressionASTNode {
 	struct ValueType type;
 } LiteralExpressionASTNode;
 
+typedef struct InterpolationExpressionASTNode {
+	enum ASTNodeType _type;
+	Array /*<String>*/ *strings;
+	Array /*<ExpressionASTNode>*/ *expressions; // Always has one less element than strings
+} InterpolationExpressionASTNode;
+
 typedef struct PatternASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
@@ -214,6 +237,7 @@ typedef struct PatternASTNode {
 typedef struct OptionalBindingConditionASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
+	size_t fromId;
 } OptionalBindingConditionASTNode;
 
 typedef struct IfStatementASTNode {
@@ -256,6 +280,7 @@ FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
 UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator, bool isPrefix);
 LiteralExpressionASTNode* new_LiteralExpressionASTNode(ValueType type, union TokenValue value);
+InterpolationExpressionASTNode* new_InterpolationExpressionASTNode(Array /*<String>*/ *strings, Array /*<ExpressionASTNode>*/ *expressions);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);

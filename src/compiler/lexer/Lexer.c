@@ -367,8 +367,8 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 	}
 	// Match numbers
 	else if(
-		is_decimal_digit(ch) ||
-		(ch == '.' && is_decimal_digit(Lexer_peekChar(lexer, 1)))         // Error state
+		is_decimal_digit(ch)// ||
+		// (ch == '.' && is_decimal_digit(Lexer_peekChar(lexer, 1)))         // Error state
 	) {
 		return __Lexer_tokenizeNumberLiteral(lexer);
 	}
@@ -376,7 +376,7 @@ LexerResult Lexer_tokenizeNextToken(Lexer *lexer) {
 	else {
 		// Try to match punctuators and operators
 		LexerResult result = __Lexer_tokenizePunctuatorsAndOperators(lexer);
-		if(result.success) return result;
+		if(result.success && result.type != RESULT_NO_MATCH) return result;
 
 		// Invalid character
 		return LexerError(
@@ -787,7 +787,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 					fetch_next_whitespace(lexer);
 
 					// Create a token
-					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_STRING_HEAD, __wh_bit, range, (union TokenValue){0});
 					assertf(token != NULL);
 
 					// Add the token to the array
@@ -813,7 +813,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 					fetch_next_whitespace(lexer);
 
 					// Create a token
-					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_DEFAULT, __wh_bit, range, (union TokenValue){0});
+					Token *token = Token_alloc(TOKEN_STRING_INTERPOLATION_MARKER, TOKEN_STRING_SPAN, __wh_bit, range, (union TokenValue){0});
 					assertf(token != NULL);
 
 					// Add the token to the array
@@ -857,6 +857,10 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 		ch = Lexer_advance(lexer);
 	}
 	// if(ch) lexer->currentChar--;
+
+	// In case the string contains the interpolation, mark the last span marker as tail
+	Token *marker = Array_get(lexer->tokens, -1);
+	if(marker && marker->kind == TOKEN_STRING_SPAN) marker->kind = TOKEN_STRING_TAIL;
 
 	// Consume the closing quote
 	Lexer_advance(lexer);
@@ -1062,10 +1066,52 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 	while(is_decimal_digit(ch) || ch == '.' || ch == '_') {
 		// Handle fractional part
 		if(ch == '.') {
-			if(hasDot) break;       // Accessor (ex. 10.123.toFixed())
-			if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			// '...' and '..<' operators
+			if(Lexer_compare(lexer, "...") || Lexer_compare(lexer, "..<")) break;
+
+			// Accessor (ex. 10.123.toFixed())
+			if(hasDot) {
+				// break;
+				return LexerError(
+					String_fromFormat("number literal can only contain one floating point dot '.'"),
+					Array_fromArgs(
+						1,
+						Token_alloc(
+							TOKEN_MARKER,
+							TOKEN_CARET,
+							WHITESPACE_NONE,
+							TextRange_construct(
+								lexer->currentChar,
+								lexer->currentChar + 1,
+								lexer->line,
+								lexer->column
+							),
+							(union TokenValue){0}
+						)
+					)
+				);
+			}
+			// if(is_identifier_start(Lexer_peekChar(lexer, 1))) break;     // Accessor (ex. 10.toFixed())
+			// if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
+			// 		String_fromFormat("expected member name following '.'"),
+			// 		Array_fromArgs(
+			// 			1,
+			// 			Token_alloc(
+			// 				TOKEN_MARKER,
+			// 				TOKEN_CARET,
+			// 				WHITESPACE_NONE,
+			// 				TextRange_construct(
+			// 					lexer->currentChar,
+			// 					lexer->currentChar + 1,
+			// 					lexer->line,
+			// 					lexer->column
+			// 				),
+			// 				(union TokenValue){0}
+			// 			)
+			// 		)
+			// );
 			if(!is_decimal_digit(Lexer_peekChar(lexer, 1))) return LexerError(
-					String_fromFormat("expected member name following '.'"),
+					String_fromFormat("invalid character in floating point literal after '.'"),
 					Array_fromArgs(
 						1,
 						Token_alloc(
@@ -1097,7 +1143,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 			if(ch == '+' || ch == '-') ch = Lexer_advance(lexer);       // Consume the sign character if present
 
 			// Missing exponent
-			if(!is_decimal_digit(ch)) return LexerError(
+			if(!is_decimal_digit(ch)) return LexerErrorCustom(
+					RESULT_ERROR_SYNTACTIC_ANALYSIS,
 					String_fromFormat("expected a digit in floating point exponent"),
 					Array_fromArgs(
 						1,
@@ -1122,7 +1169,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 
 		// Invalid character in exponent
 		if(!is_decimal_digit(ch) && hasExponent) {
-			return LexerError(
+			return LexerErrorCustom(
+				RESULT_ERROR_SYNTACTIC_ANALYSIS,
 				String_fromFormat(
 					"'%s' is not a valid character in floating point exponent",
 					format_char(ch)
@@ -1147,7 +1195,8 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 
 		// Invalid character in integer literal
 		if(!is_decimal_digit(ch)) {
-			return LexerError(
+			return LexerErrorCustom(
+				RESULT_ERROR_SYNTACTIC_ANALYSIS,
 				String_fromFormat(
 					"'%s' is not a valid digit in integer literal",
 					format_char(ch)
@@ -1234,14 +1283,14 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	#define match_as(str, _type, _kind) if(Lexer_match(lexer, str)) type = _type, kind = _kind
 
 	// Swift operators (sorted by length)
-	match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
-	else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
-	else match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
+	// match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
+	// else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
+	/*else*/ match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
 	else match_as("..<", TOKEN_OPERATOR, TOKEN_HALF_OPEN_RANGE);
 	// else match_as("===", TOKEN_OPERATOR, TOKEN_IDENTITY);
 	// else match_as("!==", TOKEN_OPERATOR, TOKEN_NOT_IDENTITY);
-	else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
-	else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
+	// else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
+	// else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
 	else match_as("&&", TOKEN_OPERATOR, TOKEN_LOG_AND);
 	else match_as("||", TOKEN_OPERATOR, TOKEN_LOG_OR);
 	else match_as("??", TOKEN_OPERATOR, TOKEN_NULL_COALESCING);
@@ -1250,14 +1299,14 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("!=", TOKEN_OPERATOR, TOKEN_NOT_EQUALITY);
 	else match_as(">=", TOKEN_OPERATOR, TOKEN_GREATER_EQUAL);
 	else match_as("<=", TOKEN_OPERATOR, TOKEN_LESS_EQUAL);
-	else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
-	else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
-	else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
-	else match_as("/=", TOKEN_OPERATOR, TOKEN_DIV_ASSIGN);
-	else match_as("%%=", TOKEN_OPERATOR, TOKEN_MOD_ASSIGN);
-	else match_as("&=", TOKEN_OPERATOR, TOKEN_BIT_AND_ASSIGN);
-	else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
-	else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
+	// else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
+	// else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
+	// else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
+	// else match_as("/=", TOKEN_OPERATOR, TOKEN_DIV_ASSIGN);
+	// else match_as("%%=", TOKEN_OPERATOR, TOKEN_MOD_ASSIGN);
+	// else match_as("&=", TOKEN_OPERATOR, TOKEN_BIT_AND_ASSIGN);
+	// else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
+	// else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
 	else match_as("->", TOKEN_PUNCTUATOR, TOKEN_ARROW);
 	else match_as("=", TOKEN_OPERATOR, TOKEN_EQUAL);
 	else match_as(">", TOKEN_OPERATOR, TOKEN_GREATER);
@@ -1266,29 +1315,29 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("-", TOKEN_OPERATOR, TOKEN_MINUS);
 	else match_as("*", TOKEN_OPERATOR, TOKEN_STAR);
 	else match_as("/", TOKEN_OPERATOR, TOKEN_SLASH);
-	else match_as("%%", TOKEN_OPERATOR, TOKEN_PERCENT);
-	else match_as("&", TOKEN_OPERATOR, TOKEN_AMPERSAND);
-	else match_as("|", TOKEN_OPERATOR, TOKEN_PIPE);
-	else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
-	else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
+	// else match_as("%%", TOKEN_OPERATOR, TOKEN_PERCENT);
+	// else match_as("&", TOKEN_OPERATOR, TOKEN_AMPERSAND);
+	// else match_as("|", TOKEN_OPERATOR, TOKEN_PIPE);
+	// else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
+	// else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
 
 	else match_as("(", TOKEN_PUNCTUATOR, TOKEN_LEFT_PAREN);
 	else match_as(")", TOKEN_PUNCTUATOR, TOKEN_RIGHT_PAREN);
 	else match_as("{", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACE);
 	else match_as("}", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACE);
-	else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
-	else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
-	else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
+	// else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
+	// else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
+	// else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
 	else match_as(",", TOKEN_PUNCTUATOR, TOKEN_COMMA);
 	else match_as(":", TOKEN_PUNCTUATOR, TOKEN_COLON);
 	else match_as(";", TOKEN_PUNCTUATOR, TOKEN_SEMICOLON);
 	else match_as("=", TOKEN_PUNCTUATOR, TOKEN_EQUAL);
-	else match_as("@", TOKEN_PUNCTUATOR, TOKEN_AT);
-	else match_as("#", TOKEN_PUNCTUATOR, TOKEN_HASH);
-	else match_as("&", TOKEN_PUNCTUATOR, TOKEN_AMPERSAND);
-	else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
+	// else match_as("@", TOKEN_PUNCTUATOR, TOKEN_AT);
+	// else match_as("#", TOKEN_PUNCTUATOR, TOKEN_HASH);
+	// else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
 	else match_as("?", TOKEN_PUNCTUATOR, TOKEN_QUESTION);
 	else match_as("!", TOKEN_PUNCTUATOR, TOKEN_EXCLAMATION);
+	else return LexerNoMatch();
 
 	#undef match_as
 

@@ -31,6 +31,11 @@ enum TokenKind {
 	TOKEN_BOOLEAN,
 	TOKEN_NIL,
 
+	// String interpolation markers
+	TOKEN_STRING_HEAD,
+	TOKEN_STRING_SPAN,
+	TOKEN_STRING_TAIL,
+
 	// Punctuators ((, ), {, }, [, ], ., ,, :, ;, =, @, #, & (as a prefix operator), ->, `, ?, and ! (as a postfix operator))
 	TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN,
 	TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE,

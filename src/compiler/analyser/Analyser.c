@@ -5,9 +5,12 @@
 #include "internal/HashMap.h"
 #include "compiler/analyser/AnalyserResult.h"
 #include "compiler/lexer/Token.h"
+#include "compiler/lexer/Lexer.h"
+#include "compiler/parser/Parser.h"
 
 
 String* __Analyser_stringifyType(ValueType type);
+void __Analyser_registerBuiltInFunctions(Analyser *analyser);
 void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent);
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
@@ -29,6 +32,15 @@ ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind) {
 
 size_t Analyser_nextId(Analyser *analyser) {
 	return analyser->idCounter++;
+}
+
+size_t Analyser_registerId(Analyser *analyser, size_t id) {
+	assertf(id != 0, "Cannot register id 0");
+	assertf(id < analyser->idCounter, "Cannot register id %zu, next available id is %zu", id, analyser->idCounter);
+
+	analyser->idCounter = id + 1;
+
+	return id;
 }
 
 VariableDeclaration* new_VariableDeclaration(
@@ -179,6 +191,13 @@ VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, 
 	return NULL;
 }
 
+Array /*<FunctionDeclaration> | NULL*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name) {
+	Array *overloads = HashMap_get(analyser->overloads, name);
+	if(!overloads) return NULL;
+
+	return overloads;
+}
+
 FunctionDeclaration* Analyser_getNearestFunctionDeclaration(Analyser *analyser, BlockScope *scope) {
 	(void)analyser;
 
@@ -314,6 +333,9 @@ AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast) {
 
 	analyser->ast = ast;
 
+	// Register built-in functions
+	__Analyser_registerBuiltInFunctions(analyser);
+
 	__Analyser_createBlockScopeChaining(analyser, ast->block, NULL);
 	analyser->globalScope = ast->block->scope;
 
@@ -372,6 +394,45 @@ String* __Analyser_formatBooleanTestErrorMessage(ValueType type) {
 					type.type == TYPE_STRING ? "; test for '!= \"\"' instead" :
 						""
 	);
+}
+
+void __Analyser_registerBuiltInFunctions(Analyser *analyser) {
+	assertf(analyser->ast != NULL);
+
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Lexer_setSource(
+		&lexer,
+		#define LF "\n"
+		"func readString() -> String? {return nil}" LF
+		"func readInt() -> Int? {return nil}" LF
+		"func readDouble() -> Double? {return nil}" LF
+		"func write() {}" LF // Parameters handled internally
+		"func Int2Double(_ term: Int) -> Double {return 0.0}" LF
+		"func Double2Int(_ term: Double) -> Int {return 0}" LF
+		"func length(_ s: String) -> Int {return 0}" LF
+		"func substring(of s: String, startingAt i: Int, endingBefore j: Int) -> String? {return nil}" LF
+		"func ord(_ c: String) -> Int {return 0}" LF
+		"func chr(_ i: Int) -> String {return \"\"}" LF
+		#undef LF
+	);
+	ParserResult result = Parser_parse(&parser);
+	assertf(result.success, "Failed to parse built-in function declarations: %s", result.message->value);
+
+	ProgramASTNode *ast = (ProgramASTNode*)result.node;
+	Array *statements = ast->block->statements;
+
+	for(size_t i = 0; i < FUNCTIONS_COUNT; i++) {
+		FunctionDeclarationASTNode *functionNode = (FunctionDeclarationASTNode*)Array_get(statements, i);
+
+		functionNode->builtin = (enum BuiltInFunction)i;
+
+		Array_unshift(analyser->ast->block->statements, functionNode);
+	}
 }
 
 void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent) {
@@ -466,6 +527,9 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 
 		// Set the id of the identifier node to the id of the new declaration
 		identifier->id = newDeclaration->id;
+
+		// Set the id from which the value is unwrapped
+		condition->fromId = declaration->id;
 	} else {
 		// Get the type of the test expression
 		ValueType type;
@@ -595,6 +659,26 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						);
 					}
 
+					// If the variable is in global scope together with a function declaration, it is an error
+					if(!block->scope->parent) {
+						Array *functions = Analyser_getFunctionDeclarationsByName(analyser, declaration->name->value);
+
+						// There has to be at least one function declaration with no parameters
+						if(functions && functions->size > 0) {
+							for(size_t i = 0; i < functions->size; i++) {
+								FunctionDeclaration *function = Array_get(functions, i);
+
+								if(function->node->parameterList->parameters->size == 0) {
+									return AnalyserError(
+										RESULT_ERROR_SEMANTIC_OTHER,
+										String_fromFormat("invalid redeclaration of '%s'", declaration->name->value),
+										NULL
+									);
+								}
+							}
+						}
+					}
+
 					// Add the variable declaration to the current scope
 					HashMap_set(block->scope->variables, declaration->name->value, declaration);
 
@@ -708,6 +792,19 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				assertf(declaration != NULL, "Cannot find function declaration with id %ld", function->id->id);
 
 				// TODO: handle implicit return
+
+				// If there is a variable in the global scope with the same name, it is an error
+				if(declaration->node->parameterList->parameters->size == 0) {
+					VariableDeclaration *variable = Analyser_getVariableByName(analyser, declaration->node->id->name->value, block->scope);
+
+					if(variable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_OTHER,
+							String_fromFormat("invalid redeclaration of '%s'", declaration->node->id->name->value),
+							NULL
+						);
+					}
+				}
 
 				// Analyse the return statement reachability
 				if(declaration->returnType.type != TYPE_VOID && !__Analyser_isReturnReachable(analyser, function->body)) {
@@ -1351,6 +1448,31 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				default: {
 					fassertf("Failed to resolve binary operator: Unexpected operator %d", binary->operator);
 				} break;
+			}
+		} break;
+
+		case NODE_INTERPOLATION_EXPRESSION: {
+			InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)node;
+
+			// Validate all the expressions
+			for(size_t i = 0; i < interpolation->expressions->size; i++) {
+				ExpressionASTNode *expression = Array_get(interpolation->expressions, i);
+
+				ValueType type;
+				AnalyserResult result = Analyser_resolveExpressionType(analyser, expression, scope, prefferedType, &type);
+				if(!result.success) return result;
+
+				// NOTE: Not specified in the assignment, but Swift is okay with this (just prints some warnings)
+				// if(type.isNullable) {
+				// 	return AnalyserError(
+				// 		RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+				// 		String_fromFormat(
+				// 			"value of optional type '%s' must be unwrapped to a value of type 'String'",
+				// 			__Analyser_stringifyType(type)->value
+				// 		),
+				// 		NULL
+				// 	);
+				// }
 			}
 		} break;
 
