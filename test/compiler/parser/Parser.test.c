@@ -724,7 +724,6 @@ DESCRIBE(if_statement, "If statement parsing") {
 
 	} TEST_END();
 
-
 	TEST_BEGIN("Binding condition with type and initializer") {
 		Lexer_setSource(&lexer, "if let hello: Int = 10 {}");
 		result = Parser_parse(&parser);
@@ -1612,6 +1611,159 @@ DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
 
 }
 
+DESCRIBE(invalid_equals, "Invalid use of equals sign") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Equals sign in if body") {
+		Lexer_setSource(&lexer, "if (true) {=}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in program body") {
+		Lexer_setSource(&lexer, "=");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in condition") {
+		Lexer_setSource(&lexer, "if = {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in parameter") {
+		Lexer_setSource(&lexer, "func (a: Int, =) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in return") {
+		Lexer_setSource(&lexer, "func () -> Int {return = }");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in argument") {
+		Lexer_setSource(&lexer, "write(=,\"hello\")");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in varible daclaration expression") {
+		Lexer_setSource(&lexer, "let a = =");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in varible daclaration") {
+		Lexer_setSource(&lexer, "let = a = 10");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in assignment expression") {
+		Lexer_setSource(&lexer, "a = =");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in assignment") {
+		Lexer_setSource(&lexer, "= a = 10");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Equals sign in assignment expression") {
+		Lexer_setSource(&lexer, "while (=) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+}
+
 DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
@@ -1802,6 +1954,8 @@ DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 		EXPECT_TRUE(identifier->_type == NODE_IDENTIFIER);
 		EXPECT_TRUE(String_equals(identifier->name, "expr"));
 	} TEST_END();
+
+
 }
 
 DESCRIBE(simple_programs, "Simple program parsing") {
@@ -1813,6 +1967,12 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 	Parser_constructor(&parser, &lexer);
 
 	ParserResult result;
+
+	TEST_BEGIN("Empty") {
+		Lexer_setSource(&lexer, "");
+		EXPECT_TRUE(result.success);
+	}
+	TEST_END();
 
 	TEST_BEGIN("Factorial iterative") {
 		Lexer_setSource(

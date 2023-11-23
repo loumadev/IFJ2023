@@ -103,6 +103,13 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 		ParserResult result = __Parser_parseStatement(parser);
 		if(!result.success) return result;
 
+		if(result.type == RESULT_NO_MATCH) {
+			return ParserError(
+				String_fromFormat("expected '}' in block body, but got '%s'", Token_toString(peek.token)),
+				Array_fromArgs(1, peek.token)
+			);
+		}
+
 		Array_push(statements, result.node);
 
 		if(requireBraces) {
