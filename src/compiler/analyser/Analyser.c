@@ -179,6 +179,13 @@ VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, 
 	return NULL;
 }
 
+Array /*<FunctionDeclaration> | NULL*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name) {
+	Array *overloads = HashMap_get(analyser->overloads, name);
+	if(!overloads) return NULL;
+
+	return overloads;
+}
+
 FunctionDeclaration* Analyser_getNearestFunctionDeclaration(Analyser *analyser, BlockScope *scope) {
 	(void)analyser;
 
@@ -595,6 +602,26 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						);
 					}
 
+					// If the variable is in global scope together with a function declaration, it is an error
+					if(!block->scope->parent) {
+						Array *functions = Analyser_getFunctionDeclarationsByName(analyser, declaration->name->value);
+
+						// There has to be at least one function declaration with no parameters
+						if(functions && functions->size > 0) {
+							for(size_t i = 0; i < functions->size; i++) {
+								FunctionDeclaration *function = Array_get(functions, i);
+
+								if(function->node->parameterList->parameters->size == 0) {
+									return AnalyserError(
+										RESULT_ERROR_SEMANTIC_OTHER,
+										String_fromFormat("invalid redeclaration of '%s'", declaration->name->value),
+										NULL
+									);
+								}
+							}
+						}
+					}
+
 					// Add the variable declaration to the current scope
 					HashMap_set(block->scope->variables, declaration->name->value, declaration);
 
@@ -708,6 +735,19 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				assertf(declaration != NULL, "Cannot find function declaration with id %ld", function->id->id);
 
 				// TODO: handle implicit return
+
+				// If there is a variable in the global scope with the same name, it is an error
+				if(declaration->node->parameterList->parameters->size == 0) {
+					VariableDeclaration *variable = Analyser_getVariableByName(analyser, declaration->node->id->name->value, block->scope);
+
+					if(variable) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_OTHER,
+							String_fromFormat("invalid redeclaration of '%s'", declaration->node->id->name->value),
+							NULL
+						);
+					}
+				}
 
 				// Analyse the return statement reachability
 				if(declaration->returnType.type != TYPE_VOID && !__Analyser_isReturnReachable(analyser, function->body)) {

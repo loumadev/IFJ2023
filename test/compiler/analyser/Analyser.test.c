@@ -1549,6 +1549,32 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int) { }" LF
+				"" LF
+				"let a = 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"let a = 5" LF
+				"" LF
+				"func a(x a: Int) { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
 	} TEST_END();
 
 	TEST_BEGIN("Invalid function declaration") {
@@ -1649,6 +1675,32 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 				"func a(x a: Int, y b: Int) -> Int {return x + y}" LF
 				"" LF
 				"a(x: 1, y: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() { }" LF
+				"" LF
+				"let a = 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"let a = 5" LF
+				"" LF
+				"func a() { }" LF
 			);
 			parserResult = Parser_parse(&parser);
 			EXPECT_TRUE(parserResult.success);
