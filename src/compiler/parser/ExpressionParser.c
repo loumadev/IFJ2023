@@ -32,10 +32,10 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input
 	{S, S, S, S, S, S, S, X, S, S, S, X}  // $
 };
 
-int Expr_getPrecTbIndex(Token *token, bool isFunction, Parser *parser, PrefixStatus status) {
+int Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser *parser, PrefixStatus status) {
 	prefix = P_UNRESOLVED;
 	if(!token) {
-		if(isFunction){
+		if(isIdentifier){
 			return I_ID;
 		}
 		return I_DOLLAR;
@@ -321,8 +321,6 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	assertf(parser != NULL);
 
 	Array *stack = Array_alloc(STACK_SIZE);
-	// Array *reduceStack = Array_alloc(STACK_SIZE);
-	// Token *token = NULL;
 	StackItem *bottom = mem_alloc(sizeof(StackItem));
 
 	bottom->Stype = S_BOTTOM;
@@ -332,17 +330,17 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	Array_push(stack, bottom);
 
 	bool reductionSuccess;
-	bool functionCall = false;
+	bool isIdentifier= false;
 	int offset = 1;
 	enum PrecTableRelation operation;
 	
 	LexerResult current = Lexer_peekToken(parser->lexer, offset);
-	LexerResult leftParen;
+	LexerResult next;
 	LexerResult removeFromTokenStream;
 
 	while(true) {
 		if(!current.success) return LexerToParserError(current);
-		functionCall = false;
+		isIdentifier= false;
 
 		// check if there is a function call in expression
 		if(current.token->type == TOKEN_IDENTIFIER){
@@ -354,21 +352,46 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				);
 			}
 
-			leftParen = Lexer_peekToken(parser->lexer, offset + 1);
-			if(!leftParen.success) return LexerToParserError(current);
+			next = Lexer_peekToken(parser->lexer, offset + 1);
+			if(!next.success) return LexerToParserError(current);
 
-			if(leftParen.token->kind == TOKEN_LEFT_PAREN){
+			if(next.token->kind == TOKEN_LEFT_PAREN){
 				ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
 				if(!functionCallExpression.success) return functionCallExpression;
 
-				functionCall = true;
+				isIdentifier= true;
 
 				StackItem *function = mem_alloc(sizeof(StackItem));
 				function->node = functionCallExpression.node;
 				function->Stype = S_TERMINAL;
 				function->token = NULL;
+				function->isPrefix = P_UNRESOLVED;
 				Expr_pushAfterTopTerminal(stack);
 				Array_push(stack, function);
+
+				current = Lexer_peekToken(parser->lexer, offset);
+				if(!current.success) return LexerToParserError(current);
+			}
+		}
+
+		// check for string interpolation
+		if(current.token->kind ==TOKEN_STRING){
+			next = Lexer_peekToken(parser->lexer, offset + 1);
+			if(!next.success) return LexerToParserError(current);
+
+			if(next.token->type == TOKEN_STRING_INTERPOLATION_MARKER){
+				//ParserResult stringInterpolation = replaceThisFunctionNameWithActualFunctionCallToParseStringInterpolation();
+				//if(!stringInterpolation.success) return stringInterpolation;
+
+				isIdentifier = true;
+
+				StackItem *string = mem_alloc(sizeof(StackItem));
+				//string->node = stringInterpolation.node;
+				string->Stype = S_TERMINAL;
+				string->token = NULL;
+				string->isPrefix = P_UNRESOLVED;
+				Expr_pushAfterTopTerminal(stack);
+				Array_push(stack, string);
 
 				current = Lexer_peekToken(parser->lexer, offset);
 				if(!current.success) return LexerToParserError(current);
@@ -379,7 +402,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 
 			StackItem *topTerminal = Expr_getTopTerminal(stack);
 
-			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, functionCall, parser, topTerminal->isPrefix);
+			int topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, isIdentifier, parser, topTerminal->isPrefix);
 			int currentTokenIndex = Expr_getPrecTbIndex(current.token, false, parser, P_UNRESOLVED);
 
 			operation = precedence_table[topTerminalIndex][currentTokenIndex];
