@@ -1095,6 +1095,36 @@ DESCRIBE(if_statement_analysis, "Analysis of the if statements") {
 			"var a: Int? = nil" LF
 			"" LF
 			"if let a {" LF
+			TAB "var a = 8" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = nil" LF
+			"" LF
+			"if let a {" LF
+			TAB "var a = 8 + a" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = nil" LF
+			"" LF
+			"if let a {" LF
 			TAB "var b = a + 8" LF
 			"} else if(a == 8) {" LF
 			TAB "var b = a! + 8" LF
@@ -1134,6 +1164,20 @@ DESCRIBE(if_statement_analysis, "Analysis of the if statements") {
 			"" LF
 			"if let a {" LF
 			TAB "var b: Int = a" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int = 20" LF
+			"" LF
+			"if let a {" LF
+			TAB "a = 5" LF
 			"}" LF
 		);
 		parserResult = Parser_parse(&parser);
