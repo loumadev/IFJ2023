@@ -1762,7 +1762,9 @@ DESCRIBE(invalid_equals, "Invalid use of equals sign") {
 		// prbbly later add message check also
 	}
 	TEST_END();
+
 }
+
 
 DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 	Lexer lexer;
@@ -1958,6 +1960,56 @@ DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 
 }
 
+DESCRIBE(invalid_lexical, "Lexical error propagation"){
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("In global scope") {
+		Lexer_setSource(&lexer, ".14c20 ");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("In if block") {
+		Lexer_setSource(&lexer, "if true { .14 }");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("In expression") {
+		Lexer_setSource(&lexer, "let a: Int = .10y10");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+}
+
 DESCRIBE(simple_programs, "Simple program parsing") {
 
 	Lexer lexer;
@@ -2092,3 +2144,5 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 	} TEST_END();
 
 }
+
+
