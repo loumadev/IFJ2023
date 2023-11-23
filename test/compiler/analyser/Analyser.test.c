@@ -3081,3 +3081,124 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 	// 	EXPECT_TRUE(analyserResult.success);
 	// } TEST_END();
 }
+
+DESCRIBE(str_interp_analysis, "String interpolation analysis") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Valid use of string interpolation") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = \"test\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 5" LF
+				"var b = \"pre \\(a) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 5" LF
+				"var b = 9" LF
+				"var c = \"pre \\(a + b) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a: Double = 9" LF
+				"var c = \"pre \\(a + 3) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f() -> Int {return 3}" LF
+				"var a = 5" LF
+				"var b = 9" LF
+				"var c = \"pre \\(1 - (a + b) * f()) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+	} TEST_END();
+
+	TEST_BEGIN("Invalid use of string interpolation") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 5" LF
+				"var b = \"pre \\(c) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a: Double = 5" LF
+				"var b = 9" LF
+				"var c = \"pre \\(a + b) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f() -> Bool {return false}" LF
+				"var a = 5" LF
+				"var b = 9" LF
+				"var c = \"pre \\(1 - (a + b) * f()) post\"" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+	} TEST_END();
+}

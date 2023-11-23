@@ -1354,6 +1354,31 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			}
 		} break;
 
+		case NODE_INTERPOLATION_EXPRESSION: {
+			InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)node;
+
+			// Validate all the expressions
+			for(size_t i = 0; i < interpolation->expressions->size; i++) {
+				ExpressionASTNode *expression = Array_get(interpolation->expressions, i);
+
+				ValueType type;
+				AnalyserResult result = Analyser_resolveExpressionType(analyser, expression, scope, prefferedType, &type);
+				if(!result.success) return result;
+
+				// NOTE: Not specified in the assignment, but Swift is okay with this (just prints some warnings)
+				// if(type.isNullable) {
+				// 	return AnalyserError(
+				// 		RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+				// 		String_fromFormat(
+				// 			"value of optional type '%s' must be unwrapped to a value of type 'String'",
+				// 			__Analyser_stringifyType(type)->value
+				// 		),
+				// 		NULL
+				// 	);
+				// }
+			}
+		} break;
+
 		default: {
 			fassertf("Failed to resolve type of node: Unexpected node type %d", node->_type);
 		} break;
