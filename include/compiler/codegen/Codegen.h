@@ -7,16 +7,16 @@
 
 #define TAB "\009"
 
-typedef struct Codegen {
-    Analyser *analyser;
-} Codegen;
-
-
 enum Frame {
     FRAME_GLOBAL,
     FRAME_LOCAL,
     FRAME_TEMPORARY,
 };
+
+typedef struct Codegen {
+    Analyser *analyser;
+    enum Frame frame;
+} Codegen;
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser);
 
