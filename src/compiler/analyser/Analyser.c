@@ -701,7 +701,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(!variable) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
-						String_fromFormat("cannot find '%s' in scope", assignment->id->name),
+						String_fromFormat("cannot find '%s' in scope", assignment->id->name->value),
 						NULL
 					);
 				}
@@ -710,7 +710,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(variable->isConstant && variable->isInitialized) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("cannot assign to constant '%s'", assignment->id->name),
+						String_fromFormat("cannot assign to constant '%s'", assignment->id->name->value),
 						NULL
 					);
 				}
@@ -1079,7 +1079,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				if(parameter->isLabeless && argument->label) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-						String_fromFormat("extraneous argument label '%s' in call", argument->label->name),
+						String_fromFormat("extraneous argument label '%s' in call", argument->label->name->value),
 						NULL
 					);
 				}
@@ -1088,7 +1088,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				if(!parameter->isLabeless && !argument->label) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-						String_fromFormat("missing argument label '%s' in call", externalName),
+						String_fromFormat("missing argument label '%s' in call", externalName->value),
 						NULL
 					);
 				}
@@ -1099,8 +1099,8 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
 						String_fromFormat(
 							"incorrect argument label in call (have '%s', expected '%s')",
-							argument->label->name,
-							externalName
+							argument->label->name->value,
+							externalName->value
 						),
 						NULL
 					);
@@ -1371,7 +1371,11 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					if(leftType.isNullable || rightType.isNullable) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_OTHER,
-							String_fromFormat("cannot use relational operator '%s' with optional type '%s'", __Analyser_stringifyOperator(binary->operator), __Analyser_stringifyType(leftType)->value),
+							String_fromFormat(
+								"cannot use relational operator '%s' with optional type '%s'",
+								__Analyser_stringifyOperator(binary->operator),
+								__Analyser_stringifyType(leftType)->value
+							),
 							NULL
 						);
 					}
@@ -1660,7 +1664,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				if(!parameter->type) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("type annotation missing in parameter '%s'", name),
+						String_fromFormat("type annotation missing in parameter '%s'", name->value),
 						NULL
 					);
 				}
@@ -1671,7 +1675,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				if(!is_type_valid(resolvedType)) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("cannot find type '%s' in scope", typeName),
+						String_fromFormat("cannot find type '%s' in scope", typeName->value),
 						NULL
 					);
 				}
@@ -1701,7 +1705,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				// There is already a parameter with the same name
 				return AnalyserError(
 					RESULT_ERROR_SEMANTIC_OTHER,
-					String_fromFormat("invalid redeclaration of '%s'", name),
+					String_fromFormat("invalid redeclaration of '%s'", name->value),
 					NULL
 				);
 			}
