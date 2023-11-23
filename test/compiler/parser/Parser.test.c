@@ -1557,6 +1557,44 @@ DESCRIBE(function_calls, "Function call parsing") {
 
 	} TEST_END();
 
+	TEST_BEGIN("Unwrap operator containing function call") {
+		Lexer_setSource(
+			&lexer,
+			"a = min()!"
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		UnaryExpressionASTNode *unwrap = (UnaryExpressionASTNode*)assignment->expression;
+		EXPECT_NOT_NULL(unwrap);
+		EXPECT_TRUE(unwrap->_type == NODE_UNARY_EXPRESSION);
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)unwrap->argument;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "min"));
+	} TEST_END();
+
+	TEST_BEGIN("Multiple unwrap operators in a single expression") {
+		Lexer_setSource(
+			&lexer,
+			"a = x! + y!"
+		);
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_ASSIGNMENT_STATEMENT);
+
+		AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statement;
+
+		EXPECT_BINARY_NODE(assignment->expression, OPERATOR_PLUS, NODE_UNARY_EXPRESSION, NODE_UNARY_EXPRESSION, binary);
+	} TEST_END();
+
 }
 
 DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
@@ -1960,7 +1998,7 @@ DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 
 }
 
-DESCRIBE(invalid_lexical, "Lexical error propagation"){
+DESCRIBE(invalid_lexical, "Lexical error propagation") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
 
