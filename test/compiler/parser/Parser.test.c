@@ -196,8 +196,109 @@ DESCRIBE(variable_declaration, "Variable declaration parsing") {
 
 	} TEST_END();
 
+	TEST_BEGIN("Invalid use of operator") {
+		Lexer_setSource(&lexer, "let a = 10 +");
+		result = Parser_parse(&parser);
 
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
 
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid variable name") {
+		Lexer_setSource(&lexer, "let 123: Int = 7");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing equals sign") {
+		Lexer_setSource(&lexer, "let a: Int 7");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing expression") {
+		Lexer_setSource(&lexer, "let a: Int =");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid expression") {
+		Lexer_setSource(&lexer, "let a: Int = 7 7");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With extra") {
+		Lexer_setSource(&lexer, "let a: Int = 7 extra");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid name") {
+		Lexer_setSource(&lexer, "let : int = 7");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid assignment") {
+		Lexer_setSource(&lexer, "let a: Int == ");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
 }
 
 DESCRIBE(function_declaration, "Function declaration parsing") {
@@ -549,6 +650,128 @@ DESCRIBE(function_declaration, "Function declaration parsing") {
 
 	} TEST_END();
 
+	TEST_BEGIN("With missing opening brace") {
+		Lexer_setSource(
+			&lexer,
+			"func foo()" LF
+			TAB "return" LF
+			"}" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+
+
+	} TEST_END();
+
+	TEST_BEGIN("Invalid identifier") {
+		Lexer_setSource(&lexer, "func -+() {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With missing closing brace") {
+		Lexer_setSource(&lexer, "func test () { return ");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With extra") {
+		Lexer_setSource(&lexer, "func te extra () {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With missing closing paren") {
+		Lexer_setSource(&lexer, "func test( {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With missing opening paren") {
+		Lexer_setSource(&lexer, "func test ) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With missing keyword") {
+		Lexer_setSource(&lexer, "test () {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With missing return type") {
+		Lexer_setSource(&lexer, "func test () -> {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("With wrong return type syntax") {
+		Lexer_setSource(&lexer, "func test (): Int {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
 }
 
 DESCRIBE(if_statement, "If statement parsing") {
@@ -779,6 +1002,111 @@ DESCRIBE(if_statement, "If statement parsing") {
 		EXPECT_NULL(if_statement->alternate);
 
 	} TEST_END();
+
+	TEST_BEGIN("Missing condition") {
+		Lexer_setSource(&lexer, "if () {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing opening paren") {
+		Lexer_setSource(&lexer, "if true) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing opening paren") {
+		Lexer_setSource(&lexer, "if (true {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing opening brace") {
+		Lexer_setSource(&lexer, "if (true) return}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing closing brace") {
+		Lexer_setSource(&lexer, "if (true) {return");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid expression") {
+		Lexer_setSource(&lexer, "if (+) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid expression no parens") {
+		Lexer_setSource(&lexer, "if + {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("No body") {
+		Lexer_setSource(&lexer, "if true");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
 }
 
 DESCRIBE(while_statement, "While statement parsing") {
@@ -918,6 +1246,110 @@ DESCRIBE(while_statement, "While statement parsing") {
 		EXPECT_EQUAL_INT(arr->size, 0);
 
 	} TEST_END();
+
+	TEST_BEGIN("Missing condition") {
+		Lexer_setSource(&lexer, "if () {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing opening paren") {
+		Lexer_setSource(&lexer, "if true) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing opening paren") {
+		Lexer_setSource(&lexer, "if (true {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing opening brace") {
+		Lexer_setSource(&lexer, "if (true) return}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Missing closing brace") {
+		Lexer_setSource(&lexer, "if (true) {return");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid expression") {
+		Lexer_setSource(&lexer, "if (+) {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid expression no parens") {
+		Lexer_setSource(&lexer, "if + {}");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("No body") {
+		Lexer_setSource(&lexer, "if true");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
 }
 
 DESCRIBE(statement_separation, "Validity of statement separation") {
@@ -1622,6 +2054,60 @@ DESCRIBE(function_calls, "Function call parsing") {
 		result = Parser_parse(&parser);
 		EXPECT_TRUE(result.success);
 	} TEST_END();
+
+	TEST_BEGIN("No closing paren") {
+		Lexer_setSource(&lexer, "call(a:1,b:1");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("No opening paren") {
+		Lexer_setSource(&lexer, "call a:1,b:1)");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid comma") {
+		Lexer_setSource(&lexer, "call(1,,2)");
+		result = Parser_parse(&parser);
+		String_print_compact(result.message);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
+
+	TEST_BEGIN("Invalid argument label") {
+		Lexer_setSource(&lexer, "call(a:b:1,2)");
+		result = Parser_parse(&parser);
+		String_print_compact(result.message);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
 }
 
 DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
@@ -1828,8 +2314,8 @@ DESCRIBE(invalid_equals, "Invalid use of equals sign") {
 	}
 	TEST_END();
 
-}
 
+}
 
 DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 	Lexer lexer;
@@ -2073,6 +2559,18 @@ DESCRIBE(invalid_lexical, "Lexical error propagation") {
 	}
 	TEST_END();
 
+	TEST_BEGIN("Invalid variable name") {
+		Lexer_setSource(&lexer, "let a$ = 7");
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+		EXPECT_NULL(result.node);
+
+		EXPECT_TRUE(result.type == RESULT_ERROR_LEXICAL_ANALYSIS);
+		EXPECT_TRUE(result.severity == SEVERITY_ERROR);
+		// prbbly later add message check also
+	}
+	TEST_END();
 }
 
 DESCRIBE(simple_programs, "Simple program parsing") {
@@ -2118,7 +2616,6 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 
 		EXPECT_TRUE(result.success);
 		EXPECT_STATEMENTS(result.node, 3);
-
 
 		// first statement write(...)
 		StatementASTNode *statement = (StatementASTNode*)Array_get(statements, 0);
@@ -2205,9 +2702,501 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(if_statement->test);
 		EXPECT_TRUE(if_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
+		// TODO
+
 
 	} TEST_END();
 
+	TEST_BEGIN("String and builtins") {
+		Lexer_setSource(
+			&lexer,
+			"var str1 = \"Toto je nejaky text v programu jazyka IFJ23\"" LF
+			"let str2 = str1 + \", ktery jeste trochu obohatime\"" LF
+			"write(str1, \"\\n\", str2, \"\\n\")" LF
+			"let i = length(str1)" LF
+			"write(\"Pozice retezce \\\"text\\\" v str2: \", i, \"\\n\")" LF
+			"write(\"Zadejte serazenou posloupnost vsech malych pismen a-h, \")" LF
+			"let newInput = readString()" LF
+			"if let newInput {" LF
+			TAB "str1 = newInput" LF
+			TAB "while (str1 != \"abcdefgh\") {" LF
+			TAB TAB "write(\"Spatne zadana posloupnost, zkuste znovu:\\n\")" LF
+			TAB TAB "let tmp = readString()" LF
+			TAB TAB "str1 = tmp ?? \"\"" LF
+			TAB "}" LF
+			"} else {}" LF
+		);
+
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENTS(result.node, 8);
+
+
+		// var str1 = "..."
+		StatementASTNode *statement = (StatementASTNode*)Array_get(statements, 0);
+		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
+		VariableDeclarationASTNode *declaration = (VariableDeclarationASTNode*)statement;
+
+		EXPECT_FALSE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		VariableDeclarationListASTNode *list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		Array *arr = list->declarators;
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		VariableDeclaratorASTNode *declarator = Array_get(arr, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		PatternASTNode *pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		IdentifierASTNode *id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str1"));
+
+		LiteralExpressionASTNode *literal_initializer = (LiteralExpressionASTNode*)declarator->initializer;
+		EXPECT_NOT_NULL(literal_initializer);
+		EXPECT_TRUE(literal_initializer->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(literal_initializer->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(literal_initializer->value.string, "Toto je nejaky text v programu jazyka IFJ23"));
+
+		// let str2 = str1 + "..."
+		statement = (StatementASTNode*)Array_get(statements, 1);
+		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
+		declaration = (VariableDeclarationASTNode*)statement;
+
+		EXPECT_TRUE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		arr = list->declarators;
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		declarator = Array_get(arr, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str2"));
+
+		BinaryExpressionASTNode *binary_initializer = (BinaryExpressionASTNode*)declarator->initializer;
+		EXPECT_BINARY_NODE(binary_initializer, OPERATOR_PLUS, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, binary)
+
+		IdentifierASTNode *id_left = (IdentifierASTNode*)binary->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "str1"));
+
+		LiteralExpressionASTNode *literal_right = (LiteralExpressionASTNode*)binary->right;
+		EXPECT_TRUE(String_equals(literal_right->value.string, ", ktery jeste trochu obohatime"));
+
+		// write(...)
+		statement = (StatementASTNode*)Array_get(statements, 2);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		ExpressionStatementASTNode *expression_statement = (ExpressionStatementASTNode*)statement;
+
+		FunctionCallASTNode *function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		Array *arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 4);
+
+		// str1
+		ArgumentASTNode *argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		id = (IdentifierASTNode*)argument->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str1"));
+
+		// \n
+		argument = (ArgumentASTNode*)Array_get(arguments, 1);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		LiteralExpressionASTNode *argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "\n"));
+
+		// str2
+		argument = (ArgumentASTNode*)Array_get(arguments, 2);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		id = (IdentifierASTNode*)argument->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str2"));
+
+		// \n
+		argument = (ArgumentASTNode*)Array_get(arguments, 3);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "\n"));
+
+
+		// let i = length(str1)
+		statement = (StatementASTNode*)Array_get(statements, 3);
+		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
+		declaration = (VariableDeclarationASTNode*)statement;
+
+		EXPECT_TRUE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		arr = list->declarators;
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		declarator = Array_get(arr, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "i"));
+
+		// length(str1)
+		function_call = (FunctionCallASTNode*)declarator->initializer;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "length"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 1);
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		id = (IdentifierASTNode*)argument->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str1"));
+
+		// "write(\"Pozice retezce \\\"text\\\" v str2: \", i, \"\\n\")" LF
+		// write(...)
+		statement = (StatementASTNode*)Array_get(statements, 4);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		expression_statement = (ExpressionStatementASTNode*)statement;
+
+		function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size ==3);
+
+		// Pozice retezce text v str2:
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "Pozice retezce \"text\" v str2: "));
+
+		// i
+		argument = (ArgumentASTNode*)Array_get(arguments, 1);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		id = (IdentifierASTNode*)argument->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "i"));
+
+		// \n
+		argument = (ArgumentASTNode*)Array_get(arguments, 2);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "\n"));
+
+		// write("...")
+		statement = (StatementASTNode*)Array_get(statements, 5);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		expression_statement = (ExpressionStatementASTNode*)statement;
+
+		function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 1);
+
+		// Pozice retezce text v str2:
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "Zadejte serazenou posloupnost vsech malych pismen a-h, "));
+
+		// let newInput = readString()
+		statement = (StatementASTNode*)Array_get(statements, 6);
+		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
+		declaration = (VariableDeclarationASTNode*)statement;
+
+		EXPECT_TRUE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		arr = list->declarators;
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		declarator = Array_get(arr, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "newInput"));
+
+		// length(str1)
+		function_call = (FunctionCallASTNode*)declarator->initializer;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "readString"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 0);
+
+
+		// if let newInput {
+		statement = (StatementASTNode*)Array_get(statements, 7);
+		EXPECT_TRUE(statement->_type == NODE_IF_STATEMENT);
+		IfStatementASTNode *if_statement = (IfStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_TRUE(if_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
+
+		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)if_statement->test;
+
+		id = binding_condition->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "newInput"));
+
+		// if body
+		BlockASTNode *body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 2);
+
+
+		// str1 = newInput
+		statement = (StatementASTNode*)Array_get(body->statements, 0);
+		EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assign_statement = (AssignmentStatementASTNode*)statement;
+
+		id = assign_statement->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str1"));
+
+		EXPECT_TRUE(assign_statement->expression->_type == NODE_IDENTIFIER);
+		id = (IdentifierASTNode*)assign_statement->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "newInput"));
+
+		// while (str1 != \"abcdefgh\") {
+		statement = (StatementASTNode*)Array_get(body->statements, 1);
+		EXPECT_TRUE(statement->_type == NODE_WHILE_STATEMENT);
+		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(while_statement->test);
+		EXPECT_TRUE(while_statement->test->_type == NODE_BINARY_EXPRESSION);
+
+		BinaryExpressionASTNode *binary_test = (BinaryExpressionASTNode*)while_statement->test;
+		EXPECT_BINARY_NODE(binary_test, OPERATOR_NOT_EQUAL, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, test_binary)
+
+		id_left = (IdentifierASTNode*)test_binary->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "str1"));
+
+		literal_right = (LiteralExpressionASTNode*)test_binary->right;
+		EXPECT_TRUE(String_equals(literal_right->value.string, "abcdefgh"));
+
+		body = while_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 3);
+
+		// write("Spatne zadana posloupnost, zkuste znovu:\n")
+		statement = (StatementASTNode*)Array_get(body->statements, 0);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		expression_statement = (ExpressionStatementASTNode*)statement;
+
+		function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 1);
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "Spatne zadana posloupnost, zkuste znovu:\n"));
+
+		// let tmp = readString()
+		statement = (StatementASTNode*)Array_get(body->statements, 1);
+		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
+		declaration = (VariableDeclarationASTNode*)statement;
+
+		EXPECT_TRUE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		arr = list->declarators;
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+		declarator = Array_get(arr, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "tmp"));
+
+		// length(str1)
+		function_call = (FunctionCallASTNode*)declarator->initializer;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "readString"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 0);
+
+		// str1 = tmp ?? \"\"
+		statement = (StatementASTNode*)Array_get(body->statements, 2);
+		EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
+		assign_statement = (AssignmentStatementASTNode*)statement;
+
+		id = assign_statement->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "str1"));
+
+		EXPECT_TRUE(assign_statement->expression->_type == NODE_BINARY_EXPRESSION);
+
+		BinaryExpressionASTNode *binary_assing = (BinaryExpressionASTNode*)assign_statement->expression;
+		EXPECT_BINARY_NODE(binary_assing, OPERATOR_NULL_COALESCING, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, assign_binary)
+
+		id_left = (IdentifierASTNode*)assign_binary->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "tmp"));
+
+		literal_right = (LiteralExpressionASTNode*)assign_binary->right;
+		EXPECT_TRUE(String_equals(literal_right->value.string, ""));
+
+		// else
+		EXPECT_NOT_NULL(if_statement->alternate);
+
+		EXPECT_TRUE(if_statement->alternate->_type == NODE_BLOCK);
+
+		body = (BlockASTNode*)if_statement->alternate;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 0);
+
+
+
+	}
+	TEST_END();
+
 }
-
-
