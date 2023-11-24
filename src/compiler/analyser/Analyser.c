@@ -297,6 +297,22 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 			ValueType parameterType = parameter->type->type;
 			ValueType argumentType;
 
+			// Check for label
+			String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
+			assertf(externalName, "Parameter has no external or internal name");
+			if(parameter->isLabeless && argument->label) {
+				hasMatched = false;
+				break;
+			}
+			if(!parameter->isLabeless && !argument->label) {
+				hasMatched = false;
+				break;
+			}
+			if(!parameter->isLabeless && !String_equals(externalName, argument->label->name->value)) {
+				hasMatched = false;
+				break;
+			}
+
 			AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, parameterType, &argumentType);
 			if(!result.success) {
 				Array_free(candidates);
@@ -1001,7 +1017,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				for(size_t i = 0; i < candidates->size; i++) {
 					FunctionDeclaration *candidate = Array_get(candidates, i);
 
-					if(prefferedType.type == TYPE_UNKNOWN || is_value_assignable(prefferedType, candidate->returnType)) {
+					if(prefferedType.type == TYPE_UNKNOWN || is_type_equal(prefferedType, candidate->returnType) || is_value_assignable(prefferedType, candidate->returnType)) {
 						// Multiple candidates matching
 						if(declaration) {
 							hasMultipleCandidates = true;
@@ -1693,8 +1709,8 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 		// TODO: Analyse function declaration
 		// Check for duplicate parameters
+		Array *parameterList = declarationNode->parameterList->parameters;
 		{
-			Array *parameterList = declarationNode->parameterList->parameters;
 			HashMap *variables = declaration->node->body->scope->variables;
 
 			// This will effectively check for duplicate parameters + register them as local variables
@@ -1770,7 +1786,50 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 			continue;
 		}
 
-		// TODO: Check for overloads
+		// Look for an overload with the same number of parameters
+		for(size_t i = 0; i < overloads->size; i++) {
+			FunctionDeclaration *overload = Array_get(overloads, i);
+			Array *parameters = overload->node->parameterList->parameters;
+
+			// Different number of parameters, skip
+			if(parameters->size != parameterList->size) continue;
+
+			// Different return type, skip
+			if(!is_type_equal(overload->returnType, declaration->returnType)) continue;
+
+			// Check for parameters
+			bool isMatching = false;
+			for(size_t j = 0; j < parameters->size; j++) {
+				ParameterASTNode *parameter = Array_get(parameters, j);
+				ParameterASTNode *otherParameter = Array_get(parameterList, j);
+
+				// Different parameter types, skip
+				if(!is_type_equal(parameter->type->type, otherParameter->type->type)) continue;
+
+				// Different external parameter name, skip
+				String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
+				String *otherExternalName = otherParameter->externalId ? otherParameter->externalId->name : otherParameter->internalId->name;
+				assertf(externalName, "Parameter has no external or internal name");
+				assertf(otherExternalName, "Parameter has no external or internal name");
+
+				if(!String_equals(externalName, otherExternalName->value)) continue;
+
+				// Found a matching overload
+				isMatching = true;
+				break;
+			}
+
+			// Found a matching overload
+			if(isMatching) {
+				return AnalyserError(
+					RESULT_ERROR_SEMANTIC_OTHER,
+					String_fromFormat("invalid redeclaration of '%s'", name->value),
+					NULL
+				);
+			}
+		}
+
+		// No matching overload found, add the function declaration to the array
 		Array_push(overloads, declaration);
 	}
 

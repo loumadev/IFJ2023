@@ -84,6 +84,7 @@ enum BuiltInFunction {
 
 #define is_type_valid(type) ((type) > TYPE_INVALID)
 #define is_value_assignable(dst, src) (((dst).type == (src).type || (src).type == TYPE_NIL) && ((dst).isNullable || !(src).isNullable))
+#define is_type_equal(type1, type2) ((type1).type == (type2).type && (type1).isNullable == (type2).isNullable)
 
 typedef struct ValueType {
 	enum BuiltInTypes type;
