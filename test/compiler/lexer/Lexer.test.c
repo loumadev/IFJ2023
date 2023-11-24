@@ -1375,6 +1375,193 @@ DESCRIBE(string_tokenization, "String literals tokenization") {
 	})
 }
 
+#define LF "\n"
+
+DESCRIBE(ml_string_token_single, "Multiline string literals tokenization on a single line") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST_BEGIN("Empty string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+		EXPECT_EQUAL_INT(token->value.string->length, 0);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"  Aaa" LF
+			"  \"\"\"" LF
+		);
+		// result = Lexer_tokenize(
+		// 	&lexer,
+		// 	"\"\"\"" LF
+		// 	"A" LF
+		// 	"\"\"\"" LF
+		// );
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "Aaa"));
+		EXPECT_EQUAL_INT(token->value.string->length, 3);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"Hello!" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "Hello!"));
+		EXPECT_EQUAL_INT(token->value.string->length, 6);
+	} TEST_END();
+}
+
+DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on a single line") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+
+	TEST_BEGIN("Empty string containing a newline") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"\"\"\"" LF
+		);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string on a single line") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"A" LF
+			"\"\"\"" LF
+		);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string on a new line") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"A\"\"\"" LF
+		);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"A" LF
+			"B" LF
+			"C\"\"\"" LF
+		);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+}
+
+DESCRIBE(ml_string_token_escape, "Multiline string literals tokenization with escape sequences") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	LexerResult result;
+	Token *token;
+
+	TEST_BEGIN("Escaped newline") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\\n" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\n"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Hexadecimal escape sequence") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\\u{00041}" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\nA\n"));
+		EXPECT_EQUAL_INT(token->value.string->length, 3);
+	} TEST_END();
+
+	TEST_BEGIN("Single escaped double quote") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\"" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\""));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"A" LF
+			"B" LF
+			"C" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "A\nB\nC"));
+		EXPECT_EQUAL_INT(token->value.string->length, 5);
+	} TEST_END();
+}
+
 DESCRIBE(string_invalid_tokeniz, "Invalid string literals tokenization") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
