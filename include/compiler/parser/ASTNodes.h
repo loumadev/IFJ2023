@@ -2,7 +2,9 @@
 
 #include "internal/Array.h"
 #include "internal/String.h"
+
 #include "compiler/lexer/Token.h"
+#include "compiler/analyser/Analyser.h"
 
 #ifndef ASTNode_H
 #define ASTNode_H
@@ -25,11 +27,11 @@ enum ASTNodeType {
 	NODE_BINARY_EXPRESSION,
 	NODE_UNARY_EXPRESSION,
 	NODE_LITERAL_EXPRESSION,
+	NODE_INTERPOLATION_EXPRESSION,
 	NODE_ARGUMENT_LIST,
 	NODE_FUNCTION_CALL,
 	NODE_IF_STATEMENT,
 	NODE_PATTERN,
-	NODE_CONDITION,
 	NODE_OPTIONAL_BINDING_CONDITION,
 	NODE_WHILE_STATEMENT,
 	NODE_ASSIGNMENT_STATEMENT
@@ -48,17 +50,46 @@ typedef enum OperatorType {
 	OPERATOR_LESS,
 	OPERATOR_GREATER,
 	OPERATOR_LESS_EQUAL,
-	OPERATOR_GREATER_EQUAL
+	OPERATOR_GREATER_EQUAL,
+	OPERATOR_NOT,
+	OPERATOR_OR,
+	OPERATOR_AND
 } OperatorType;
 
-typedef enum LiteralType {
-	LITERAL_INVALID = 0,
-	LITERAL_STRING,
-	LITERAL_INTEGER,
-	LITERAL_FLOATING,
-	LITERAL_BOOLEAN,
-	LITERAL_NIL
-} LiteralType;
+enum BuiltInTypes {
+	TYPE_NIL = -2,
+	TYPE_UNKNOWN = -1,
+	TYPE_INVALID = 0,
+	TYPE_INT,
+	TYPE_DOUBLE,
+	TYPE_BOOL,
+	TYPE_STRING,
+	TYPE_VOID
+};
+
+enum BuiltInFunction {
+	FUNCTION_NONE = -1,
+	FUNCTION_READ_STRING = 0,
+	FUNCTION_READ_INT,
+	FUNCTION_READ_DOUBLE,
+	FUNCTION_WRITE,
+	FUNCTION_INT_TO_DOUBLE,
+	FUNCTION_DOUBLE_TO_INT,
+	FUNCTION_LENGTH,
+	FUNCTION_SUBSTRING,
+	FUNCTION_ORD,
+	FUNCTION_CHR,
+	FUNCTIONS_COUNT
+};
+
+#define is_type_valid(type) ((type) > TYPE_INVALID)
+#define is_value_assignable(dst, src) (((dst).type == (src).type || (src).type == TYPE_NIL) && ((dst).isNullable || !(src).isNullable))
+#define is_type_equal(type1, type2) ((type1).type == (type2).type && (type1).isNullable == (type2).isNullable)
+
+typedef struct ValueType {
+	enum BuiltInTypes type;
+	bool isNullable;
+} ValueType;
 
 
 /* Definition of AST nodes */
@@ -73,6 +104,7 @@ typedef ASTNode StatementASTNode;
 typedef struct BlockASTNode {
 	enum ASTNodeType _type;
 	Array /*<StatementASTNode>*/ *statements;
+	struct BlockScope *scope;
 } BlockASTNode;
 
 typedef struct ProgramASTNode {
@@ -83,12 +115,14 @@ typedef struct ProgramASTNode {
 typedef struct IdentifierASTNode {
 	enum ASTNodeType _type;
 	String *name;
+	size_t id;
 } IdentifierASTNode;
 
 typedef struct TypeReferenceASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
 	bool isNullable;
+	struct ValueType type;
 } TypeReferenceASTNode;
 
 typedef struct VariableDeclaratorASTNode {
@@ -116,6 +150,7 @@ typedef struct ExpressionStatementASTNode {
 typedef struct ReturnStatementASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *expression;
+	size_t id;
 } ReturnStatementASTNode;
 
 typedef struct ParameterASTNode {
@@ -138,6 +173,7 @@ typedef struct FunctionDeclarationASTNode {
 	ParameterListASTNode *parameterList;
 	TypeReferenceASTNode *returnType;
 	BlockASTNode *body;
+	enum BuiltInFunction builtin;
 } FunctionDeclarationASTNode;
 
 typedef struct ArgumentASTNode {
@@ -170,20 +206,28 @@ typedef struct BinaryExpressionASTNode {
 	ExpressionASTNode *left;
 	ExpressionASTNode *right;
 	OperatorType operator;
+	struct ValueType type;
 } BinaryExpressionASTNode;
 
 typedef struct UnaryExpressionASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *argument;
 	OperatorType operator;
-	// bool isPrefix;
+	bool isPrefix;
+	struct ValueType type;
 } UnaryExpressionASTNode;
 
 typedef struct LiteralExpressionASTNode {
 	enum ASTNodeType _type;
-	LiteralType type;
 	union TokenValue value;
+	struct ValueType type;
 } LiteralExpressionASTNode;
+
+typedef struct InterpolationExpressionASTNode {
+	enum ASTNodeType _type;
+	Array /*<String>*/ *strings;
+	Array /*<ExpressionASTNode>*/ *expressions; // Always has one less element than strings
+} InterpolationExpressionASTNode;
 
 typedef struct PatternASTNode {
 	enum ASTNodeType _type;
@@ -193,34 +237,29 @@ typedef struct PatternASTNode {
 
 typedef struct OptionalBindingConditionASTNode {
 	enum ASTNodeType _type;
-	PatternASTNode *pattern;
-	ExpressionASTNode *initializer;
-	bool isConstant;
+	IdentifierASTNode *id;
+	size_t fromId;
 } OptionalBindingConditionASTNode;
-
-typedef struct ConditionASTNode {
-	enum ASTNodeType _type;
-	ExpressionASTNode *expression;
-	OptionalBindingConditionASTNode *optionalBindingCondition;
-} ConditionASTNode;
 
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
-	ConditionASTNode *condition;
+	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
 	BlockASTNode *body;
 	ASTNode /* BlockASTNode | IfStatementASTNode | null */ *alternate;
+	size_t id;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
-	ConditionASTNode *condition;
+	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
 	BlockASTNode *body;
+	size_t id;
 } WhileStatementASTNode;
 
 typedef struct AssignmentStatementASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	ExpressionASTNode *assignment;
+	ExpressionASTNode *expression;
 } AssignmentStatementASTNode;
 
 // TODO: Add more AST nodes
@@ -240,17 +279,18 @@ ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *internalId, TypeRefere
 ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
 BinaryExpressionASTNode* new_BinaryExpressionASTNode(ExpressionASTNode *left, ExpressionASTNode *right, OperatorType operator);
-UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator /*, bool isPrefix*/);
-LiteralExpressionASTNode* new_LiteralExpressionASTNode(LiteralType type, union TokenValue value);
+UnaryExpressionASTNode* new_UnaryExpressionASTNode(ExpressionASTNode *argument, OperatorType operator, bool isPrefix);
+LiteralExpressionASTNode* new_LiteralExpressionASTNode(ValueType type, union TokenValue value);
+InterpolationExpressionASTNode* new_InterpolationExpressionASTNode(Array /*<String>*/ *strings, Array /*<ExpressionASTNode>*/ *expressions);
 ArgumentASTNode* new_ArgumentASTNode(ExpressionASTNode *expression, IdentifierASTNode *label);
 ArgumentListASTNode* new_ArgumentListASTNode(Array *arguments);
 FunctionCallASTNode* new_FunctionCallASTNode(IdentifierASTNode *id, ArgumentListASTNode *argumentList);
 PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *type);
-OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer, bool isConstant);
-ConditionASTNode* new_ConditionASTNode(ExpressionASTNode *expression, OptionalBindingConditionASTNode *optionalBindingCondition);
-IfStatementASTNode* new_IfStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body, ASTNode *alternate);
-WhileStatementASTNode* new_WhileStatementASTNode(ConditionASTNode *condition,  BlockASTNode *body);
-AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *assignment);
+OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(IdentifierASTNode *id);
+IfStatementASTNode* new_IfStatementASTNode(ASTNode *test,  BlockASTNode *body, ASTNode *alternate);
+WhileStatementASTNode* new_WhileStatementASTNode(ASTNode *test,  BlockASTNode *body);
+AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);
+ExpressionStatementASTNode* new_ExpressionStatementASTNode(ExpressionASTNode *expression);
 
 // TODO: Add more AST node constructors
 

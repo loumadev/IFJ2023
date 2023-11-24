@@ -25,6 +25,22 @@ void Array_constructor(Array *array, size_t capacity);
 void Array_destructor(Array *array);
 
 /**
+ * Adds a new element to the beginning of the array.
+ *
+ * @param array The array to add the element to.
+ * @param value The value to add to the array.
+ */
+void Array_unshift(Array *array, void *value);
+
+/**
+ * Removes and returns the first element of the array.
+ *
+ * @param array The array to remove the element from.
+ * @return A pointer to the removed element, or NULL if the array is empty.
+ */
+void* Array_shift(Array *array);
+
+/**
  * Adds a new element to the end of the array.
  *
  * @param array The array to add the element to.

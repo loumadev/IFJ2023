@@ -12,6 +12,11 @@
 #define MESSAGE GREY
 #define ERASE_LINE "\033[2K"
 
+#define CURSOR_UP(n) "\033[" #n "A"
+#define CURSOR_DOWN(n) "\033[" #n "B"
+#define CURSOR_RIGHT(n) "\033[" #n "C"
+#define CURSOR_LEFT(n) "\033[" #n "D"
+
 struct unit_global {
 	int files_count;
 	int suites_count;
@@ -50,12 +55,20 @@ void unit_print_results();
 
 // Internals
 
+#define __stringify__(x) #x
+#define __stringify(x) __stringify__(x)
+#define __concat__(a, b) a ## b
+#define __concat(a, b) __concat__(a, b)
+#define __id(name) __concat(name, __LINE__)
 #define __locationFormat(file, line) DARK_GREY "(at " file ":" line ")" RST
 #define __location() __locationFormat(__FILE__, "%d")
-#define __string(format, ...) String_fromFormat(format, ## __VA_ARGS__)->value
+#define __string(format, ...) String_fromFormat(format, ## __VA_ARGS__)
+#define __string_init(name, value) String*__id(name) = (value)
+#define __string_free(name) String_free(__id(name)); __id(name) = NULL
 #define __error(format, ...) __string(RED format " " __location() RST, ## __VA_ARGS__, __LINE__)
 
-#define UNIT_EXPECT(condition, message) if(unit_assert(condition, #condition, message)) break
+#define __UNIT_EXPECT(condition, message, id) __string_init(__concat(str, id), (message)); if(unit_assert(condition, #condition, __id(__concat(str, id))->value)) {break;} else {__string_free(__concat(str, id));}
+#define UNIT_EXPECT(condition, message) __UNIT_EXPECT(condition, message, __COUNTER__)
 #define UNIT_REGISTER_FILE(name) unit_register_file(name)
 #define UNIT_REGISTER_SUIT(func, desc, file, line) unit_run_test_suite(WHITE desc " " __locationFormat(file, line) RST, func)
 #define UNIT_BEGIN() unit_begin()
@@ -67,7 +80,7 @@ void unit_print_results();
 
 #define DESCRIBE(id, name) void unit__ ## id()
 
-#define TEST_BEGIN(name) unit_run_test_start(name, __string(__location(), __LINE__)); do
+#define TEST_BEGIN(name) __string_init(str, __string(__location(), __LINE__)); unit_run_test_start(name, __id(str)->value); __string_free(str); do
 #define TEST_END() while(0); unit_run_test_finish();
 #define TEST(name, block) TEST_BEGIN(name) block TEST_END();
 
