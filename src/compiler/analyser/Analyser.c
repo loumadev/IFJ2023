@@ -3,6 +3,7 @@
 #include "allocator/MemoryAllocator.h"
 #include "internal/Array.h"
 #include "internal/HashMap.h"
+#include "internal/Utils.h"
 #include "compiler/analyser/AnalyserResult.h"
 #include "compiler/lexer/Token.h"
 #include "compiler/lexer/Lexer.h"
@@ -189,6 +190,16 @@ VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, 
 	}
 
 	return NULL;
+}
+
+enum BuiltInFunction Analyser_getBuiltInFunctionById(Analyser *analyser, size_t id) {
+	if(id == 0) return FUNCTION_NONE;
+
+	// Get the function declaration
+	FunctionDeclaration *declaration = Analyser_getFunctionById(analyser, id);
+	if(!declaration) return FUNCTION_NONE;
+
+	return declaration->node->builtin;
 }
 
 Array /*<FunctionDeclaration> | NULL*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name) {
@@ -701,7 +712,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(!variable) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
-						String_fromFormat("cannot find '%s' in scope", assignment->id->name),
+						String_fromFormat("cannot find '%s' in scope", assignment->id->name->value),
 						NULL
 					);
 				}
@@ -710,7 +721,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(variable->isConstant && variable->isInitialized) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("cannot assign to constant '%s'", assignment->id->name),
+						String_fromFormat("cannot assign to constant '%s'", assignment->id->name->value),
 						NULL
 					);
 				}
@@ -977,76 +988,87 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				return AnalyserSuccess();
 			}
 
-			// Array /*<FunctionDeclaration>*/ *declarations = HashMap_get(analyser->overloads, call->id->name->value);
-
-			// if(!declarations) {
-			// 	return AnalyserError(
-			// 		RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-			// 		String_fromFormat("cannot find '%s' in scope", call->id->name->value),
-			// 		NULL
-			// 	);
-			// }
-
-			// // Resolve overload
-			// // TODO: Resolve types of the arguments
-			// // TODO: Match the resolved types with the available overloads
-			// // TODO: Validate argument labels
-
-			// Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
-
-			// for(size_t i = 0; i < declarations->size; i++) {
-			// 	FunctionDeclaration *declaration = Array_get(declarations, i);
-
-			// 	if(declaration->node->parameterList->parameters->size != arguments->size) continue;
-
-			// 	bool match = true;
-
-			// 	Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
-
-			// 	for(size_t j = 0; j < arguments->size; j++) {
-			// 		ArgumentASTNode *argument = Array_get(arguments, j);
-			// 		ParameterASTNode *parameter = Array_get(declaration->node->parameterList->parameters, j);
-
-			// 		ValueType argumentType;
-			// 		AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, &argumentType);
-			// 		if(!result.success) return result;
-
-			// 		if(argumentType.type != parameter->type->type.type) {
-			// 			match = false;
-			// 			break;
-			// 		}
-			// 	}
-
-			// 	if(!match) continue;
-
-			// 	call->id->id = declaration->id;
-			// 	*outType = declaration->returnType;
-
-			// 	return AnalyserSuccess();
-			// }
-
+			Array /*<FunctionDeclaration>*/ *overloads = Analyser_getFunctionDeclarationsByName(analyser, call->id->name->value);
 			Array /*<FunctionDeclaration>*/ *candidates = NULL;
-			AnalyserResult result = __Analyser_resolveFunctionOverloadCandidates(analyser, call, scope, &candidates);
-			if(!result.success) return result;
-
-			// Try to find the candidate with preffered return type
 			bool hasMultipleCandidates = false;
 			FunctionDeclaration *declaration = NULL;
-			for(size_t i = 0; i < candidates->size; i++) {
-				FunctionDeclaration *candidate = Array_get(candidates, i);
 
-				if(prefferedType.type == TYPE_UNKNOWN || is_value_assignable(prefferedType, candidate->returnType)) {
-					// Multiple candidates matching
-					if(declaration) {
-						hasMultipleCandidates = true;
-						break;
+			if(overloads && overloads->size > 1) {
+				AnalyserResult result = __Analyser_resolveFunctionOverloadCandidates(analyser, call, scope, &candidates);
+				if(!result.success) return result;
+
+				// Try to find the candidate with preffered return type
+				for(size_t i = 0; i < candidates->size; i++) {
+					FunctionDeclaration *candidate = Array_get(candidates, i);
+
+					if(prefferedType.type == TYPE_UNKNOWN || is_value_assignable(prefferedType, candidate->returnType)) {
+						// Multiple candidates matching
+						if(declaration) {
+							hasMultipleCandidates = true;
+							break;
+						}
+
+						declaration = candidate;
+					}
+				}
+			} else if(overloads) {
+				declaration = Array_get(overloads, 0);
+				assertf(declaration);
+			} else {
+				return AnalyserError(
+					RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+					String_fromFormat("cannot find '%s' in scope", call->id->name->value),
+					NULL
+				);
+			}
+
+			// Handle built-in 'write' function differently
+			if((!declaration || (overloads && overloads->size == 1)) && String_equals(call->id->name, "write")) {
+				Array /*<FunctionDeclaration>*/ *writeCandidates = Analyser_getFunctionDeclarationsByName(analyser, "write");
+				assertf(writeCandidates && writeCandidates->size > 0, "Cannot find built-in 'write' function");
+
+				// First function should be the built-in 'write' function
+				FunctionDeclaration *writeFunc = Array_get(writeCandidates, 0);
+				assertf(writeFunc);
+
+				if(writeFunc->node->builtin == FUNCTION_WRITE) {
+					declaration = writeFunc;
+
+					// Resolve all the arguments
+					Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
+
+					for(size_t i = 0; i < arguments->size; i++) {
+						ArgumentASTNode *argument = Array_get(arguments, i);
+
+						ValueType type;
+						AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, (ValueType){.type = TYPE_UNKNOWN, .isNullable = false}, &type);
+						if(!result.success) return result;
+
+						if(!is_type_valid(type.type) || type.type == TYPE_VOID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat(
+									"cannot convert value of type '%s' to expected argument type 'Int? | Double? | String? | Bool?'",
+									__Analyser_stringifyType(type)->value
+								),
+								NULL
+							);
+						}
 					}
 
-					declaration = candidate;
+					// Set properties of the call node
+					call->id->id = declaration->id;
+					declaration->isUsed = true;
+					*outType = declaration->returnType;
+
+					return AnalyserSuccess();
 				}
 			}
 
-			Array_free(candidates);
+			if(candidates) {
+				Array_free(candidates);
+				candidates = NULL;
+			}
 
 			if(!declaration) {
 				return AnalyserError(
@@ -1067,10 +1089,29 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			// Check for correct label names
 			Array /*<ArgumentASTNode>*/ *arguments = call->argumentList->arguments;
 			Array /*<ParameterASTNode>*/ *parameters = declaration->node->parameterList->parameters;
+			size_t length = max(arguments->size, parameters->size);
 
-			for(size_t i = 0; i < arguments->size; i++) {
+			for(size_t i = 0; i < length; i++) {
 				ArgumentASTNode *argument = Array_get(arguments, i);
 				ParameterASTNode *parameter = Array_get(parameters, i);
+
+				// Missing argument for parameter
+				if(!argument) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						String_fromFormat("missing argument for parameter '%s' in call", parameter->externalId->name->value),
+						NULL
+					);
+				}
+
+				// Too many arguments for parameters passed
+				if(!parameter) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						String_fromFormat("extra argument in call"),
+						NULL
+					);
+				}
 
 				String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
 				assertf(externalName, "Parameter has no external or internal name");
@@ -1079,7 +1120,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				if(parameter->isLabeless && argument->label) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-						String_fromFormat("extraneous argument label '%s' in call", argument->label->name),
+						String_fromFormat("extraneous argument label '%s' in call", argument->label->name->value),
 						NULL
 					);
 				}
@@ -1088,7 +1129,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				if(!parameter->isLabeless && !argument->label) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
-						String_fromFormat("missing argument label '%s' in call", externalName),
+						String_fromFormat("missing argument label '%s' in call", externalName->value),
 						NULL
 					);
 				}
@@ -1099,8 +1140,8 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
 						String_fromFormat(
 							"incorrect argument label in call (have '%s', expected '%s')",
-							argument->label->name,
-							externalName
+							argument->label->name->value,
+							externalName->value
 						),
 						NULL
 					);
@@ -1371,7 +1412,11 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					if(leftType.isNullable || rightType.isNullable) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_OTHER,
-							String_fromFormat("cannot use relational operator '%s' with optional type '%s'", __Analyser_stringifyOperator(binary->operator), __Analyser_stringifyType(leftType)->value),
+							String_fromFormat(
+								"cannot use relational operator '%s' with optional type '%s'",
+								__Analyser_stringifyOperator(binary->operator),
+								__Analyser_stringifyType(leftType)->value
+							),
 							NULL
 						);
 					}
@@ -1660,7 +1705,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				if(!parameter->type) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("type annotation missing in parameter '%s'", name),
+						String_fromFormat("type annotation missing in parameter '%s'", name->value),
 						NULL
 					);
 				}
@@ -1671,7 +1716,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				if(!is_type_valid(resolvedType)) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("cannot find type '%s' in scope", typeName),
+						String_fromFormat("cannot find type '%s' in scope", typeName->value),
 						NULL
 					);
 				}
@@ -1701,7 +1746,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				// There is already a parameter with the same name
 				return AnalyserError(
 					RESULT_ERROR_SEMANTIC_OTHER,
-					String_fromFormat("invalid redeclaration of '%s'", name),
+					String_fromFormat("invalid redeclaration of '%s'", name->value),
 					NULL
 				);
 			}
