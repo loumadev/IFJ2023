@@ -591,16 +591,6 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				for(size_t j = 0; j < declarators->size; j++) {
 					VariableDeclaratorASTNode *declaratorNode = Array_get(declarators, j);
 
-					// In case the initializer is absent, the type annotation is required
-					// TODO: This might be also a syntax error?
-					// if(!declaratorNode->initializer && !declaratorNode->pattern->type) {
-					// 	return AnalyserError(
-					// 		RESULT_ERROR_SEMANTIC_OTHER,
-					// 		String_fromFormat("type annotation missing in pattern"),
-					// 		NULL
-					// 	);
-					// }
-
 					// Cannot resolve type (provided type is not supported)
 					if(declaratorNode->pattern->type) {
 						declaratorNode->pattern->type->type.type = Analyser_resolveBuiltInType(declaratorNode->pattern->type->id->name);
@@ -614,14 +604,6 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 							);
 						}
 					}
-					// TODO: This might be a syntax error as well? Others probably implemented it fixed, using grammar rules
-					// if(declaratorNode->pattern->type && !HashMap_has(analyser->types, declaratorNode->pattern->type->id->name->value)) {
-					// 	return AnalyserError(
-					// 		RESULT_ERROR_SEMANTIC_OTHER,
-					// 		String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
-					// 		NULL
-					// 	);
-					// }
 
 					VariableDeclaration *declaration = new_VariableDeclaration(
 						analyser,
@@ -861,15 +843,6 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					);
 				}
 
-				// Function has no return type but returns something
-				if(function->returnType.type == TYPE_VOID && returnStatement->expression) {
-					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("unexpected non-void return value in void function"),
-						NULL
-					);
-				}
-
 				// Function has a return type but returns nothing
 				if(function->returnType.type != TYPE_VOID && !returnStatement->expression) {
 					return AnalyserError(
@@ -880,7 +853,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				}
 
 				// Function has a return type but returns incompatible type
-				if(function->returnType.type != TYPE_VOID && returnStatement->expression) {
+				if(/*function->returnType.type != TYPE_VOID && */ returnStatement->expression) {
 					// Get the type of the return expression
 					ValueType type;
 					AnalyserResult result = Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, function->returnType, &type);
@@ -888,6 +861,14 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 					// Validate the type of the return expression
 					if(!is_value_assignable(function->returnType, type)) {
+						if(function->returnType.type == TYPE_VOID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_OTHER,
+								String_fromFormat("unexpected non-void return value in void function"),
+								NULL
+							);
+						}
+
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat(

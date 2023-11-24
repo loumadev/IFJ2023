@@ -145,6 +145,18 @@ DESCRIBE(variable_declaraion, "Analysis of variable declaration") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 
+	TEST_BEGIN("Use of void variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Void" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
 	TEST_BEGIN("Use of partially initialized variable") {
 		Lexer_setSource(
 			&lexer,
@@ -3040,6 +3052,49 @@ DESCRIBE(return_statement, "Analysis of a return statement") {
 			"func foo() -> Int? {" LF
 			TAB "return nil" LF
 			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Valid return of the void expression from void function") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"func g() {return f()}" LF
+			"" LF
+			"g()" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Valid assignment of the void expression to the void variable") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"" LF
+			"var a: Void = f()" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid assignment of the void expression to the variable") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"" LF
+			"var a = f()" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
