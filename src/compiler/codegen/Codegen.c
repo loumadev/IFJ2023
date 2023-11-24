@@ -42,12 +42,12 @@ void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 	codegen->frame = FRAME_GLOBAL;
 }
 //
-//void Codegen_destructor(Codegen *codegen) {
+// void Codegen_destructor(Codegen *codegen) {
 //	assertf(codegen != NULL);
 //	assertf(codegen->analyser != NULL);
 //
 //	codegen->analyser = NULL;
-//}
+// }
 
 void Codegen_generate(Codegen *codegen) {
 	assertf(codegen != NULL);
@@ -59,8 +59,8 @@ void Codegen_generate(Codegen *codegen) {
 
 void __Codegen_generate(Codegen *codegen) {
 	__Codegen_generatePreamble();
-    // TODO: Shortcut, fix it later
-    Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
+	// TODO: Shortcut, fix it later
+	Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
 
 	__Codegen_generateGlobalVariablesDeclarations(codegen);
 	__Codegen_walkAST(codegen);
@@ -142,9 +142,9 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		} break;
 		case NODE_FUNCTION_CALL: {
 			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)statementAstNode;
-            enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
+			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
 			if(builtin != FUNCTION_NONE) {
-                __Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
+				__Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
 				break;
 			}
 
@@ -267,25 +267,26 @@ void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *w
 	Instruction_clears();
 }
 
-void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
-	if(functionDeclaration->builtin != FUNCTION_NONE) {
+void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *declarationNode) {
+	if(declarationNode->builtin != FUNCTION_NONE) {
 		return;
 	}
 
 	codegen->frame = FRAME_LOCAL;
 
-	Instruction_jump_func_end(functionDeclaration->id->id);
-	Instruction_label_func_start(functionDeclaration->id->id);
+	Instruction_jump_func_end(declarationNode->id->id);
+	Instruction_label_func_start(declarationNode->id->id);
 
 	Instruction_pushframe();
 
 	// Ensure return variable
-	if(functionDeclaration->returnType->type.type != TYPE_VOID) {
-		Instruction_defretvar(functionDeclaration->id->id, FRAME_LOCAL);
+	FunctionDeclaration *declaration = Analyser_getFunctionById(codegen->analyser, declarationNode->id->id);
+	if(declaration->returnType.type != TYPE_VOID) {
+		Instruction_defretvar(declarationNode->id->id, FRAME_LOCAL);
 	}
 
 	// Process arguments
-	ParameterListASTNode *parameterList = functionDeclaration->parameterList;
+	ParameterListASTNode *parameterList = declarationNode->parameterList;
 	for(size_t i = 0; i < parameterList->parameters->size; ++i) {
 		ParameterASTNode *parameter = Array_get(parameterList->parameters, i);
 		Instruction_defvar(parameter->internalId->id, codegen->frame);
@@ -293,9 +294,9 @@ void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 	}
 
 	// Process body
-	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
+	__Codegen_evaluateBlock(codegen, declarationNode->body);
 
-    codegen->frame = FRAME_GLOBAL;
+	codegen->frame = FRAME_GLOBAL;
 }
 
 
@@ -412,47 +413,47 @@ void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block) {
 
 void
 __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function) {
-    switch (function) {
-        case FUNCTION_READ_STRING:{
-            // TODO: This is probably not safe
-            Instruction_defvar(functionCall->id->id, codegen->frame);
-            Instruction_readString(functionCall->id->id, codegen->frame);
-            Instruction_pushs_var(functionCall->id->id, codegen->frame);
-        } break;
-        case FUNCTION_READ_INT: {
-            Instruction_defvar(functionCall->id->id, codegen->frame);
-            Instruction_readInt(functionCall->id->id, codegen->frame);
-            Instruction_pushs_var(functionCall->id->id, codegen->frame);
-        } break;
-        case FUNCTION_READ_DOUBLE: {
-            Instruction_defvar(functionCall->id->id, codegen->frame);
-            Instruction_readFloat(functionCall->id->id, codegen->frame);
-            Instruction_pushs_var(functionCall->id->id, codegen->frame);
-        } break;
-        case FUNCTION_WRITE: {
-            ArgumentListASTNode *argumentList = functionCall->argumentList;
-            for (size_t i = 0; i < argumentList->arguments->size; ++i) {
-                ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
-                __Codegen_evaluateStatement(codegen, (StatementASTNode *) argument->expression);
-                Instruction_pops_where("WRITE_TMP", codegen->frame);
-                Instruction_write("WRITE_TMP", codegen->frame);
-            }
-        } break;
-        case FUNCTION_INT_TO_DOUBLE:
-            break;
-        case FUNCTION_DOUBLE_TO_INT:
-            break;
-        case FUNCTION_LENGTH:
-            break;
-        case FUNCTION_SUBSTRING:
-            break;
-        case FUNCTION_ORD:
-            break;
-        case FUNCTION_CHR:
-            break;
-        case FUNCTIONS_COUNT:
-            break;
-        case FUNCTION_NONE:
-            fassertf("Expected builtin function, got user defined.");
-    }
+	switch(function) {
+		case FUNCTION_READ_STRING: {
+			// TODO: This is probably not safe
+			Instruction_defvar(functionCall->id->id, codegen->frame);
+			Instruction_readString(functionCall->id->id, codegen->frame);
+			Instruction_pushs_var(functionCall->id->id, codegen->frame);
+		} break;
+		case FUNCTION_READ_INT: {
+			Instruction_defvar(functionCall->id->id, codegen->frame);
+			Instruction_readInt(functionCall->id->id, codegen->frame);
+			Instruction_pushs_var(functionCall->id->id, codegen->frame);
+		} break;
+		case FUNCTION_READ_DOUBLE: {
+			Instruction_defvar(functionCall->id->id, codegen->frame);
+			Instruction_readFloat(functionCall->id->id, codegen->frame);
+			Instruction_pushs_var(functionCall->id->id, codegen->frame);
+		} break;
+		case FUNCTION_WRITE: {
+			ArgumentListASTNode *argumentList = functionCall->argumentList;
+			for(size_t i = 0; i < argumentList->arguments->size; ++i) {
+				ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
+				__Codegen_evaluateStatement(codegen, (StatementASTNode*)argument->expression);
+				Instruction_pops_where("WRITE_TMP", codegen->frame);
+				Instruction_write("WRITE_TMP", codegen->frame);
+			}
+		} break;
+		case FUNCTION_INT_TO_DOUBLE:
+			break;
+		case FUNCTION_DOUBLE_TO_INT:
+			break;
+		case FUNCTION_LENGTH:
+			break;
+		case FUNCTION_SUBSTRING:
+			break;
+		case FUNCTION_ORD:
+			break;
+		case FUNCTION_CHR:
+			break;
+		case FUNCTIONS_COUNT:
+			break;
+		case FUNCTION_NONE:
+			fassertf("Expected builtin function, got user defined.");
+	}
 }
