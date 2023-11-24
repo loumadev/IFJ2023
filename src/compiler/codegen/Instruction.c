@@ -60,10 +60,27 @@ void Instruction_defretvar(size_t id, enum Frame frame) {
     fprintf(stdout, "DEFVAR %s@$ret_%lu\n", __Instruction_getFrame(frame), id);
 }
 
-/// --- PUSH COMMANDS ---
-void Instruction_pushs(char *symb) {
-    fprintf(stdout, "PUSHS %s\n", symb);
+void Instruction_popretvar(size_t id, enum Frame frame) {
+    fprintf(stdout, "POPS %s@$ret_%lu\n", __Instruction_getFrame(frame), id);
 }
+
+void Instruction_return() {
+    INSTRUCTION_NULLARY("RETURN")
+}
+
+void Instruction_readString(size_t id, enum Frame frame) {
+    fprintf(stdout, "READ %s@$%lu string\n", __Instruction_getFrame(frame), id);
+}
+
+void Instruction_readInt(size_t id, enum Frame frame) {
+    fprintf(stdout, "READ %s@$%lu int\n", __Instruction_getFrame(frame), id);
+}
+
+void Instruction_readFloat(size_t id, enum Frame frame) {
+    fprintf(stdout, "READ %s@$%lu float\n", __Instruction_getFrame(frame), id);
+}
+
+/// --- PUSH COMMANDS ---
 
 void Instruction_pushs_nil() {
     fprintf(stdout, "PUSHS nil@nil\n");
@@ -71,6 +88,10 @@ void Instruction_pushs_nil() {
 
 void Instruction_pushs_bool(bool value) {
     fprintf(stdout, "PUSHS bool@%s\n", value ? "true" : "false");
+}
+
+void Instruction_write(size_t id, enum Frame frame){
+    fprintf(stdout, "WRITE %s@$%lu\n", __Instruction_getFrame(frame), id);
 }
 
 void Instruction_pushs_int(long value) {
@@ -139,14 +160,6 @@ void Instruction_nots() {
     INSTRUCTION_NULLARY("NOTS")
 }
 
-void Instruction_label(char *label) {
-    fprintf(stdout, "LABEL %s\n", label);
-}
-
-void Instruction_jump(char *label) {
-    fprintf(stdout, "JUMP %s\n", label);
-}
-
 void Instruction_jump_func_end(size_t id) {
     fprintf(stdout, "JUMP $%lu_end\n", id);
 }
@@ -154,8 +167,4 @@ void Instruction_jump_func_end(size_t id) {
 
 void Instruction_label_func_start(size_t id) {
     fprintf(stdout, "LABEL $%lu_start\n", id);
-}
-
-void Instruction_label_func_end(size_t id) {
-    fprintf(stdout, "LABEL $%lu_end\n", id);
 }

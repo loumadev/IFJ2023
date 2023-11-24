@@ -28,9 +28,6 @@
 #define COMMENT_ELSE_BLOCK(id) \
     fprintf(stdout, "# If %lu else\n", id);
 
-#define COMMENT_FUNC(id) \
-    fprintf(stdout, "# Function %lu\n", id);
-
 #define HEADER \
     fprintf(stdout, ".IFJcode23\n");
 
@@ -48,9 +45,21 @@ void Instruction_jumpifneqs_if_end(size_t id);
 
 void Instruction_label_if_end(size_t id);
 
+void Instruction_popretvar(size_t id, enum Frame frame);
+
 // --- INSTUCTIONS ---
 
+void Instruction_return();
+
 void Instruction_pushframe();
+
+void Instruction_readString(size_t id, enum Frame frame);
+
+void Instruction_readInt(size_t id, enum Frame frame);
+
+void Instruction_readFloat(size_t id, enum Frame frame);
+
+void Instruction_write(size_t id, enum Frame frame);
 
 void Instruction_defvar(size_t id, enum Frame frame);
 
@@ -92,16 +101,8 @@ void Instruction_ors();
 
 void Instruction_nots();
 
-void Instruction_label(char *label);
-
-void Instruction_jump(char *label);
-
 void Instruction_jump_func_end(size_t id);
 
 void Instruction_label_func_start(size_t id);
-
-void Instruction_label_func_end(size_t id);
-
-void Instruction_jumpifneqs(char *);
 
 #endif // INSTRUCTION_H

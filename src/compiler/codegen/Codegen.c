@@ -29,8 +29,10 @@ void __Codegen_evaluateAssignmentStatement(Codegen *codegen, AssignmentStatement
 void __Codegen_evaluateExpressionStatement(Codegen *codegen, ExpressionStatementASTNode *expressionStatement);
 void __Codegen_evaluateBlock(__attribute__((unused)) Codegen *codegen, BlockASTNode *block);
 
-
 void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAstNode);
+
+void
+__Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function);
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 	assertf(codegen != NULL);
@@ -39,13 +41,13 @@ void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 	codegen->analyser = analyser;
 	codegen->frame = FRAME_GLOBAL;
 }
-
-void Codegen_destructor(Codegen *codegen) {
-	assertf(codegen != NULL);
-	assertf(codegen->analyser != NULL);
-
-	codegen->analyser = NULL;
-}
+//
+//void Codegen_destructor(Codegen *codegen) {
+//	assertf(codegen != NULL);
+//	assertf(codegen->analyser != NULL);
+//
+//	codegen->analyser = NULL;
+//}
 
 void Codegen_generate(Codegen *codegen) {
 	assertf(codegen != NULL);
@@ -135,9 +137,23 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)statementAstNode;
 			__Codegen_evaluateLiteral(codegen, literal);
 		} break;
-		case NODE_FUNCTION_CALL:
-			// TODO: Implement
-			break;
+		case NODE_FUNCTION_CALL: {
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)statementAstNode;
+            enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
+			if(builtin != FUNCTION_NONE) {
+                __Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
+				break;
+			}
+
+			ArgumentListASTNode *argumentList = functionCall->argumentList;
+
+			for(size_t i = 0; i < argumentList->arguments->size; ++i) {
+				ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
+				Instruction_defvar(argument->label->id, codegen->frame);
+				__Codegen_evaluateStatement(codegen, (StatementASTNode*)argument->expression);
+				Instruction_pops(argument->label->id, codegen->frame);
+			}
+		} break;
 		case NODE_VARIABLE_DECLARATION: {
 			VariableDeclarationASTNode *variableDeclaration = (VariableDeclarationASTNode*)statementAstNode;
 			__Codegen_evaluateVariableDeclaration(codegen, variableDeclaration);
@@ -165,24 +181,30 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statementAstNode;
 			__Codegen_evaluateExpressionStatement(codegen, expressionStatement);
 		} break;
-
-		case NODE_RETURN_STATEMENT:
-			// TODO: Implement
-			break;
-
 		case NODE_IDENTIFIER: {
 			IdentifierASTNode *identifier = (IdentifierASTNode*)statementAstNode;
 			Instruction_pushs_var(identifier->id, codegen->frame);
 		} break;
 
 		case NODE_OPTIONAL_BINDING_CONDITION: {
-			OptionalBindingConditionASTNode *node = (OptionalBindingConditionASTNode*)statementAstNode;
-			Instruction_pushs_var(node->id->id, codegen->frame);
+			OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)statementAstNode;
+			Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
 		} break;
 		case NODE_BLOCK: {
 			BlockASTNode *block = (BlockASTNode*)statementAstNode;
 			__Codegen_evaluateBlock(codegen, block);
 		} break;
+		case NODE_RETURN_STATEMENT: {
+			ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statementAstNode;
+			if(returnStatement->expression != NULL) {
+				__Codegen_evaluateStatement(codegen, (StatementASTNode*)returnStatement->expression);
+			}
+
+			Instruction_popretvar(returnStatement->id, codegen->frame);
+			Instruction_return();
+		} break;
+		case NODE_INTERPOLATION_EXPRESSION:
+		// Todo: Implement
 		case NODE_INVALID:
 		case NODE_PROGRAM:
 		case NODE_TYPE_REFERENCE:
@@ -243,12 +265,34 @@ void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *w
 }
 
 void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
-	if(codegen->frame == FRAME_GLOBAL) {
-		codegen->frame = FRAME_GLOBAL;
+	if(functionDeclaration->builtin != FUNCTION_NONE) {
+		return;
 	}
 
+	codegen->frame = FRAME_LOCAL;
+
+	Instruction_jump_func_end(functionDeclaration->id->id);
 	Instruction_label_func_start(functionDeclaration->id->id);
+
+	Instruction_pushframe();
+
+	// Ensure return variable
+	if(functionDeclaration->returnType->type.type != TYPE_VOID) {
+		Instruction_defretvar(functionDeclaration->id->id, FRAME_LOCAL);
+	}
+
+	// Process arguments
+	ParameterListASTNode *parameterList = functionDeclaration->parameterList;
+	for(size_t i = 0; i < parameterList->parameters->size; ++i) {
+		ParameterASTNode *parameter = Array_get(parameterList->parameters, i);
+		Instruction_defvar(parameter->internalId->id, codegen->frame);
+		__Codegen_evaluateStatement(codegen, (StatementASTNode*)parameter->initializer);
+	}
+
+	// Process body
+	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
 }
+
 
 void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNode *binaryExpression) {
 	__Codegen_evaluateStatement(codegen, (StatementASTNode*)binaryExpression->left);
@@ -359,4 +403,51 @@ void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block) {
 		StatementASTNode *statement = Array_get(statements, i);
 		__Codegen_evaluateStatement(codegen, statement);
 	}
+}
+
+void
+__Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function) {
+    switch (function) {
+        case FUNCTION_READ_STRING:{
+            // TODO: This is probably not safe
+            Instruction_defvar(functionCall->id->id, codegen->frame);
+            Instruction_readString(functionCall->id->id, codegen->frame);
+            Instruction_pushs_var(functionCall->id->id, codegen->frame);
+        } break;
+        case FUNCTION_READ_INT: {
+            Instruction_defvar(functionCall->id->id, codegen->frame);
+            Instruction_readInt(functionCall->id->id, codegen->frame);
+            Instruction_pushs_var(functionCall->id->id, codegen->frame);
+        } break;
+        case FUNCTION_READ_DOUBLE: {
+            Instruction_defvar(functionCall->id->id, codegen->frame);
+            Instruction_readFloat(functionCall->id->id, codegen->frame);
+            Instruction_pushs_var(functionCall->id->id, codegen->frame);
+        } break;
+        case FUNCTION_WRITE: {
+            ArgumentListASTNode *argumentList = functionCall->argumentList;
+            for (size_t i = 0; i < argumentList->arguments->size; ++i) {
+                ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
+                __Codegen_evaluateStatement(codegen, (StatementASTNode *) argument->expression);
+                Instruction_pops(argument->label->id, codegen->frame);
+                Instruction_write(argument->label->id, codegen->frame);
+            }
+        } break;
+        case FUNCTION_INT_TO_DOUBLE:
+            break;
+        case FUNCTION_DOUBLE_TO_INT:
+            break;
+        case FUNCTION_LENGTH:
+            break;
+        case FUNCTION_SUBSTRING:
+            break;
+        case FUNCTION_ORD:
+            break;
+        case FUNCTION_CHR:
+            break;
+        case FUNCTIONS_COUNT:
+            break;
+        case FUNCTION_NONE:
+            fassertf("Expected builtin function, got user defined.");
+    }
 }
