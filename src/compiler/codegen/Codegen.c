@@ -59,6 +59,9 @@ void Codegen_generate(Codegen *codegen) {
 
 void __Codegen_generate(Codegen *codegen) {
 	__Codegen_generatePreamble();
+    // TODO: Shortcut, fix it later
+    Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
+
 	__Codegen_generateGlobalVariablesDeclarations(codegen);
 	__Codegen_walkAST(codegen);
 }
@@ -291,6 +294,8 @@ void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 
 	// Process body
 	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
+
+    codegen->frame = FRAME_GLOBAL;
 }
 
 
@@ -429,8 +434,8 @@ __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *function
             for (size_t i = 0; i < argumentList->arguments->size; ++i) {
                 ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
                 __Codegen_evaluateStatement(codegen, (StatementASTNode *) argument->expression);
-                Instruction_pops(argument->label->id, codegen->frame);
-                Instruction_write(argument->label->id, codegen->frame);
+                Instruction_pops_where("WRITE_TMP", codegen->frame);
+                Instruction_write("WRITE_TMP", codegen->frame);
             }
         } break;
         case FUNCTION_INT_TO_DOUBLE:

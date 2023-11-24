@@ -31,6 +31,11 @@
 #define HEADER \
     fprintf(stdout, ".IFJcode23\n");
 
+// TODO: Fix
+void Instruction_pops_where(char * where, enum Frame frame);
+
+void Instruction_defvar_where(char * where, enum Frame frame);
+
 // --- UTILS ---
 
 void Instruction_label_while_start(size_t id);
@@ -59,7 +64,7 @@ void Instruction_readInt(size_t id, enum Frame frame);
 
 void Instruction_readFloat(size_t id, enum Frame frame);
 
-void Instruction_write(size_t id, enum Frame frame);
+void Instruction_write(char * id, enum Frame frame);
 
 void Instruction_defvar(size_t id, enum Frame frame);
 

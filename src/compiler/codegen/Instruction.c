@@ -90,8 +90,17 @@ void Instruction_pushs_bool(bool value) {
     fprintf(stdout, "PUSHS bool@%s\n", value ? "true" : "false");
 }
 
-void Instruction_write(size_t id, enum Frame frame){
-    fprintf(stdout, "WRITE %s@$%lu\n", __Instruction_getFrame(frame), id);
+void Instruction_write(char * id, enum Frame frame){
+    fprintf(stdout, "WRITE %s@$%s\n", __Instruction_getFrame(frame), id);
+}
+
+// TODO: This is very bad shortcut, should be fixed
+void Instruction_pops_where(char * where, enum Frame frame) {
+    fprintf(stdout, "POPS %s@%s\n", __Instruction_getFrame(frame), where);
+}
+
+void Instruction_defvar_where(char * where, enum Frame frame) {
+    fprintf(stdout, "DEFVAR %s@%s\n", __Instruction_getFrame(frame), where);
 }
 
 void Instruction_pushs_int(long value) {
