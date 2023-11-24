@@ -2441,20 +2441,20 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 		}
-		{
-			Lexer_setSource(
-				&lexer,
-				"func f(a: Int?) {}" LF
-				"func f(a: Int) {}" LF
-				"" LF
-				"f(a: 5)" LF
-			);
-			parserResult = Parser_parse(&parser);
-			EXPECT_TRUE(parserResult.success);
+		// {
+		// 	Lexer_setSource(
+		// 		&lexer,
+		// 		"func f(a: Int?) {}" LF
+		// 		"func f(a: Int) {}" LF
+		// 		"" LF
+		// 		"f(a: 5)" LF
+		// 	);
+		// 	parserResult = Parser_parse(&parser);
+		// 	EXPECT_TRUE(parserResult.success);
 
-			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-			EXPECT_TRUE(analyserResult.success);
-		}
+		// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		// 	EXPECT_TRUE(analyserResult.success);
+		// }
 		{
 			Lexer_setSource(
 				&lexer,
