@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "../../../include/compiler/codegen/Instruction.h"
-#include "../../../include/assertf.h"
-#include "../../../include/internal/String.h"
-#include "../../../include/compiler/codegen/Codegen.h"
+#include "assertf.h"
+#include "internal/String.h"
+#include "compiler/codegen/Instruction.h"
+#include "compiler/codegen/Codegen.h"
 
 char *__Instruction_getFrame(enum Frame frame);
 
