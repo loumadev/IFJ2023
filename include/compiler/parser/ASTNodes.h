@@ -128,7 +128,7 @@ typedef struct TypeReferenceASTNode {
 typedef struct VariableDeclaratorASTNode {
 	enum ASTNodeType _type;
 	struct PatternASTNode *pattern;
-	ExpressionASTNode *initializer;
+	ExpressionASTNode /* | null*/ *initializer;
 } VariableDeclaratorASTNode;
 
 typedef struct VariableDeclarationListASTNode {
@@ -149,17 +149,17 @@ typedef struct ExpressionStatementASTNode {
 
 typedef struct ReturnStatementASTNode {
 	enum ASTNodeType _type;
-	ExpressionASTNode *expression;
+	ExpressionASTNode /* | null*/ *expression;
 	size_t id;
 } ReturnStatementASTNode;
 
 typedef struct ParameterASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *internalId;
-	TypeReferenceASTNode *type;
-	ExpressionASTNode *initializer;
-	IdentifierASTNode *externalId;
-	bool isLabeless;
+	TypeReferenceASTNode /* | null*/ *type;
+	ExpressionASTNode /* | null*/ *initializer;
+	IdentifierASTNode /* | null*/ *externalId; // If null then internalId should be used
+	bool isLabeless; // true if externalId is '_'
 } ParameterASTNode;
 
 typedef struct ParameterListASTNode {
@@ -171,15 +171,15 @@ typedef struct FunctionDeclarationASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
 	ParameterListASTNode *parameterList;
-	TypeReferenceASTNode *returnType;
+	TypeReferenceASTNode /* | null*/ *returnType; // For fully resolved return type (e.g. Void) query analyser for declaration by id
 	BlockASTNode *body;
-	enum BuiltInFunction builtin;
+	enum BuiltInFunction builtin; // FUNCTION_NONE identifies user defined function
 } FunctionDeclarationASTNode;
 
 typedef struct ArgumentASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *expression;
-	IdentifierASTNode *label;
+	IdentifierASTNode /* | null*/ *label;
 } ArgumentASTNode;
 
 typedef struct ArgumentListASTNode {
@@ -232,7 +232,7 @@ typedef struct InterpolationExpressionASTNode {
 typedef struct PatternASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	TypeReferenceASTNode *type;
+	TypeReferenceASTNode /* | null*/ *type;
 } PatternASTNode;
 
 typedef struct OptionalBindingConditionASTNode {
@@ -243,15 +243,15 @@ typedef struct OptionalBindingConditionASTNode {
 
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
-	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
+	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test;
 	BlockASTNode *body;
-	ASTNode /* BlockASTNode | IfStatementASTNode | null */ *alternate;
+	ASTNode /*<BlockASTNode | IfStatementASTNode> | null*/ *alternate;
 	size_t id;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
-	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
+	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test;
 	BlockASTNode *body;
 	size_t id;
 } WhileStatementASTNode;
