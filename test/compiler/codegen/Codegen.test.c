@@ -8,6 +8,8 @@
 #include "compiler/codegen/Codegen.h"
 #include "internal/String.h"
 
+#include "../parser/parser_assertions.h"
+
 #define TEST_PRIORITY 60
 
 DESCRIBE(test_example, "Test example") {
@@ -36,4 +38,19 @@ DESCRIBE(test_example, "Test example") {
 
 		Codegen_generate(&codegen);
 	} TEST_END();
+
+	// TEST_BEGIN("Initialisation of a declared constant variable") {
+	// 	Lexer_setSource(
+	// 		&lexer,
+	// 		"let a: Int" LF
+	// 		"a = 7" LF
+	// 	);
+	// 	parserResult = Parser_parse(&parser);
+	// 	EXPECT_TRUE(parserResult.success);
+
+	// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+	// 	EXPECT_TRUE(analyserResult.success);
+
+	// 	Codegen_generate(&codegen);
+	// } TEST_END();
 }

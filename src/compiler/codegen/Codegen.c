@@ -120,26 +120,32 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			IfStatementASTNode *ifStatement = (IfStatementASTNode*)statementAstNode;
 			__Codegen_evaluateIfStatement(codegen, ifStatement);
 		} break;
+
 		case NODE_WHILE_STATEMENT: {
 			WhileStatementASTNode *whileStatement = (WhileStatementASTNode*)statementAstNode;
 			__Codegen_evaluateWhileStatement(codegen, whileStatement);
 		} break;
+
 		case NODE_FUNCTION_DECLARATION: {
 			FunctionDeclarationASTNode *funcDeclaration = (FunctionDeclarationASTNode*)statementAstNode;
 			__Codegen_evaluateFunctionDeclaration(codegen, funcDeclaration);
 		} break;
+
 		case NODE_BINARY_EXPRESSION: {
 			BinaryExpressionASTNode *binaryExpression = (BinaryExpressionASTNode*)statementAstNode;
 			__Codegen_evaluateBinaryExpression(codegen, binaryExpression);
 		} break;
+
 		// unwrap - ignore
-		case NODE_UNARY_EXPRESSION:
+		case NODE_UNARY_EXPRESSION: {
 			// TODO: Implement
-			break;
+		} break;
+
 		case NODE_LITERAL_EXPRESSION: {
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)statementAstNode;
 			__Codegen_evaluateLiteral(codegen, literal);
 		} break;
+
 		case NODE_FUNCTION_CALL: {
 			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)statementAstNode;
 			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
@@ -157,6 +163,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 				Instruction_pops(argument->label->id, codegen->frame);
 			}
 		} break;
+
 		case NODE_VARIABLE_DECLARATION: {
 			VariableDeclarationASTNode *variableDeclaration = (VariableDeclarationASTNode*)statementAstNode;
 			__Codegen_evaluateVariableDeclaration(codegen, variableDeclaration);
@@ -179,11 +186,13 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			AssignmentStatementASTNode *assignment = (AssignmentStatementASTNode*)statementAstNode;
 			__Codegen_evaluateAssignmentStatement(codegen, assignment);
 		} break;
+
 		// Len function call
 		case NODE_EXPRESSION_STATEMENT: {
 			ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statementAstNode;
 			__Codegen_evaluateExpressionStatement(codegen, expressionStatement);
 		} break;
+
 		case NODE_IDENTIFIER: {
 			IdentifierASTNode *identifier = (IdentifierASTNode*)statementAstNode;
 			Instruction_pushs_var(identifier->id, codegen->frame);
@@ -193,10 +202,12 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)statementAstNode;
 			Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
 		} break;
+
 		case NODE_BLOCK: {
 			BlockASTNode *block = (BlockASTNode*)statementAstNode;
 			__Codegen_evaluateBlock(codegen, block);
 		} break;
+
 		case NODE_RETURN_STATEMENT: {
 			ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statementAstNode;
 			if(returnStatement->expression != NULL) {
@@ -206,8 +217,9 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			Instruction_popretvar(returnStatement->id, codegen->frame);
 			Instruction_return();
 		} break;
-		case NODE_INTERPOLATION_EXPRESSION:
+
 		// Todo: Implement
+		case NODE_INTERPOLATION_EXPRESSION:
 		case NODE_INVALID:
 		case NODE_PROGRAM:
 		case NODE_TYPE_REFERENCE:
@@ -215,8 +227,9 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		case NODE_PARAMETER_LIST:
 		case NODE_ARGUMENT:
 		case NODE_ARGUMENT_LIST:
-		case NODE_PATTERN:
+		case NODE_PATTERN: {
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
+		} break;
 	}
 }
 

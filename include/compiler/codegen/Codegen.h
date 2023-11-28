@@ -5,17 +5,15 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
-#define TAB "\009"
-
 enum Frame {
-    FRAME_GLOBAL,
-    FRAME_LOCAL,
-    FRAME_TEMPORARY,
+	FRAME_GLOBAL,
+	FRAME_LOCAL,
+	FRAME_TEMPORARY
 };
 
 typedef struct Codegen {
-    Analyser *analyser;
-    enum Frame frame;
+	Analyser *analyser;
+	enum Frame frame;
 } Codegen;
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser);
