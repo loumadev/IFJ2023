@@ -624,6 +624,15 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						AnalyserResult result = Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, declaration->type, &type);
 						if(!result.success) return result;
 
+						// This was requested by the assignment
+						if(declaration->type.type == TYPE_VOID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat("cannot use initializer for variable of type 'Void'"),
+								NULL
+							);
+						}
+
 						if(declaratorNode->pattern->type) {
 							declaratorNode->pattern->type->type = Analyser_TypeReferenceToValueType(declaratorNode->pattern->type);
 

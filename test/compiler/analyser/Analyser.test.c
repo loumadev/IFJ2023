@@ -3298,7 +3298,8 @@ DESCRIBE(return_statement, "Analysis of a return statement") {
 		EXPECT_TRUE(parserResult.success);
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-		EXPECT_TRUE(analyserResult.success);
+		// EXPECT_TRUE(analyserResult.success);
+		EXPECT_FALSE(analyserResult.success);
 	} TEST_END();
 
 	TEST_BEGIN("Invalid assignment of the void expression to the variable") {
