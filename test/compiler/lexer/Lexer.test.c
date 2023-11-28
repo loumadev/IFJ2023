@@ -1709,6 +1709,17 @@ DESCRIBE(string_whitespace_escape, "String literals tokenization with escaped wh
 		EXPECT_EQUAL_INT(token->value.string->length, 2);
 	})
 
+	TEST_BEGIN("Line feed as escaped char") {
+		result = Lexer_tokenize(&lexer, "\"line1 \\\nline2\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "line1 \nline2"));
+		EXPECT_EQUAL_INT(token->value.string->length, 12);
+	} TEST_END();
+
 
 	TEST("Single carriage return", {
 		result = Lexer_tokenize(&lexer, "\"\\r\"");

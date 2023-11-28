@@ -513,6 +513,7 @@ bool __Lexer_resolveEscapedChar(char ch, char *out) {
 		case '\\': *out = '\\'; break;
 		case '\'': *out = '\''; break;
 		case '"': *out = '"'; break;
+		case '\n': *out = '\n'; break;
 		default: return false;
 	}
 
