@@ -385,7 +385,10 @@ void __Codegen_evaluateVariableDeclarationList(Codegen *codegen, VariableDeclara
 }
 
 void __Codegen_evaluateVariableDeclarator(Codegen *codegen, VariableDeclaratorASTNode *variableDeclarator) {
-	__Codegen_evaluateStatement(codegen, (StatementASTNode*)variableDeclarator->initializer);
+    if(variableDeclarator->initializer == NULL) {
+        return;
+    }
+    __Codegen_evaluateStatement(codegen, (StatementASTNode*)variableDeclarator->initializer);
 	Instruction_pops(variableDeclarator->pattern->id->id, codegen->frame);
 	NEWLINE
 }

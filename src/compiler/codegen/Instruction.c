@@ -7,6 +7,7 @@
 #include "../../../include/compiler/codegen/Codegen.h"
 
 char *__Instruction_getFrame(enum Frame frame);
+void __Instruction_escape_string(String *string);
 
 char *__Instruction_getFrame(enum Frame frame) {
     switch (frame) {
@@ -19,6 +20,24 @@ char *__Instruction_getFrame(enum Frame frame) {
         default:
             fassertf("Invalid frame. Something went wrong.");
     }
+}
+
+void __Instruction_escape_string(String *string){
+    String buffer;
+    String_constructor(&buffer, "");
+
+    for (size_t i = 0; i < string->length; i++){
+        char c = string->value[i];
+        if((0 <= c && c <= 32) || c == 35 || c == 92) {
+            String * replacement = String_fromFormat("\\0%d", c);
+            String_append(&buffer, replacement->value);
+            String_free(replacement);
+        } else {
+            String_appendChar(&buffer, c);
+        }
+    }
+
+    String_set(string, buffer.value);
 }
 
 /// --- UTILS ---
@@ -96,11 +115,11 @@ void Instruction_write(char * id, enum Frame frame){
 
 // TODO: This is very bad shortcut, should be fixed
 void Instruction_pops_where(char * where, enum Frame frame) {
-    fprintf(stdout, "POPS %s@%s\n", __Instruction_getFrame(frame), where);
+    fprintf(stdout, "POPS %s@$%s\n", __Instruction_getFrame(frame), where);
 }
 
 void Instruction_defvar_where(char * where, enum Frame frame) {
-    fprintf(stdout, "DEFVAR %s@%s\n", __Instruction_getFrame(frame), where);
+    fprintf(stdout, "DEFVAR %s@$%s\n", __Instruction_getFrame(frame), where);
 }
 
 void Instruction_pushs_int(long value) {
@@ -113,6 +132,7 @@ void Instruction_pushs_float(double value) {
 }
 
 void Instruction_pushs_string(String *string) {
+    __Instruction_escape_string(string);
     fprintf(stdout, "PUSHS string@%s\n", string->value);
 }
 

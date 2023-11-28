@@ -1,0 +1,10 @@
+## Running tests
+[!] FROM ROOT OF PROJECT [!]
+./test/compiler/codegen/test_runner.sh
+
+## Adding tests
+In swift_samples, add new .swift file with code. This file is then compiled into .swift.ifjcode file in compiled_codes
+directory. This file is then used as input for the interpreter
+
+[!] Careful, compiled_codes directory is cleaned after start of test_runner.sh (not after because we might want to
+observe the compiled code)
