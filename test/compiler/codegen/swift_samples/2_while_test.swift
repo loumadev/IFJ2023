@@ -43,3 +43,17 @@ while (counter < foo) {
     counter = counter + 1
 }
 
+write("\n")
+
+write("Let's print a 3x3 matrix\n")
+var x = 3
+var y = 3
+
+while (x > 0) {
+    while (y > 0) {
+        write("[", x, ", ", y, "]", "\n")
+        y = y - 1
+    }
+    x = x - 1
+    y = 3
+}

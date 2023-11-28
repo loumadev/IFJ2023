@@ -42,12 +42,12 @@ void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 	codegen->frame = FRAME_GLOBAL;
 }
 //
-//void Codegen_destructor(Codegen *codegen) {
+// void Codegen_destructor(Codegen *codegen) {
 //	assertf(codegen != NULL);
 //	assertf(codegen->analyser != NULL);
 //
 //	codegen->analyser = NULL;
-//}
+// }
 
 void Codegen_generate(Codegen *codegen) {
 	assertf(codegen != NULL);
@@ -59,8 +59,11 @@ void Codegen_generate(Codegen *codegen) {
 
 void __Codegen_generate(Codegen *codegen) {
 	__Codegen_generatePreamble();
-    // TODO: Shortcut, fix it later
-    Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
+	// TODO: Shortcut, fix it later
+	Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
+	Instruction_defvar_where("READINT_TMP", FRAME_GLOBAL);
+	Instruction_defvar_where("READSTRING_TMP", FRAME_GLOBAL);
+	Instruction_defvar_where("READDOUBLE_TMP", FRAME_GLOBAL);
 
 	__Codegen_generateGlobalVariablesDeclarations(codegen);
 	__Codegen_walkAST(codegen);
@@ -133,18 +136,19 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			__Codegen_evaluateBinaryExpression(codegen, binaryExpression);
 		} break;
 		// unwrap - ignore
-		case NODE_UNARY_EXPRESSION:
-			// TODO: Implement
-			break;
+		case NODE_UNARY_EXPRESSION: {
+			UnaryExpressionASTNode *expression = (UnaryExpressionASTNode*)statementAstNode;
+            __Codegen_evaluateStatement(codegen, (StatementASTNode*)expression->argument);
+		} break;
 		case NODE_LITERAL_EXPRESSION: {
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)statementAstNode;
 			__Codegen_evaluateLiteral(codegen, literal);
 		} break;
 		case NODE_FUNCTION_CALL: {
 			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)statementAstNode;
-            enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
+			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
 			if(builtin != FUNCTION_NONE) {
-                __Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
+				__Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
 				break;
 			}
 
@@ -192,6 +196,9 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		case NODE_OPTIONAL_BINDING_CONDITION: {
 			OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)statementAstNode;
 			Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
+			Instruction_pushs_nil();
+			Instruction_eqs();
+			Instruction_nots();
 		} break;
 		case NODE_BLOCK: {
 			BlockASTNode *block = (BlockASTNode*)statementAstNode;
@@ -224,23 +231,24 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 	COMMENT_IF(ifStatement->id)
 	__Codegen_evaluateStatement(codegen, (StatementASTNode*)ifStatement->test);
 	Instruction_pushs_bool(true);
-	Instruction_jumpifneqs_if_end(ifStatement->id);
+	Instruction_jumpifneqs_if_else(ifStatement->id);
 	Instruction_clears();
 
 	// Process body
 	COMMENT_IF_BLOCK(ifStatement->id)
 	__Codegen_evaluateBlock(codegen, ifStatement->body);
 	Instruction_clears();
-
-	Instruction_label_if_end(ifStatement->id);
-	Instruction_clears();
+	Instruction_jump_if_end(ifStatement->id);
 
 	// Process else
+	Instruction_label_if_else(ifStatement->id);
 	if(ifStatement->alternate != NULL) {
 		COMMENT_ELSE_BLOCK(ifStatement->id)
 		__Codegen_evaluateStatement(codegen, (StatementASTNode*)ifStatement->alternate);
 		Instruction_clears();
 	}
+
+	Instruction_label_if_end(ifStatement->id);
 }
 
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement) {
@@ -295,7 +303,7 @@ void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 	// Process body
 	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
 
-    codegen->frame = FRAME_GLOBAL;
+	codegen->frame = FRAME_GLOBAL;
 }
 
 
@@ -343,6 +351,7 @@ void __Codegen_evaluateBinaryOperator(__attribute__((unused)) Codegen *codegen, 
 		case OPERATOR_AND:
 			return Instruction_ands();
 		case OPERATOR_UNWRAP:
+
 		case OPERATOR_NULL_COALESCING:
 			fassertf("Operator not implemented yet. Throw this this against xnovot2r head");
 		case OPERATOR_DEFAULT: {
@@ -385,10 +394,10 @@ void __Codegen_evaluateVariableDeclarationList(Codegen *codegen, VariableDeclara
 }
 
 void __Codegen_evaluateVariableDeclarator(Codegen *codegen, VariableDeclaratorASTNode *variableDeclarator) {
-    if(variableDeclarator->initializer == NULL) {
-        return;
-    }
-    __Codegen_evaluateStatement(codegen, (StatementASTNode*)variableDeclarator->initializer);
+	if(variableDeclarator->initializer == NULL) {
+		return;
+	}
+	__Codegen_evaluateStatement(codegen, (StatementASTNode*)variableDeclarator->initializer);
 	Instruction_pops(variableDeclarator->pattern->id->id, codegen->frame);
 	NEWLINE
 }
@@ -415,47 +424,43 @@ void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block) {
 
 void
 __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function) {
-    switch (function) {
-        case FUNCTION_READ_STRING:{
-            // TODO: This is probably not safe
-            Instruction_defvar(functionCall->id->id, codegen->frame);
-            Instruction_readString(functionCall->id->id, codegen->frame);
-            Instruction_pushs_var(functionCall->id->id, codegen->frame);
-        } break;
-        case FUNCTION_READ_INT: {
-            Instruction_defvar(functionCall->id->id, codegen->frame);
-            Instruction_readInt(functionCall->id->id, codegen->frame);
-            Instruction_pushs_var(functionCall->id->id, codegen->frame);
-        } break;
-        case FUNCTION_READ_DOUBLE: {
-            Instruction_defvar(functionCall->id->id, codegen->frame);
-            Instruction_readFloat(functionCall->id->id, codegen->frame);
-            Instruction_pushs_var(functionCall->id->id, codegen->frame);
-        } break;
-        case FUNCTION_WRITE: {
-            ArgumentListASTNode *argumentList = functionCall->argumentList;
-            for (size_t i = 0; i < argumentList->arguments->size; ++i) {
-                ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
-                __Codegen_evaluateStatement(codegen, (StatementASTNode *) argument->expression);
-                Instruction_pops_where("WRITE_TMP", codegen->frame);
-                Instruction_write("WRITE_TMP", codegen->frame);
-            }
-        } break;
-        case FUNCTION_INT_TO_DOUBLE:
-            break;
-        case FUNCTION_DOUBLE_TO_INT:
-            break;
-        case FUNCTION_LENGTH:
-            break;
-        case FUNCTION_SUBSTRING:
-            break;
-        case FUNCTION_ORD:
-            break;
-        case FUNCTION_CHR:
-            break;
-        case FUNCTIONS_COUNT:
-            break;
-        case FUNCTION_NONE:
-            fassertf("Expected builtin function, got user defined.");
-    }
+	switch(function) {
+		case FUNCTION_READ_STRING: {
+			Instruction_readString("READSTRING_TMP", FRAME_GLOBAL);
+			Instruction_pushs_var_named("READSTRING_TMP", FRAME_GLOBAL);
+		} break;
+		case FUNCTION_READ_INT: {
+			Instruction_readInt("READINT_TMP", FRAME_GLOBAL);
+			Instruction_pushs_var_named("READINT_TMP", FRAME_GLOBAL);
+		} break;
+		case FUNCTION_READ_DOUBLE: {
+			Instruction_readFloat("READDOUBLE_TMP", FRAME_GLOBAL);
+			Instruction_pushs_var_named("READDOUBLE_TMP", FRAME_GLOBAL);
+		} break;
+		case FUNCTION_WRITE: {
+			ArgumentListASTNode *argumentList = functionCall->argumentList;
+			for(size_t i = 0; i < argumentList->arguments->size; ++i) {
+				ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
+				__Codegen_evaluateStatement(codegen, (StatementASTNode*)argument->expression);
+				Instruction_pops_where("WRITE_TMP", codegen->frame);
+				Instruction_write("WRITE_TMP", codegen->frame);
+			}
+		} break;
+		case FUNCTION_INT_TO_DOUBLE:
+			break;
+		case FUNCTION_DOUBLE_TO_INT:
+			break;
+		case FUNCTION_LENGTH:
+			break;
+		case FUNCTION_SUBSTRING:
+			break;
+		case FUNCTION_ORD:
+			break;
+		case FUNCTION_CHR:
+			break;
+		case FUNCTIONS_COUNT:
+			break;
+		case FUNCTION_NONE:
+			fassertf("Expected builtin function, got user defined.");
+	}
 }

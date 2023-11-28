@@ -46,11 +46,19 @@ void Instruction_jumpifneqs_while_end(size_t id);
 
 void Instruction_jump_while_start(size_t id);
 
-void Instruction_jumpifneqs_if_end(size_t id);
+void Instruction_jumpifneqs_if_else(size_t id);
+
+void Instruction_label_if_else(size_t id);
+
+void Instruction_jump_if_else(size_t id);
+
+void Instruction_jump_if_end(size_t id);
 
 void Instruction_label_if_end(size_t id);
 
 void Instruction_popretvar(size_t id, enum Frame frame);
+
+void Instruction_pushs_var_named(char * var, enum Frame frame);
 
 // --- INSTUCTIONS ---
 
@@ -58,11 +66,11 @@ void Instruction_return();
 
 void Instruction_pushframe();
 
-void Instruction_readString(size_t id, enum Frame frame);
+void Instruction_readString(char *var, enum Frame frame);
 
-void Instruction_readInt(size_t id, enum Frame frame);
+void Instruction_readInt(char *var, enum Frame frame);
 
-void Instruction_readFloat(size_t id, enum Frame frame);
+void Instruction_readFloat(char *var, enum Frame frame);
 
 void Instruction_write(char * id, enum Frame frame);
 

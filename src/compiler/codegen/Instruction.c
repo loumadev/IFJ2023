@@ -57,8 +57,20 @@ void Instruction_jump_while_start(size_t id){
     fprintf(stdout, "JUMP $while_start_%lu\n", id);
 }
 
-void Instruction_jumpifneqs_if_end(size_t id) {
-    fprintf(stdout, "JUMPIFNEQS $if_end_%lu\n", id);
+void Instruction_jumpifneqs_if_else(size_t id) {
+    fprintf(stdout, "JUMPIFNEQS $if_else_%lu\n", id);
+}
+
+void Instruction_jump_if_end(size_t id) {
+    fprintf(stdout, "JUMP $if_end_%lu\n", id);
+}
+
+void Instruction_label_if_else(size_t id) {
+    fprintf(stdout, "LABEL $if_else_%lu\n", id);
+}
+
+void Instruction_jump_if_else(size_t id) {
+    fprintf(stdout, "JUMP $if_else_%lu\n", id);
 }
 
 void Instruction_label_if_end(size_t id) {
@@ -87,16 +99,16 @@ void Instruction_return() {
     INSTRUCTION_NULLARY("RETURN")
 }
 
-void Instruction_readString(size_t id, enum Frame frame) {
-    fprintf(stdout, "READ %s@$%lu string\n", __Instruction_getFrame(frame), id);
+void Instruction_readString(char *var, enum Frame frame) {
+    fprintf(stdout, "READ %s@$%s string\n", __Instruction_getFrame(frame), var);
 }
 
-void Instruction_readInt(size_t id, enum Frame frame) {
-    fprintf(stdout, "READ %s@$%lu int\n", __Instruction_getFrame(frame), id);
+void Instruction_readInt(char *var, enum Frame frame) {
+    fprintf(stdout, "READ %s@$%s int\n", __Instruction_getFrame(frame), var);
 }
 
-void Instruction_readFloat(size_t id, enum Frame frame) {
-    fprintf(stdout, "READ %s@$%lu float\n", __Instruction_getFrame(frame), id);
+void Instruction_readFloat(char *var, enum Frame frame) {
+    fprintf(stdout, "READ %s@$%s float\n", __Instruction_getFrame(frame), var);
 }
 
 /// --- PUSH COMMANDS ---
@@ -138,6 +150,10 @@ void Instruction_pushs_string(String *string) {
 
 void Instruction_pushs_var(size_t id, enum Frame frame) {
     fprintf(stdout, "PUSHS %s@$%lu\n", __Instruction_getFrame(frame), id);
+}
+
+void Instruction_pushs_var_named(char * var, enum Frame frame) {
+    fprintf(stdout, "PUSHS %s@$%s\n", __Instruction_getFrame(frame), var);
 }
 
 

@@ -19,7 +19,6 @@ write("foo3: Int? [assigned 3] => ", foo3 ,"\n")
 var foo4: Int? = 4 + 3
 write("foo4: 4 + 3 => ", foo4 ,"\n")
 
-// reading from variable
-// todo: handle unwrap
-// foo4 = foo4! + 1
-// write("foo4, foo4 + 1: ", foo4 ,"\n")
+//reading from variable
+foo4 = foo4! + 1
+write("foo4, foo4 + 1: ", foo4 ,"\n")
