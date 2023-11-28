@@ -1891,7 +1891,7 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_FALSE(analyserResult.success);
-			EXPECT_TRUE(analyserResult.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+			EXPECT_TRUE(analyserResult.type == RESULT_ERROR_SEMANTIC_OTHER);
 		}
 		{
 			Lexer_setSource(
