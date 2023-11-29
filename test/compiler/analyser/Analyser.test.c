@@ -341,6 +341,37 @@ DESCRIBE(variable_resolution, "Resolution of variable references") {
 
 		EXPECT_TRUE(aIdentifier->id == a->id);
 	} TEST_END();
+
+	TEST_BEGIN("Variable resolution inside the function call") {
+		Lexer_setSource(
+			&lexer,
+			"let a = 1" LF
+			"write(\"str1\", a, \"str2\")" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+
+		VariableDeclaration *a = Analyser_getVariableByName(&analyser, "a", analyser.globalScope);
+		EXPECT_NOT_NULL(a);
+		EXPECT_TRUE(a->isInitialized);
+		EXPECT_TRUE(a->isUsed);
+
+		FunctionCallASTNode *write = (FunctionCallASTNode*)((ExpressionStatementASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT))->expression;
+		EXPECT_NOT_NULL(write);
+		EXPECT_TRUE(write->_type == NODE_FUNCTION_CALL);
+
+		IdentifierASTNode *arg = (IdentifierASTNode*)((ArgumentASTNode*)Array_get(write->argumentList->arguments, 1))->expression;
+		EXPECT_NOT_NULL(arg);
+		EXPECT_TRUE(arg->_type == NODE_IDENTIFIER);
+
+		EXPECT_NOT_EQUAL_INT(a->id, 0);
+		EXPECT_EQUAL_INT(arg->id, a->id);
+	} TEST_END();
 }
 
 DESCRIBE(type_compatibility_var, "Compatibility of types in variable declaration") {
@@ -1528,7 +1559,7 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
 				"" LF
 				"a(a: 12)" LF
 			);
@@ -1541,7 +1572,7 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return a + b}" LF
+				"func a(a x: Int, b y: Int) -> Int {return x + y}" LF
 				"" LF
 				"a(a: 1, b: 2)" LF
 			);
@@ -1932,6 +1963,39 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_FALSE(analyserResult.success);
 		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a x: Int, a y: Int) { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a x: Int, b x: Int) { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a x: Int, a x: Int) { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
 	} TEST_END();
 }
 
@@ -1990,11 +2054,27 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 	} TEST_END();
 
+	TEST_BEGIN("Resolution of non-overloaded function inside an expression") {
+		Lexer_setSource(
+			&lexer,
+			"func a() -> Int {return 1}" LF
+			"" LF
+			"let v1 = a() + 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+	} TEST_END();
+
 	TEST_BEGIN("Resolution of overloaded function inside an expression with multiple parameters") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
 				"func a() -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a() + 5" LF
@@ -2025,8 +2105,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(a: Bool) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(a x: Bool) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(a: false) + 5" LF
 			);
@@ -2056,8 +2136,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(b: Bool) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(b x: Bool) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(b: false) + 5" LF
 			);
@@ -2087,8 +2167,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(a: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(a x: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(a: 1) + 5" LF
 			);
@@ -2118,8 +2198,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return 1}" LF
-				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int, b y: Int) -> Int {return 1}" LF
+				"func a(a x: Double, b y: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Int = a(a: 15, b: 8) + 5" LF
 			);
@@ -2149,8 +2229,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return 1}" LF
-				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int, b y: Int) -> Int {return 1}" LF
+				"func a(a x: Double, b y: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(a: 15, b: 8) + 5" LF
 			);
@@ -2180,8 +2260,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return 1}" LF
-				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int, b y: Int) -> Int {return 1}" LF
+				"func a(a x: Double, b y: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(a: 15.5, b: 8.5) + 5" LF
 			);
@@ -2211,8 +2291,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return 1}" LF
-				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int, b y: Int) -> Int {return 1}" LF
+				"func a(a x: Double, b y: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(a: 15, b: 8.5) + 5" LF
 			);
@@ -2246,7 +2326,7 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
 				"func a() -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Int = a() + 5" LF
@@ -2260,8 +2340,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(a: Bool) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(a x: Bool) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Int = a(a: false) + 5" LF
 			);
@@ -2274,8 +2354,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(b: Bool) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(b x: Bool) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(c: false) + 5" LF
 			);
@@ -2288,8 +2368,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(b: Bool) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(b x: Bool) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(c: \"hh\") + 5" LF
 			);
@@ -2302,8 +2382,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int) -> Int {return 1}" LF
-				"func a(a: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int) -> Int {return 1}" LF
+				"func a(a x: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Bool = a(a: 1) + 5" LF
 			);
@@ -2316,8 +2396,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return 1}" LF
-				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int, b y: Int) -> Int {return 1}" LF
+				"func a(a x: Double, b y: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(a: 15, b: true) + 5" LF
 			);
@@ -2330,8 +2410,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a: Int, b: Int) -> Int {return 1}" LF
-				"func a(a: Double, b: Double) -> Double {return 1.5}" LF
+				"func a(a x: Int, b y: Int) -> Int {return 1}" LF
+				"func a(a x: Double, b y: Double) -> Double {return 1.5}" LF
 				"" LF
 				"let v1: Double = a(b: 15, a: 8) + 5" LF
 			);
@@ -2654,8 +2734,8 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func f(a: Int) {}" LF
-				"func f(b: Int) {}" LF
+				"func f(a x: Int) {}" LF
+				"func f(b x: Int) {}" LF
 				"" LF
 				"f(a: 5)" LF
 			);
