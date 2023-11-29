@@ -213,3 +213,11 @@ void Instruction_jump_func_end(size_t id) {
 void Instruction_label_func_start(size_t id) {
     fprintf(stdout, "LABEL $%lu_start\n", id);
 }
+
+void Instruction_int2floats() {
+    INSTRUCTION_NULLARY("INT2FLOATS")
+}
+
+void Instruction_float2ints() {
+    INSTRUCTION_NULLARY("FLOAT2INTS")
+}

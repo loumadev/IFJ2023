@@ -189,6 +189,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			__Codegen_evaluateExpressionStatement(codegen, expressionStatement);
 		} break;
 		case NODE_IDENTIFIER: {
+            // TODO: Broken, needed to be fixed
 			IdentifierASTNode *identifier = (IdentifierASTNode*)statementAstNode;
 			Instruction_pushs_var(identifier->id, codegen->frame);
 		} break;
@@ -446,10 +447,24 @@ __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *function
 				Instruction_write("WRITE_TMP", codegen->frame);
 			}
 		} break;
-		case FUNCTION_INT_TO_DOUBLE:
-			break;
-		case FUNCTION_DOUBLE_TO_INT:
-			break;
+		case FUNCTION_INT_TO_DOUBLE: {
+            ArgumentListASTNode *argumentList = functionCall->argumentList;
+            ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
+            // Let's forget that it could be literal and it's always identifier
+            if(argument->expression->_type == NODE_IDENTIFIER) {
+                IdentifierASTNode *identifier = (IdentifierASTNode *)argument->expression;
+                Instruction_pushs_var(identifier->id, codegen->frame);
+            }
+//            IdentifierASTNode * identifier = (IdentifierASTNode *)argument->expression;
+//            Instruction_pushs_var(identifier->id, codegen->frame);
+            Instruction_int2floats();
+        } break;
+		case FUNCTION_DOUBLE_TO_INT: {
+            ArgumentListASTNode *argumentList = functionCall->argumentList;
+            ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
+            __Codegen_evaluateStatement(codegen, (StatementASTNode*)argument->expression);
+            Instruction_float2ints();
+        } break;
 		case FUNCTION_LENGTH:
 			break;
 		case FUNCTION_SUBSTRING:

@@ -62,7 +62,7 @@ function cleanup() {
   make clean >/dev/null
 
   echo "Removing compiled codes"
-  rm -r "$CODEGEN_PATH"/compiled_codes
+  rm -rf "$CODEGEN_PATH"/compiled_codes
 
   echo "🧹 Cleanup complete"
 }

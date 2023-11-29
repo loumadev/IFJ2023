@@ -118,4 +118,8 @@ void Instruction_jump_func_end(size_t id);
 
 void Instruction_label_func_start(size_t id);
 
+void Instruction_int2floats();
+
+void Instruction_float2ints();
+
 #endif // INSTRUCTION_H
