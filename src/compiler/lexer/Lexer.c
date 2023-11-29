@@ -853,8 +853,12 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
 	else if(TextRange_compare(&range, "var")) kind = TOKEN_VAR;
 	else if(TextRange_compare(&range, "let")) kind = TOKEN_LET;
 	else if(TextRange_compare(&range, "while")) kind = TOKEN_WHILE;
+	else if(TextRange_compare(&range, "for")) kind = TOKEN_FOR;
 	else if(TextRange_compare(&range, "func")) kind = TOKEN_FUNC;
 	else if(TextRange_compare(&range, "return")) kind = TOKEN_RETURN;
+	else if(TextRange_compare(&range, "break")) kind = TOKEN_BREAK;
+	else if(TextRange_compare(&range, "continue")) kind = TOKEN_CONTINUE;
+
 
 	// else if(TextRange_compare(&range, "class")) kind = TOKEN_CLASS;
 	// else if(TextRange_compare(&range, "else")) kind = TOKEN_ELSE;
