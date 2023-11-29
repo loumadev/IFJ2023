@@ -613,15 +613,19 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	// Match string
 	while(isMultiline ? !Lexer_match(lexer, ML_QUOTE) : ch != '"') {
 		// Handle unterminated string literals
-		if(ch == '\0' || (ch == '\n' && !isMultiline)) return LexerError(
+		if(ch == '\0' || (ch == '\n' && !isMultiline)) {
+			return LexerError(
 				String_fromFormat("unterminated string literal"),
 				ERROR_MARKER(0, 1)
-		);
+			);
+		}
 
-		if(!isMultiline && ch < 0x20) return LexerError(
+		if(!isMultiline && ch < 0x20) {
+			return LexerError(
 				String_fromFormat("unprintable ASCII character '%s' in string literal", format_char(ch)),
 				ERROR_MARKER(0, 1)
-		);
+			);
+		}
 
 		// TODO: Handle multiline string literals
 
@@ -712,10 +716,12 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 				char escaped = '\0';
 				bool res = __Lexer_resolveEscapedChar(toEscape, &escaped);
 
-				if(!res) return LexerError(
+				if(!res) {
+					return LexerError(
 						String_fromFormat("invalid escape sequence '\\%s' in literal", format_char(toEscape)),
 						ERROR_MARKER(0, 1)
-				);
+					);
+				}
 
 				String_appendChar(string, escaped);
 			}
