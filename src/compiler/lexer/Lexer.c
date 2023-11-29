@@ -620,7 +620,8 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 			);
 		}
 
-		if(!isMultiline && ch < 0x20) {
+		// Handle unprintable characters
+		if(!isMultiline && (ch < 0x20 || ch == 0x7F)) {
 			return LexerError(
 				String_fromFormat("unprintable ASCII character '%s' in string literal", format_char(ch)),
 				ERROR_MARKER(0, 1)

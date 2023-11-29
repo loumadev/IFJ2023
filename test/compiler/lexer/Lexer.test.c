@@ -1655,6 +1655,11 @@ DESCRIBE(string_invalid_tokeniz, "Invalid string literals tokenization") {
 		result = Lexer_tokenize(&lexer, "\"Hello \n World\"");
 		EXPECT_FALSE(result.success);
 	})
+
+	TEST("String containing non-printable characters", {
+		result = Lexer_tokenize(&lexer, "\"Hello \t World\"");
+		EXPECT_FALSE(result.success);
+	})
 }
 
 DESCRIBE(string_quotes_escape, "String literals tokenization with escaped quotes") {
