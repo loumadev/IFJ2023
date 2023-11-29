@@ -106,6 +106,15 @@ bool String_endsWith(String *string, char *value);
 long String_indexOf(String *string, char *value);
 
 /**
+ * Returns the character at a given index in a String.
+ *
+ * @param string The String to get the character from.
+ * @param index The index of the character to get. (negative values start from the end)
+ * @return The character at the given index.
+ */
+char String_charAt(String *string, signed long index);
+
+/**
  * Copies the contents of the String to a given buffer of a given length.
  *
  * @param string The String to copy.

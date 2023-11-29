@@ -521,3 +521,38 @@ DESCRIBE(fromRange, "String_fromRange") {
 		EXPECT_NULL(str);
 	})
 }
+
+DESCRIBE(charAt, "String_charAt") {
+	String *str = NULL;
+
+	TEST("Simple charAt", {
+		str = String_alloc("Hello, World!");
+		EXPECT_EQUAL_CHAR(String_charAt(str, 0), 'H');
+		EXPECT_EQUAL_CHAR(String_charAt(str, 3), 'l');
+		EXPECT_EQUAL_CHAR(String_charAt(str, 6), ' ');
+		EXPECT_EQUAL_CHAR(String_charAt(str, 9), 'r');
+		EXPECT_EQUAL_CHAR(String_charAt(str, 12), '!');
+	})
+
+	TEST("Single character charAt", {
+		str = String_alloc("A");
+		EXPECT_EQUAL_CHAR(String_charAt(str, 0), 'A');
+	})
+
+	TEST("Empty charAt", {
+		str = String_alloc("");
+		EXPECT_EQUAL_CHAR(String_charAt(str, 0), '\0');
+	})
+
+	TEST("Negative index", {
+		str = String_alloc("Hello, World!");
+		EXPECT_EQUAL_CHAR(String_charAt(str, -1), '!');
+		EXPECT_EQUAL_CHAR(String_charAt(str, -13), 'H');
+	})
+
+	TEST("Out of bounds charAt", {
+		str = String_alloc("Hello, World!");
+		EXPECT_EQUAL_CHAR(String_charAt(str, 13), '\0');
+		EXPECT_EQUAL_CHAR(String_charAt(str, -14), '\0');
+	})
+}

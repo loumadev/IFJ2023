@@ -218,6 +218,19 @@ long String_indexOf(String *string, char *value) {
 	return result - string->value;
 }
 
+char String_charAt(String *string, signed long index) {
+	if(!string) return '\0';
+	if(!string->value) return '\0';
+
+	// Resolve negative indices
+	if(index < 0) index = string->length + index;
+
+	// Index out of bounds
+	if(index < 0 || index > (signed long)string->length) return '\0';
+
+	return string->value[index];
+}
+
 void String_copy(String *string, char *dest, size_t length) {
 	if(!string) return;
 	if(!dest) return;
