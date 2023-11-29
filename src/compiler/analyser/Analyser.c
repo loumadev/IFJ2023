@@ -1173,9 +1173,26 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						NULL
 					);
 				}
+
+				// TODO: Might need to retype all the parameters to match the overload
+				ValueType type;
+				AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, parameter->type->type, &type);
+				if(!result.success) return result;
+
+				// Is this really needed? Not sure so keeping it here
+				if(!is_value_assignable(parameter->type->type, type)) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
+						String_fromFormat(
+							"cannot convert value of type '%s' to expected argument type '%s'",
+							__Analyser_stringifyType(type)->value,
+							__Analyser_stringifyType(parameter->type->type)->value
+						),
+						NULL
+					);
+				}
 			}
 
-			// TODO: Might need to retype all the parameters to match the overload
 			call->id->id = declaration->id;
 			declaration->isUsed = true;
 			*outType = declaration->returnType;
