@@ -2084,7 +2084,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 	TEST_BEGIN("Invalid comma") {
 		Lexer_setSource(&lexer, "call(1,,2)");
 		result = Parser_parse(&parser);
-		String_print_compact(result.message);
 
 		EXPECT_FALSE(result.success);
 		EXPECT_NULL(result.node);
@@ -2098,7 +2097,6 @@ DESCRIBE(function_calls, "Function call parsing") {
 	TEST_BEGIN("Invalid argument label") {
 		Lexer_setSource(&lexer, "call(a:b:1,2)");
 		result = Parser_parse(&parser);
-		String_print_compact(result.message);
 
 		EXPECT_FALSE(result.success);
 		EXPECT_NULL(result.node);
@@ -2108,6 +2106,107 @@ DESCRIBE(function_calls, "Function call parsing") {
 		// prbbly later add message check also
 	}
 	TEST_END();
+}
+
+DESCRIBE(kinda_invalid_tokens, "Invalid tokens") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("Number literals") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 2a" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = a2" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_TRUE(result.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 2a2" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 2.6a" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = a2.6" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = a2.6a" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 2e3a" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = a2e3" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_TRUE(result.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 1a2e3a4" LF
+			);
+
+			result = Parser_parse(&parser);
+			EXPECT_FALSE(result.success);
+			EXPECT_TRUE(result.type == RESULT_ERROR_SYNTACTIC_ANALYSIS);
+		}
+	} TEST_END();
 }
 
 DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {

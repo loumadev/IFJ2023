@@ -145,6 +145,18 @@ DESCRIBE(variable_declaraion, "Analysis of variable declaration") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 
+	TEST_BEGIN("Use of void variable") {
+		Lexer_setSource(
+			&lexer,
+			"let a: Void" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
 	TEST_BEGIN("Use of partially initialized variable") {
 		Lexer_setSource(
 			&lexer,
@@ -1186,10 +1198,39 @@ DESCRIBE(if_statement_analysis, "Analysis of the if statements") {
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_FALSE(analyserResult.success);
 
+		Lexer_setSource(
+			&lexer,
+			"var a: Int" LF
+			"" LF
+			"if let a {" LF
+			TAB "a = 5" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
 
 		Lexer_setSource(
 			&lexer,
 			"var a: Int? = nil" LF
+			"" LF
+			"if let x {" LF
+			TAB "var b = a + 8" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int?" LF
 			"" LF
 			"if let x {" LF
 			TAB "var b = a + 8" LF
@@ -1513,19 +1554,6 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a a: Int, b b: Int) -> Int {return a + b}" LF
-				"" LF
-				"a(a: 1, b: 2)" LF
-			);
-			parserResult = Parser_parse(&parser);
-			EXPECT_TRUE(parserResult.success);
-
-			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-			EXPECT_TRUE(analyserResult.success);
-		}
-		{
-			Lexer_setSource(
-				&lexer,
 				"func a(x a: Int, y b: Int) -> Int {return a + b}" LF
 				"" LF
 				"a(x: 1, y: 2)" LF
@@ -1575,9 +1603,191 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_TRUE(analyserResult.success);
 		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int) { }" LF
+				"" LF
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a + 5" LF
+				"}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a + 5" LF
+				"}" LF
+				"" LF
+				"func a(x a: Int) { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() { }" LF
+				"" LF
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a + 5" LF
+				"}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a + 5" LF
+				"}" LF
+				"" LF
+				"func a() { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
 	} TEST_END();
 
 	TEST_BEGIN("Invalid function declaration") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() {}" LF
+				"var b = a + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+			EXPECT_TRUE(analyserResult.type == RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"var a = 5" LF
+				"a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+			EXPECT_TRUE(analyserResult.type == RESULT_ERROR_SEMANTIC_UNDEFINED_FUNCTION);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int) { }" LF
+				"" LF
+				"var a = 10" LF
+				"var b = a(x: 5)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"" LF
+				"var a = 10" LF
+				"var b = a()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(x a: Int) { }" LF
+				"" LF
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a(x: 5)" LF
+				"}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a(x: 5)" LF
+				"}" LF
+				"" LF
+				"func a(x a: Int) { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() { }" LF
+				"" LF
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a()" LF
+				"}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"if(true) {" LF
+				TAB "var a = 10" LF
+				TAB "var b = a()" LF
+				"}" LF
+				"" LF
+				"func a() { }" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
 		{
 			Lexer_setSource(
 				&lexer,
@@ -1659,7 +1869,7 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 		{
 			Lexer_setSource(
 				&lexer,
-				"func a(a a: Int, b b: Int) -> Bool {return a + b}" LF
+				"func a(a x: Int, b y: Int) -> Bool {return x + y}" LF
 				"" LF
 				"a(a: 1, b: 2)" LF
 			);
@@ -1668,6 +1878,20 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a(a a: Int, b b: Int) -> Int {return a + b}" LF
+				"" LF
+				"a(a: 1, b: 2)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+			EXPECT_TRUE(analyserResult.type == RESULT_ERROR_SEMANTIC_OTHER);
 		}
 		{
 			Lexer_setSource(
@@ -2397,6 +2621,165 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 		}
 	} TEST_END();
+
+	TEST_BEGIN("Valid redeclaration of the function overload") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f() -> Int {return 1}" LF
+				"func f() -> Int? {return 1}" LF
+				"" LF
+				"let v1 = f() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		// {
+		// 	Lexer_setSource(
+		// 		&lexer,
+		// 		"func f() {}" LF
+		// 		"func f() -> Int? {return 1}" LF
+		// 		"" LF
+		// 		"let v1 = f()! + 5" LF
+		// 	);
+		// 	parserResult = Parser_parse(&parser);
+		// 	EXPECT_TRUE(parserResult.success);
+
+		// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		// 	EXPECT_TRUE(analyserResult.success);
+		// }
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f(a: Int) {}" LF
+				"func f(b: Int) {}" LF
+				"" LF
+				"f(a: 5)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+		// {
+		// 	Lexer_setSource(
+		// 		&lexer,
+		// 		"func f(a: Int?) {}" LF
+		// 		"func f(a: Int) {}" LF
+		// 		"" LF
+		// 		"f(a: 5)" LF
+		// 	);
+		// 	parserResult = Parser_parse(&parser);
+		// 	EXPECT_TRUE(parserResult.success);
+
+		// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		// 	EXPECT_TRUE(analyserResult.success);
+		// }
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f(x a: Int) {}" LF
+				"func f(y a: Int) {}" LF
+				"" LF
+				"f(x: 5)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+		}
+	} TEST_END();
+	TEST_BEGIN("Invalid redeclaration of the function overload") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f() -> Int {return 1}" LF
+				"func f() -> Int {return 1}" LF
+				"" LF
+				"let v1 = f() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f() -> Int? {return 1}" LF
+				"func f() -> Int? {return 1}" LF
+				"" LF
+				"let v1 = f() + 5" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f() {}" LF
+				"func f() {}" LF
+				"" LF
+				"f()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f(a: Int) {}" LF
+				"func f(a: Int) {}" LF
+				"" LF
+				"f(a: 5)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f(a: Int?) {}" LF
+				"func f(a: Int?) {}" LF
+				"" LF
+				"f(a: 5)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func f(x a: Int) {}" LF
+				"func f(x a: Int) {}" LF
+				"" LF
+				"f(x: 5)" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+	} TEST_END();
 }
 
 DESCRIBE(declaration_registry, "Declaration registry") {
@@ -2881,6 +3264,50 @@ DESCRIBE(return_statement, "Analysis of a return statement") {
 			"func foo() -> Int? {" LF
 			TAB "return nil" LF
 			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Valid return of the void expression from void function") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"func g() {return f()}" LF
+			"" LF
+			"g()" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Valid assignment of the void expression to the void variable") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"" LF
+			"var a: Void = f()" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		// EXPECT_TRUE(analyserResult.success);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid assignment of the void expression to the variable") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"" LF
+			"var a = f()" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);

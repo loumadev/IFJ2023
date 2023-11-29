@@ -270,7 +270,7 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 	Array *overloads = HashMap_get(analyser->overloads, node->id->name->value);
 	if(!overloads) {
 		return AnalyserError(
-			RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+			RESULT_ERROR_SEMANTIC_UNDEFINED_FUNCTION,
 			String_fromFormat("cannot find function '%s' in scope", node->id->name->value),
 			NULL
 		);
@@ -296,6 +296,22 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 
 			ValueType parameterType = parameter->type->type;
 			ValueType argumentType;
+
+			// Check for label
+			String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
+			assertf(externalName, "Parameter has no external or internal name");
+			if(parameter->isLabeless && argument->label) {
+				hasMatched = false;
+				break;
+			}
+			if(!parameter->isLabeless && !argument->label) {
+				hasMatched = false;
+				break;
+			}
+			if(!parameter->isLabeless && !String_equals(externalName, argument->label->name->value)) {
+				hasMatched = false;
+				break;
+			}
 
 			AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, parameterType, &argumentType);
 			if(!result.success) {
@@ -513,7 +529,7 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 		// Validate type of the variable
 		if(!declaration->type.isNullable) {
 			return AnalyserError(
-				RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+				RESULT_ERROR_SEMANTIC_OTHER,
 				String_fromFormat(
 					"initializer for conditional binding must have Optional type, not '%s'",
 					__Analyser_stringifyType(declaration->type)->value
@@ -575,37 +591,24 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				for(size_t j = 0; j < declarators->size; j++) {
 					VariableDeclaratorASTNode *declaratorNode = Array_get(declarators, j);
 
-					// In case the initializer is absent, the type annotation is required
-					// TODO: This might be also a syntax error?
-					// if(!declaratorNode->initializer && !declaratorNode->pattern->type) {
-					// 	return AnalyserError(
-					// 		RESULT_ERROR_SEMANTIC_OTHER,
-					// 		String_fromFormat("type annotation missing in pattern"),
-					// 		NULL
-					// 	);
-					// }
-
 					// Cannot resolve type (provided type is not supported)
 					if(declaratorNode->pattern->type) {
 						declaratorNode->pattern->type->type.type = Analyser_resolveBuiltInType(declaratorNode->pattern->type->id->name);
 						declaratorNode->pattern->type->type.isNullable = declaratorNode->pattern->type->isNullable;
 
 						if(declaratorNode->pattern->type->type.type == TYPE_INVALID) {
+							// return AnalyserError(
+							// 	RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							// 	String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
+							// 	NULL
+							// );
 							return AnalyserError(
-								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								RESULT_ERROR_SYNTACTIC_ANALYSIS,
 								String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
 								NULL
 							);
 						}
 					}
-					// TODO: This might be a syntax error as well? Others probably implemented it fixed, using grammar rules
-					// if(declaratorNode->pattern->type && !HashMap_has(analyser->types, declaratorNode->pattern->type->id->name->value)) {
-					// 	return AnalyserError(
-					// 		RESULT_ERROR_SEMANTIC_OTHER,
-					// 		String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
-					// 		NULL
-					// 	);
-					// }
 
 					VariableDeclaration *declaration = new_VariableDeclaration(
 						analyser,
@@ -620,6 +623,15 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						ValueType type;
 						AnalyserResult result = Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, declaration->type, &type);
 						if(!result.success) return result;
+
+						// This was requested by the assignment
+						if(declaration->type.type == TYPE_VOID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								String_fromFormat("cannot use initializer for variable of type 'Void'"),
+								NULL
+							);
+						}
 
 						if(declaratorNode->pattern->type) {
 							declaratorNode->pattern->type->type = Analyser_TypeReferenceToValueType(declaratorNode->pattern->type);
@@ -664,7 +676,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					// There is already a variable with the same name in the current scope
 					if(existingDeclaration && existingDeclaration->isUserDefined) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 							String_fromFormat("invalid redeclaration of '%s'", declaration->name->value),
 							NULL
 						);
@@ -681,7 +693,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 								if(function->node->parameterList->parameters->size == 0) {
 									return AnalyserError(
-										RESULT_ERROR_SEMANTIC_OTHER,
+										RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 										String_fromFormat("invalid redeclaration of '%s'", declaration->name->value),
 										NULL
 									);
@@ -720,7 +732,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				// Constant variable is already initialized
 				if(variable->isConstant && variable->isInitialized) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("cannot assign to constant '%s'", assignment->id->name->value),
 						NULL
 					);
@@ -732,7 +744,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 				if(!is_value_assignable(variable->type, type)) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+						RESULT_ERROR_SEMANTIC_INVALID_TYPE, // TODO: Fixed
 						String_fromFormat(
 							"cannot convert value of type '%s' to specified type '%s'",
 							__Analyser_stringifyType(type)->value,
@@ -810,7 +822,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 					if(variable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 							String_fromFormat("invalid redeclaration of '%s'", declaration->node->id->name->value),
 							NULL
 						);
@@ -820,7 +832,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				// Analyse the return statement reachability
 				if(declaration->returnType.type != TYPE_VOID && !__Analyser_isReturnReachable(analyser, function->body)) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SEMANTIC_INVALID_RETURN,
 						String_fromFormat(
 							"missing return in global function expected to return '%s'",
 							__Analyser_stringifyType(declaration->returnType)->value
@@ -845,26 +857,17 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					);
 				}
 
-				// Function has no return type but returns something
-				if(function->returnType.type == TYPE_VOID && returnStatement->expression) {
-					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
-						String_fromFormat("unexpected non-void return value in void function"),
-						NULL
-					);
-				}
-
 				// Function has a return type but returns nothing
 				if(function->returnType.type != TYPE_VOID && !returnStatement->expression) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SEMANTIC_INVALID_RETURN,
 						String_fromFormat("non-void function should return a value"),
 						NULL
 					);
 				}
 
 				// Function has a return type but returns incompatible type
-				if(function->returnType.type != TYPE_VOID && returnStatement->expression) {
+				if(/*function->returnType.type != TYPE_VOID && */ returnStatement->expression) {
 					// Get the type of the return expression
 					ValueType type;
 					AnalyserResult result = Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, function->returnType, &type);
@@ -872,8 +875,16 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 					// Validate the type of the return expression
 					if(!is_value_assignable(function->returnType, type)) {
+						if(function->returnType.type == TYPE_VOID) {
+							return AnalyserError(
+								RESULT_ERROR_SEMANTIC_INVALID_RETURN,
+								String_fromFormat("unexpected non-void return value in void function"),
+								NULL
+							);
+						}
+
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							RESULT_ERROR_SEMANTIC_INVALID_RETURN_TYPE,
 							String_fromFormat(
 								"cannot convert value of type '%s' to specified type '%s'",
 								__Analyser_stringifyType(type)->value,
@@ -965,7 +976,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 			if(!declaration->type.isNullable && !declaration->isInitialized) {
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_OTHER,
+					RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE,
 					String_fromFormat("variable '%s' used before being initialized", identifier->name->value),
 					NULL
 				);
@@ -988,8 +999,24 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				return AnalyserSuccess();
 			}
 
-			Array /*<FunctionDeclaration>*/ *overloads = Analyser_getFunctionDeclarationsByName(analyser, call->id->name->value);
-			Array /*<FunctionDeclaration>*/ *candidates = NULL;
+			// If not in global scope, look for non-global variable declaration
+			if(scope->parent) {
+				VariableDeclaration *declaration = Analyser_getVariableByName(analyser, call->id->name->value, scope);
+
+				if(declaration) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
+						String_fromFormat(
+							"cannot call value of non-function type '%s'",
+							__Analyser_stringifyType(declaration->type)->value
+						),
+						NULL
+					);
+				}
+			}
+
+			Array /*<FunctionDeclaration> | null*/ *overloads = Analyser_getFunctionDeclarationsByName(analyser, call->id->name->value);
+			Array /*<FunctionDeclaration> | null*/ *candidates = NULL;
 			bool hasMultipleCandidates = false;
 			FunctionDeclaration *declaration = NULL;
 
@@ -1001,7 +1028,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				for(size_t i = 0; i < candidates->size; i++) {
 					FunctionDeclaration *candidate = Array_get(candidates, i);
 
-					if(prefferedType.type == TYPE_UNKNOWN || is_value_assignable(prefferedType, candidate->returnType)) {
+					if(prefferedType.type == TYPE_UNKNOWN || is_type_equal(prefferedType, candidate->returnType) || is_value_assignable(prefferedType, candidate->returnType)) {
 						// Multiple candidates matching
 						if(declaration) {
 							hasMultipleCandidates = true;
@@ -1016,7 +1043,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				assertf(declaration);
 			} else {
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+					RESULT_ERROR_SEMANTIC_UNDEFINED_FUNCTION,
 					String_fromFormat("cannot find '%s' in scope", call->id->name->value),
 					NULL
 				);
@@ -1046,7 +1073,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 						if(!is_type_valid(type.type) || type.type == TYPE_VOID) {
 							return AnalyserError(
-								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+								RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
 								String_fromFormat(
 									"cannot convert value of type '%s' to expected argument type 'Int? | Double? | String? | Bool?'",
 									__Analyser_stringifyType(type)->value
@@ -1072,7 +1099,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 			if(!declaration) {
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+					RESULT_ERROR_SEMANTIC_UNDEFINED_FUNCTION,
 					String_fromFormat("no exact matches in call to global function '%s'", call->id->name->value),
 					NULL
 				);
@@ -1080,7 +1107,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 			if(hasMultipleCandidates) {
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+					RESULT_ERROR_SEMANTIC_OTHER, // TODO
 					String_fromFormat("ambiguous use of '%s'", call->id->name->value),
 					NULL
 				);
@@ -1098,7 +1125,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Missing argument for parameter
 				if(!argument) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
 						String_fromFormat("missing argument for parameter '%s' in call", parameter->externalId->name->value),
 						NULL
 					);
@@ -1107,7 +1134,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Too many arguments for parameters passed
 				if(!parameter) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
 						String_fromFormat("extra argument in call"),
 						NULL
 					);
@@ -1119,7 +1146,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter is labeless, but argument has a label
 				if(parameter->isLabeless && argument->label) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO
 						String_fromFormat("extraneous argument label '%s' in call", argument->label->name->value),
 						NULL
 					);
@@ -1128,7 +1155,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter has a label, but argument has no label
 				if(!parameter->isLabeless && !argument->label) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO
 						String_fromFormat("missing argument label '%s' in call", externalName->value),
 						NULL
 					);
@@ -1137,7 +1164,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter has a label, but argument has a different label
 				if(!parameter->isLabeless && argument->label && !String_equals(externalName, argument->label->name->value)) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION,
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO
 						String_fromFormat(
 							"incorrect argument label in call (have '%s', expected '%s')",
 							argument->label->name->value,
@@ -1167,7 +1194,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				case OPERATOR_UNWRAP: {
 					if(!type.isNullable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE, // TODO ?
 							String_fromFormat("cannot force unwrap value of non-optional type '%s'", __Analyser_stringifyType(type)->value),
 							NULL
 						);
@@ -1201,7 +1228,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 				default: {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SYNTACTIC_ANALYSIS,
 						String_fromFormat(
 							"'%s' is not a %s unary operator",
 							__Analyser_stringifyOperator(unary->operator),
@@ -1281,7 +1308,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						});
 
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat("value of optional type '%s?' must be unwrapped to a value of type '%s'", typeName->value, typeName->value),
 							NULL
 						);
@@ -1411,7 +1438,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 					if(leftType.isNullable || rightType.isNullable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat(
 								"cannot use relational operator '%s' with optional type '%s'",
 								__Analyser_stringifyOperator(binary->operator),
@@ -1441,7 +1468,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 					if(rightType.isNullable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_OTHER,
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat(
 								"cannot use '%s' operator with optional type '%s' on right side",
 								__Analyser_stringifyOperator(binary->operator),
@@ -1682,10 +1709,15 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 			if(!is_type_valid(declaration->returnType.type)) {
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_OTHER,
+					RESULT_ERROR_SYNTACTIC_ANALYSIS, // TODO: This should be everywhere, when checking types
 					String_fromFormat("cannot find type '%s' in scope", declarationNode->returnType->id->name->value),
 					NULL
 				);
+				// return AnalyserError(
+				// 	RESULT_ERROR_SEMANTIC_OTHER,
+				// 	String_fromFormat("cannot find type '%s' in scope", declarationNode->returnType->id->name->value),
+				// 	NULL
+				// );
 			}
 		} else {
 			declaration->returnType = (ValueType){.type = TYPE_VOID, .isNullable = false};
@@ -1693,8 +1725,8 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 		// TODO: Analyse function declaration
 		// Check for duplicate parameters
+		Array *parameterList = declarationNode->parameterList->parameters;
 		{
-			Array *parameterList = declarationNode->parameterList->parameters;
 			HashMap *variables = declaration->node->body->scope->variables;
 
 			// This will effectively check for duplicate parameters + register them as local variables
@@ -1704,8 +1736,26 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 				if(!parameter->type) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("type annotation missing in parameter '%s'", name->value),
+						NULL
+					);
+				}
+
+				// External paramter is missing (this is required in the assignment)
+				if(!parameter->externalId) {
+					return AnalyserError(
+						RESULT_ERROR_SYNTACTIC_ANALYSIS,
+						String_fromFormat("external parameter name missing in parameter '%s'", name->value),
+						NULL
+					);
+				}
+
+				// Both name and label are the same
+				if(parameter->externalId && String_equals(name, parameter->externalId->name->value)) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
+						String_fromFormat("parameter name same as external label '%s'", name->value),
 						NULL
 					);
 				}
@@ -1715,7 +1765,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 				if(!is_type_valid(resolvedType)) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER,
+						RESULT_ERROR_SYNTACTIC_ANALYSIS, // TODO: Fixed
 						String_fromFormat("cannot find type '%s' in scope", typeName->value),
 						NULL
 					);
@@ -1745,7 +1795,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 				// There is already a parameter with the same name
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_OTHER,
+					RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed?
 					String_fromFormat("invalid redeclaration of '%s'", name->value),
 					NULL
 				);
@@ -1770,7 +1820,50 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 			continue;
 		}
 
-		// TODO: Check for overloads
+		// Look for an overload with the same number of parameters
+		for(size_t i = 0; i < overloads->size; i++) {
+			FunctionDeclaration *overload = Array_get(overloads, i);
+			Array *parameters = overload->node->parameterList->parameters;
+
+			// Different number of parameters, skip
+			if(parameters->size != parameterList->size) continue;
+
+			// Different return type, skip
+			if(!is_type_equal(overload->returnType, declaration->returnType)) continue;
+
+			// Check for parameters
+			bool isMatching = false;
+			for(size_t j = 0; j < parameters->size; j++) {
+				ParameterASTNode *parameter = Array_get(parameters, j);
+				ParameterASTNode *otherParameter = Array_get(parameterList, j);
+
+				// Different parameter types, skip
+				if(!is_type_equal(parameter->type->type, otherParameter->type->type)) continue;
+
+				// Different external parameter name, skip
+				String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
+				String *otherExternalName = otherParameter->externalId ? otherParameter->externalId->name : otherParameter->internalId->name;
+				assertf(externalName, "Parameter has no external or internal name");
+				assertf(otherExternalName, "Parameter has no external or internal name");
+
+				if(!String_equals(externalName, otherExternalName->value)) continue;
+
+				// Found a matching overload
+				isMatching = true;
+				break;
+			}
+
+			// Found a matching overload
+			if(isMatching) {
+				return AnalyserError(
+					RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
+					String_fromFormat("invalid redeclaration of '%s'", name->value),
+					NULL
+				);
+			}
+		}
+
+		// No matching overload found, add the function declaration to the array
 		Array_push(overloads, declaration);
 	}
 

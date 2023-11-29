@@ -17,16 +17,18 @@ enum ResultType {
 	RESULT_NO_MATCH = -2,
 	RESULT_ASSERTION = -1,
 	RESULT_SUCCESS = 0,
-	RESULT_ERROR_LEXICAL_ANALYSIS = 1,                  // Chybná struktura aktuálního lexému
-	RESULT_ERROR_SYNTACTIC_ANALYSIS = 2,                // Chybná syntaxe programu, chybějící hlavička, atp.
-	RESULT_ERROR_SEMANTIC_FUNCTION_DEFINITION = 3,      // Nedefinovaná funkce, pokus o redefinice funkce
-	RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL = 4,    // Špatný počet/typ parametrů u volání funkce či typ návratové hodnoty z funkce
-	RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE = 5,       // Použití nedefinované proměnné
-	RESULT_ERROR_SEMANTIC_INVALID_RETURN = 6,           // Chybějící/přebývající výraz v příkazu návratu z funkce
-	RESULT_ERROR_SEMANTIC_INVALID_TYPE = 7,             // Chyba typové kompatibility v aritmetických, řetězcových a relačních výrazech
-	RESULT_ERROR_SEMANTIC_FAILED_INFER = 8,             // Typ proměnné nebo parametru není uveden a nelze odvodit od použitého výrazu.
-	RESULT_ERROR_SEMANTIC_OTHER = 9,                    // Ostatní sémantické chyby
-	RESULT_ERROR_INTERNAL = 99                          // Interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)
+	RESULT_ERROR_LEXICAL_ANALYSIS = 1,                    // Chybná struktura aktuálního lexému
+	RESULT_ERROR_SYNTACTIC_ANALYSIS = 2,                  // Chybná syntaxe programu, chybějící hlavička, atp.
+	RESULT_ERROR_SEMANTIC_UNDEFINED_FUNCTION = 3,         // Nedefinovaná funkce
+	RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION = 3,      // Redefinice proměnné
+	RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE = 4, // Špatný počet/typ parametrů u volání funkce
+	RESULT_ERROR_SEMANTIC_INVALID_RETURN_TYPE = 4,        // Špatný typ návratové hodnoty z funkce
+	RESULT_ERROR_SEMANTIC_UNDEFINED_VARIABLE = 5,         // Použití nedefinované nebo neinicializované proměnné
+	RESULT_ERROR_SEMANTIC_INVALID_RETURN = 6,             // Chybějící/přebývající výraz v příkazu návratu z funkce
+	RESULT_ERROR_SEMANTIC_INVALID_TYPE = 7,               // Chyba typové kompatibility v aritmetických, řetězcových a relačních výrazech
+	RESULT_ERROR_SEMANTIC_FAILED_INFER = 8,               // Typ proměnné nebo parametru není uveden a nelze odvodit od použitého výrazu
+	RESULT_ERROR_SEMANTIC_OTHER = 9,                      // Ostatní sémantické chyby
+	RESULT_ERROR_INTERNAL = 99                            // Interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)
 };
 
 typedef struct Result {
