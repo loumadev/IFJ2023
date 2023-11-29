@@ -1407,15 +1407,26 @@ DESCRIBE(ml_string_token_single, "Multiline string literals tokenization on a si
 		result = Lexer_tokenize(
 			&lexer,
 			"\"\"\"" LF
+			"A" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "A"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Single character string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
 			"  Aaa" LF
 			"  \"\"\"" LF
 		);
-		// result = Lexer_tokenize(
-		// 	&lexer,
-		// 	"\"\"\"" LF
-		// 	"A" LF
-		// 	"\"\"\"" LF
-		// );
 		EXPECT_TRUE(result.success);
 		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
 
@@ -1426,7 +1437,7 @@ DESCRIBE(ml_string_token_single, "Multiline string literals tokenization on a si
 		EXPECT_EQUAL_INT(token->value.string->length, 3);
 	} TEST_END();
 
-	TEST_BEGIN("Single character string") {
+	TEST_BEGIN("Multi character string") {
 		result = Lexer_tokenize(
 			&lexer,
 			"\"\"\"" LF
@@ -1442,9 +1453,43 @@ DESCRIBE(ml_string_token_single, "Multiline string literals tokenization on a si
 		EXPECT_TRUE(String_equals(token->value.string, "Hello!"));
 		EXPECT_EQUAL_INT(token->value.string->length, 6);
 	} TEST_END();
+
+	TEST_BEGIN("Mixed indentation") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\t Hello!" LF
+			"\t \"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "Hello!"));
+		EXPECT_EQUAL_INT(token->value.string->length, 6);
+	} TEST_END();
+
+	TEST_BEGIN("Mixed indentation 2") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\t \t Hello!" LF
+			"\t \"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\t Hello!"));
+		EXPECT_EQUAL_INT(token->value.string->length, 8);
+	} TEST_END();
 }
 
-DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on a single line") {
+DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on multiple lines") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);
 
@@ -1485,6 +1530,26 @@ DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on a sin
 		);
 		EXPECT_FALSE(result.success);
 	} TEST_END();
+
+	TEST_BEGIN("Insufficient indentation") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"B" LF
+			"  \"\"\"" LF
+		);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Insufficient indentation 2") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			" B" LF
+			"  \"\"\"" LF
+		);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
 }
 
 DESCRIBE(ml_string_token_escape, "Multiline string literals tokenization with escape sequences") {
@@ -1494,39 +1559,39 @@ DESCRIBE(ml_string_token_escape, "Multiline string literals tokenization with es
 	LexerResult result;
 	Token *token;
 
-	// TEST_BEGIN("Escaped newline") {
-	// 	result = Lexer_tokenize(
-	// 		&lexer,
-	// 		"\"\"\"" LF
-	// 		"\\n" LF
-	// 		"\"\"\"" LF
-	// 	);
-	// 	EXPECT_TRUE(result.success);
-	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+	TEST_BEGIN("Escaped newline") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\\n" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
 
-	// 	token = (Token*)Array_get(lexer.tokens, 0);
+		token = (Token*)Array_get(lexer.tokens, 0);
 
-	// 	EXPECT_TRUE(token->kind == TOKEN_STRING);
-	// 	EXPECT_TRUE(String_equals(token->value.string, "\n"));
-	// 	EXPECT_EQUAL_INT(token->value.string->length, 1);
-	// } TEST_END();
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\n"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	} TEST_END();
 
-	// TEST_BEGIN("Hexadecimal escape sequence") {
-	// 	result = Lexer_tokenize(
-	// 		&lexer,
-	// 		"\"\"\"" LF
-	// 		"\\u{00041}" LF
-	// 		"\"\"\"" LF
-	// 	);
-	// 	EXPECT_TRUE(result.success);
-	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+	TEST_BEGIN("Hexadecimal escape sequence") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"\\u{00041}" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
 
-	// 	token = (Token*)Array_get(lexer.tokens, 0);
+		token = (Token*)Array_get(lexer.tokens, 0);
 
-	// 	EXPECT_TRUE(token->kind == TOKEN_STRING);
-	// 	EXPECT_TRUE(String_equals(token->value.string, "\nA\n"));
-	// 	EXPECT_EQUAL_INT(token->value.string->length, 3);
-	// } TEST_END();
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "A"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	} TEST_END();
 
 	TEST_BEGIN("Single escaped double quote") {
 		result = Lexer_tokenize(
@@ -1545,24 +1610,24 @@ DESCRIBE(ml_string_token_escape, "Multiline string literals tokenization with es
 		EXPECT_EQUAL_INT(token->value.string->length, 1);
 	} TEST_END();
 
-	// TEST_BEGIN("Single character string") {
-	// 	result = Lexer_tokenize(
-	// 		&lexer,
-	// 		"\"\"\"" LF
-	// 		"A" LF
-	// 		"B" LF
-	// 		"C" LF
-	// 		"\"\"\"" LF
-	// 	);
-	// 	EXPECT_TRUE(result.success);
-	// 	EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+	TEST_BEGIN("Single character string") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"A" LF
+			"B" LF
+			"C" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
 
-	// 	token = (Token*)Array_get(lexer.tokens, 0);
+		token = (Token*)Array_get(lexer.tokens, 0);
 
-	// 	EXPECT_TRUE(token->kind == TOKEN_STRING);
-	// 	EXPECT_TRUE(String_equals(token->value.string, "A\nB\nC"));
-	// 	EXPECT_EQUAL_INT(token->value.string->length, 5);
-	// } TEST_END();
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "A\nB\nC"));
+		EXPECT_EQUAL_INT(token->value.string->length, 5);
+	} TEST_END();
 }
 
 DESCRIBE(string_invalid_tokeniz, "Invalid string literals tokenization") {
