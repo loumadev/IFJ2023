@@ -2,7 +2,7 @@
 #define INSTRUCTION_H
 
 #include "internal/String.h"
-#include "Codegen.h"
+#include "compiler/codegen/Codegen.h"
 
 #define INSTRUCTION_NULLARY(ins) \
 	fprintf(stdout, "%s\n", ins);
