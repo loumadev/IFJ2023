@@ -122,4 +122,32 @@ void Instruction_int2floats();
 
 void Instruction_float2ints();
 
+void Instruction_strlen(enum Frame resultScope, char *result, char *input, enum Frame inputScope);
+
+void Instruction_int2char(enum Frame resultScope, char *result, enum Frame inputScope, char *input);
+
+void Instruction_stri2int(enum Frame resultScope, char *result, enum Frame inputScope, char *input, int index);
+
+void Instruction_label(char *label);
+
+void Instruction_jump_ifeqs_chr_end();
+
+void Instruction_jump(char *label);
+
+void Instruction_move(enum Frame destinationScope, char* destination, enum Frame sourceScope, char* source);
+
+void Instruction_popframe();
+
+void Instruction_createframe();
+
+void Instruction_call(char *label);
+
+void Instruction_return();
+
+void Instruction_jump_ifeqs(char *label);
+
+void Instruction_getchar(enum Frame resultScope, char *result, enum Frame inputScope, char *input, enum Frame indexScope, char *index);
+
+void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1Scope, char *input1, enum Frame input2Scope, char *input2);
+
 #endif // INSTRUCTION_H
