@@ -150,4 +150,8 @@ void Instruction_getchar(enum Frame resultScope, char *result, enum Frame inputS
 
 void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1Scope, char *input1, enum Frame input2Scope, char *input2);
 
+void Instruction_call_func(size_t id);
+
+void Instruction_label_func(size_t id);
+
 #endif // INSTRUCTION_H

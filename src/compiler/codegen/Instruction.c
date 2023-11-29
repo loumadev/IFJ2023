@@ -273,3 +273,11 @@ void Instruction_getchar(enum Frame resultScope, char *result, enum Frame inputS
 void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1Scope, char *input1, enum Frame input2Scope, char *input2){
     fprintf(stdout, "CONCAT %s@$%s %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(input1Scope), input1, __Instruction_getFrame(input2Scope), input2);
 }
+
+void Instruction_call_func(size_t id){
+    fprintf(stdout, "CALL $func_%lu\n", id);
+}
+
+void Instruction_label_func(size_t id){
+    fprintf(stdout, "LABEL $func_%lu\n", id);
+}
