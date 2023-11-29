@@ -312,3 +312,184 @@ DESCRIBE(slice, "String_slice") {
 		EXPECT_TRUE(String_equals(out, "!"));
 	})
 }
+
+DESCRIBE(split, "String_split") {
+	String *str = NULL;
+	Array *out = NULL;
+
+	TEST_BEGIN("Simple split") {
+		str = String_alloc("Hello, World!");
+		out = String_split(str, " ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 2);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "Hello,"));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), "World!"));
+	} TEST_END()
+
+	TEST_BEGIN("Split empty") {
+		str = String_alloc("");
+		out = String_split(str, " ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 1);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), ""));
+	} TEST_END()
+
+	TEST_BEGIN("Split single") {
+		str = String_alloc("Hello");
+		out = String_split(str, " ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 1);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "Hello"));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple") {
+		str = String_alloc("Hello, World!");
+		out = String_split(str, ",");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 2);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "Hello"));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), " World!"));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple empty") {
+		str = String_alloc("Hello,,World!");
+		out = String_split(str, ",");
+		EXPECT_TRUE(out != NULL);
+		// for(size_t i = 0; i < out->size; i++) {
+		// 	String_print(Array_get(out, i), 0, 0);
+		// }
+		EXPECT_EQUAL_INT(out->size, 3);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "Hello"));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), ""));
+		EXPECT_TRUE(String_equals(Array_get(out, 2), "World!"));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple empty start") {
+		str = String_alloc(",Hello,World!");
+		out = String_split(str, ",");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 3);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), ""));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), "Hello"));
+		EXPECT_TRUE(String_equals(Array_get(out, 2), "World!"));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple empty end") {
+		str = String_alloc("Hello,World!,");
+		out = String_split(str, ",");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 3);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "Hello"));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), "World!"));
+		EXPECT_TRUE(String_equals(Array_get(out, 2), ""));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple empty start and end") {
+		str = String_alloc(",Hello,World!,");
+		out = String_split(str, ",");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 4);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), ""));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), "Hello"));
+		EXPECT_TRUE(String_equals(Array_get(out, 2), "World!"));
+		EXPECT_TRUE(String_equals(Array_get(out, 3), ""));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple empty start and end with separator") {
+		str = String_alloc(",Hello,World!,");
+		out = String_split(str, ",,");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 1);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), ",Hello,World!,"));
+	} TEST_END()
+
+	TEST_BEGIN("Split multiple character separator") {
+		str = String_alloc("abcXXXdefXXXghi");
+		out = String_split(str, "XXX");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 3);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "abc"));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), "def"));
+		EXPECT_TRUE(String_equals(Array_get(out, 2), "ghi"));
+	} TEST_END()
+
+	TEST_BEGIN("Split empty separator") {
+		str = String_alloc("abcde");
+		out = String_split(str, "");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_EQUAL_INT(out->size, 5);
+		EXPECT_TRUE(String_equals(Array_get(out, 0), "a"));
+		EXPECT_TRUE(String_equals(Array_get(out, 1), "b"));
+		EXPECT_TRUE(String_equals(Array_get(out, 2), "c"));
+		EXPECT_TRUE(String_equals(Array_get(out, 3), "d"));
+		EXPECT_TRUE(String_equals(Array_get(out, 4), "e"));
+	} TEST_END()
+}
+
+DESCRIBE(join, "String_join") {
+	Array *array = NULL;
+	String *out = NULL;
+
+	TEST_BEGIN("Simple join") {
+		array = Array_alloc(0);
+		Array_push(array, String_alloc("Hello"));
+		Array_push(array, String_alloc("World!"));
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, "Hello, World!"));
+	} TEST_END()
+
+	TEST_BEGIN("Join empty") {
+		array = Array_alloc(0);
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, ""));
+	} TEST_END()
+
+	TEST_BEGIN("Join single") {
+		array = Array_alloc(0);
+		Array_push(array, String_alloc("Hello"));
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, "Hello"));
+	} TEST_END()
+
+	TEST_BEGIN("Join multiple") {
+		array = Array_alloc(0);
+		Array_push(array, String_alloc("Hello"));
+		Array_push(array, String_alloc("World!"));
+		Array_push(array, String_alloc("Goodbye"));
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, "Hello, World!, Goodbye"));
+	} TEST_END()
+
+	TEST_BEGIN("Join multiple empty") {
+		array = Array_alloc(0);
+		Array_push(array, String_alloc("Hello"));
+		Array_push(array, String_alloc(""));
+		Array_push(array, String_alloc("World!"));
+		Array_push(array, String_alloc("Goodbye"));
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, "Hello, , World!, Goodbye"));
+	} TEST_END()
+
+	TEST_BEGIN("Join multiple empty start") {
+		array = Array_alloc(0);
+		Array_push(array, String_alloc(""));
+		Array_push(array, String_alloc("Hello"));
+		Array_push(array, String_alloc("World!"));
+		Array_push(array, String_alloc("Goodbye"));
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, ", Hello, World!, Goodbye"));
+	} TEST_END()
+
+	TEST_BEGIN("Join empty array") {
+		array = Array_alloc(0);
+		out = String_join(array, ", ");
+		EXPECT_TRUE(out != NULL);
+		EXPECT_TRUE(String_equals(out, ""));
+	} TEST_END()
+}

@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "Array.h"
+
 #ifndef STRING_H
 #define STRING_H
 
@@ -121,6 +123,23 @@ void String_copy(String *string, char *dest, size_t length);
  * @param replacement The value to replace the removed portion with.
  */
 void String_splice(String *string, size_t start, size_t end, char *replacement);
+
+/**
+ * Splits a String into an Array of Strings using a separator.
+ *
+ * @param string The String to split.
+ * @param separator The separator to use.
+ */
+Array* String_split(String *string, char *separator);
+
+/**
+ * Returns a new String created by joining the values of an Array with a separator.
+ *
+ * @param array The Array of Strings to join.
+ * @param separator The separator to use between values.
+ * @return A new String created by joining the values of the Array.
+ */
+String* String_join(Array *array, char *separator);
 
 /**
  * Returns a new String containing a portion of the original String.
