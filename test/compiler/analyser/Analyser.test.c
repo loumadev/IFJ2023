@@ -3720,17 +3720,17 @@ DESCRIBE(return_reachability, "Return reachability analysis") {
 }
 
 DESCRIBE(type_conversion, "Implicit type conversion") {
-	// Lexer lexer;
-	// Lexer_constructor(&lexer);
+	Lexer lexer;
+	Lexer_constructor(&lexer);
 
-	// Parser parser;
-	// Parser_constructor(&parser, &lexer);
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
 
-	// Analyser analyser;
-	// Analyser_constructor(&analyser);
+	Analyser analyser;
+	Analyser_constructor(&analyser);
 
-	// ParserResult parserResult;
-	// AnalyserResult analyserResult;
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
 
 	// TEST_BEGIN("Conversion of literals inside a complex expression") {
 	// 	Lexer_setSource(
@@ -3743,6 +3743,66 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 	// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 	// 	EXPECT_TRUE(analyserResult.success);
 	// } TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Double = 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 1 + FUNCTIONS_COUNT);
+
+		VariableDeclaration *var = Analyser_getVariableByName(&analyser, "a", analyser.globalScope);
+		EXPECT_NOT_NULL(var);
+
+		LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)var->node->initializer;
+		EXPECT_NOT_NULL(literal);
+		EXPECT_TRUE(literal->_type == NODE_LITERAL_EXPRESSION);
+
+		EXPECT_TRUE(literal->type.type == TYPE_DOUBLE);
+		EXPECT_EQUAL_FLOAT(literal->value.floating, 5);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Double = 5.5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 1 + FUNCTIONS_COUNT);
+
+		VariableDeclaration *var = Analyser_getVariableByName(&analyser, "a", analyser.globalScope);
+		EXPECT_NOT_NULL(var);
+
+		LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)var->node->initializer;
+		EXPECT_NOT_NULL(literal);
+		EXPECT_TRUE(literal->_type == NODE_LITERAL_EXPRESSION);
+
+		EXPECT_TRUE(literal->type.type == TYPE_DOUBLE);
+		EXPECT_EQUAL_FLOAT(literal->value.floating, 5.5);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int = 5.5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
 }
 
 DESCRIBE(str_interp_analysis, "String interpolation analysis") {

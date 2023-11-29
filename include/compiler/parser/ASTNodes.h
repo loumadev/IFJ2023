@@ -221,6 +221,8 @@ typedef struct LiteralExpressionASTNode {
 	enum ASTNodeType _type;
 	union TokenValue value;
 	struct ValueType type;
+	union TokenValue originalValue;
+	struct ValueType originalType;
 } LiteralExpressionASTNode;
 
 typedef struct InterpolationExpressionASTNode {

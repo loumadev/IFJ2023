@@ -240,6 +240,8 @@ LiteralExpressionASTNode* new_LiteralExpressionASTNode(
 	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
 	node->type = type;
 	node->value = value;
+	node->originalType = type;
+	node->originalValue = value;
 	return node;
 }
 

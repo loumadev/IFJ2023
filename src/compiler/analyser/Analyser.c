@@ -933,9 +933,15 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)node;
 
 			// Can only retype int literals to double
-			if(prefferedType.type == TYPE_DOUBLE && literal->type.type == TYPE_INT) {
-				literal->value.floating = (double)literal->value.integer;
+			if(prefferedType.type == TYPE_DOUBLE && literal->originalType.type == TYPE_INT) {
+				literal->value.floating = (double)literal->originalValue.integer;
 				literal->type.type = TYPE_DOUBLE;
+			}
+
+			// Revert implicit type conversions
+			if(prefferedType.type == TYPE_INT && literal->originalType.type == TYPE_INT) {
+				literal->value = literal->originalValue;
+				literal->type = literal->originalType;
 			}
 
 			*outType = literal->type;
@@ -1326,10 +1332,10 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						binary->left->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE
 					) {
-						LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->left;
+						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->left;
 
-						literal->value.floating = (double)literal->value.integer;
-						literal->type.type = TYPE_DOUBLE;
+						// literal->value.floating = (double)literal->value.integer;
+						// literal->type.type = TYPE_DOUBLE;
 
 						binary->type.type = TYPE_DOUBLE;
 					} else if(
@@ -1337,10 +1343,10 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						binary->right->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT
 					) {
-						LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
+						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
 
-						literal->value.floating = (double)literal->value.integer;
-						literal->type.type = TYPE_DOUBLE;
+						// literal->value.floating = (double)literal->value.integer;
+						// literal->type.type = TYPE_DOUBLE;
 
 						binary->type.type = TYPE_DOUBLE;
 					} else {
