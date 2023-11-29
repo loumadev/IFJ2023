@@ -1352,6 +1352,48 @@ DESCRIBE(while_statement, "While statement parsing") {
 	TEST_END();
 }
 
+DESCRIBE(for_statement, "For statement parsing") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	ParserResult result;
+
+	TEST_BEGIN("For statement") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 2-1...(1+3*3) {" LF
+			TAB "print(i)" LF
+			TAB "if(i == 5) {" LF
+			TAB TAB "break" LF
+			TAB "} else {" LF
+			TAB TAB "continue" LF
+			TAB "}" LF
+			"}" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_TRUE(result.success);
+		EXPECT_STATEMENT(result.node, NODE_FOR_STATEMENT);
+
+		ForStatementASTNode *for_statement = (ForStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(for_statement->iterator);
+		EXPECT_TRUE(String_equals(for_statement->iterator->name, "i"));
+
+		RangeASTNode *range = (RangeASTNode*)for_statement->range;
+		EXPECT_NOT_NULL(for_statement->range);
+		EXPECT_TRUE(for_statement->range->_type == NODE_RANGE);
+
+		EXPECT_TRUE(range->operator == OPERATOR_RANGE);
+
+		EXPECT_BINARY_NODE(range->start, OPERATOR_MINUS, NODE_LITERAL_EXPRESSION, NODE_LITERAL_EXPRESSION, start);
+		EXPECT_BINARY_NODE(range->end, OPERATOR_PLUS, NODE_LITERAL_EXPRESSION, NODE_BINARY_EXPRESSION, end);
+	} TEST_END();
+}
+
 DESCRIBE(statement_separation, "Validity of statement separation") {
 	Lexer lexer;
 	Lexer_constructor(&lexer);

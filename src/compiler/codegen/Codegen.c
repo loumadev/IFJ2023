@@ -218,6 +218,13 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			Instruction_return();
 		} break;
 
+
+		case NODE_BREAK_STATEMENT:
+		case NODE_CONTINUE_STATEMENT:
+		case NODE_FOR_STATEMENT: {
+			fassertf("TODO");
+		} break;
+
 		// Todo: Implement
 		case NODE_INTERPOLATION_EXPRESSION:
 		case NODE_INVALID:
@@ -227,6 +234,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		case NODE_PARAMETER_LIST:
 		case NODE_ARGUMENT:
 		case NODE_ARGUMENT_LIST:
+		case NODE_RANGE:
 		case NODE_PATTERN: {
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 		} break;
@@ -359,6 +367,8 @@ void __Codegen_evaluateBinaryOperator(__attribute__((unused)) Codegen *codegen, 
 		case OPERATOR_UNWRAP:
 		case OPERATOR_NULL_COALESCING:
 			fassertf("Operator not implemented yet. Throw this this against xnovot2r head");
+		case OPERATOR_RANGE:
+		case OPERATOR_HALF_OPEN_RANGE:
 		case OPERATOR_DEFAULT: {
 			fassertf("Unknown operator. Analysis probably failed.");
 		}
