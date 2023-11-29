@@ -693,7 +693,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 								if(function->node->parameterList->parameters->size == 0) {
 									return AnalyserError(
-										RESULT_ERROR_SEMANTIC_OTHER, // TODO
+										RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 										String_fromFormat("invalid redeclaration of '%s'", declaration->name->value),
 										NULL
 									);
@@ -822,7 +822,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 					if(variable) {
 						return AnalyserError(
-							RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO ?
+							RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 							String_fromFormat("invalid redeclaration of '%s'", declaration->node->id->name->value),
 							NULL
 						);
@@ -1015,8 +1015,8 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				}
 			}
 
-			Array /*<FunctionDeclaration>*/ *overloads = Analyser_getFunctionDeclarationsByName(analyser, call->id->name->value);
-			Array /*<FunctionDeclaration>*/ *candidates = NULL;
+			Array /*<FunctionDeclaration> | null*/ *overloads = Analyser_getFunctionDeclarationsByName(analyser, call->id->name->value);
+			Array /*<FunctionDeclaration> | null*/ *candidates = NULL;
 			bool hasMultipleCandidates = false;
 			FunctionDeclaration *declaration = NULL;
 
@@ -1738,6 +1738,15 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("type annotation missing in parameter '%s'", name->value),
+						NULL
+					);
+				}
+
+				// External paramter is missing (this is required in the assignment)
+				if(!parameter->externalId) {
+					return AnalyserError(
+						RESULT_ERROR_SYNTACTIC_ANALYSIS,
+						String_fromFormat("external parameter name missing in parameter '%s'", name->value),
 						NULL
 					);
 				}
