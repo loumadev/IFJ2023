@@ -195,6 +195,15 @@ String* String_fromLong(long value);
 String* String_fromDouble(double value);
 
 /**
+ * Returns a new String created from the given range.
+ *
+ * @param start The starting pointer of the range to use.
+ * @param end The ending pointer of the range to use.
+ * @return A new String created from the range.
+ */
+String* String_fromRange(char *start, char *end);
+
+/**
  * Allocates memory for a new String and initializes it with the given value.
  *
  * @param value The value to initialize the new String with.

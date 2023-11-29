@@ -493,3 +493,31 @@ DESCRIBE(join, "String_join") {
 		EXPECT_TRUE(String_equals(out, ""));
 	} TEST_END()
 }
+
+DESCRIBE(fromRange, "String_fromRange") {
+	String *str = NULL;
+
+	TEST("Simple fromRange", {
+		char *s = "Hello, World!";
+		str = String_fromRange(s, s + 5);
+		EXPECT_TRUE(String_equals(str, "Hello"));
+	})
+
+	TEST("Empty fromRange", {
+		char *s = "Hello, World!";
+		str = String_fromRange(s, s);
+		EXPECT_TRUE(String_equals(str, ""));
+	})
+
+	TEST("Single character fromRange", {
+		char *s = "Hello, World!";
+		str = String_fromRange(s, s + 1);
+		EXPECT_TRUE(String_equals(str, "H"));
+	})
+
+	TEST("Invalid fromRange", {
+		char *s = "Hello, World!";
+		str = String_fromRange(s + 5, s);
+		EXPECT_NULL(str);
+	})
+}

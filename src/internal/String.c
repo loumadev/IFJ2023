@@ -383,6 +383,28 @@ String* String_fromDouble(double value) {
 	return string;
 }
 
+String* String_fromRange(char *start, char *end) {
+	if(!start) return NULL;
+	if(!end) return NULL;
+	if(start > end) return NULL;
+
+	size_t length = end - start;
+
+	// Allocate memory for the string
+	String *string = String_alloc(NULL);
+	if(!string) return NULL;
+
+	// Copy the substring
+	String_resize(string, length + 1, true);
+	memcpy(string->value, start, length);
+
+	string->value[length] = '\0';
+	string->length = length;
+	string->capacity = string->length;
+
+	return string;
+}
+
 
 String* String_alloc(char *value) {
 	String *string = mem_alloc(sizeof(String));
