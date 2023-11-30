@@ -337,7 +337,8 @@ void __Codegen_generateUserFunctions(Codegen *codegen) {
 }
 
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
-	if(functionDeclaration->builtin != FUNCTION_NONE) {
+    fprintf(stderr, "Generating function %d\n", functionDeclaration->builtin);
+    if(functionDeclaration->builtin != FUNCTION_NONE) {
 		return;
 	}
 
