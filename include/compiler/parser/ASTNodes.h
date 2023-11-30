@@ -261,16 +261,16 @@ typedef struct OptionalBindingConditionASTNode {
 
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
-	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test;
-	BlockASTNode *body;
+	BlockASTNode *body; // This must be the second field
+	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test; // This must be the third field
 	ASTNode /*<BlockASTNode | IfStatementASTNode> | null*/ *alternate;
 	size_t id;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
-	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test;
-	BlockASTNode *body;
+	BlockASTNode *body; // This must be the second field
+	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test; // This must be the third field
 	size_t id;
 } WhileStatementASTNode;
 
@@ -283,9 +283,9 @@ typedef struct RangeASTNode {
 
 typedef struct ForStatementASTNode {
 	enum ASTNodeType _type;
+	BlockASTNode *body; // This must be the second field
 	IdentifierASTNode *iterator;
 	RangeASTNode *range;
-	BlockASTNode *body;
 	size_t id;
 } ForStatementASTNode;
 
