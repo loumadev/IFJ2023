@@ -1032,9 +1032,11 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				literal->value.floating = (double)literal->originalValue.integer;
 				literal->type.type = TYPE_DOUBLE;
 			}
-
 			// Revert implicit type conversions
-			if(prefferedType.type == TYPE_INT && literal->originalType.type == TYPE_INT) {
+			else if(
+				/*prefferedType.type == TYPE_INT && literal->originalType.type == TYPE_INT*/
+				literal->originalType.type == TYPE_INT && literal->type.type != TYPE_DOUBLE
+			) {
 				literal->value = literal->originalValue;
 				literal->type = literal->originalType;
 			}
@@ -1208,7 +1210,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 			if(hasMultipleCandidates) {
 				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_OTHER, // TODO
+					RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 					String_fromFormat("ambiguous use of '%s'", call->id->name->value),
 					NULL
 				);
@@ -1247,7 +1249,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter is labeless, but argument has a label
 				if(parameter->isLabeless && argument->label) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER, // TODO
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("extraneous argument label '%s' in call", argument->label->name->value),
 						NULL
 					);
@@ -1256,7 +1258,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter has a label, but argument has no label
 				if(!parameter->isLabeless && !argument->label) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER, // TODO
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("missing argument label '%s' in call", externalName->value),
 						NULL
 					);
@@ -1265,7 +1267,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter has a label, but argument has a different label
 				if(!parameter->isLabeless && argument->label && !String_equals(externalName, argument->label->name->value)) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER, // TODO
+						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat(
 							"incorrect argument label in call (have '%s', expected '%s')",
 							argument->label->name->value,
@@ -1361,8 +1363,34 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				bool isLeftFunctionCall = binary->left->_type == NODE_FUNCTION_CALL;
 				bool isRightFunctionCall = binary->right->_type == NODE_FUNCTION_CALL;
 
+				// No function call
+				if(!isLeftFunctionCall && !isRightFunctionCall) {
+					// Resolve both types independently
+					result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+					if(!result.success) return result;
+
+					result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
+					if(!result.success) return result;
+
+					// Left is int, right is double
+					if(leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE) {
+						// Try to convert the left side to double
+						result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+						if(!result.success) return result;
+					}
+					// Left is double, right is int
+					else if(leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT) {
+						// Try to convert the right side to double
+						result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+						if(!result.success) return result;
+					}
+					// Both types are same, we are done
+					else {
+						// Nothing to do here
+					}
+				}
 				// Left first (right function call)
-				if((!isLeftFunctionCall && !isRightFunctionCall) || (!isLeftFunctionCall && isRightFunctionCall)) {
+				else if(!isLeftFunctionCall && isRightFunctionCall) {
 					result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
 					if(!result.success) return result;
 
@@ -1383,11 +1411,13 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
 					if(result.success) {
 						result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+						if(!result.success) return result;
 					} else {
 						// Try to resolve the right side after the left side failed
 						result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
 						if(result.success) {
 							result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+							if(!result.success) return result;
 						} else {
 							// Both sides failed, return the error from the left side
 							return result;
@@ -1473,24 +1503,26 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					// Cast types of the literals
 					if(leftType.type == rightType.type) {
 						binary->type.type = TYPE_BOOL;
+					} else if(leftType.type == TYPE_NIL || rightType.type == TYPE_NIL) {
+						binary->type.type = TYPE_BOOL;
 					} else if(
 						binary->left->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE
 					) {
-						LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->left;
+						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->left;
 
-						literal->value.floating = (double)literal->value.integer;
-						literal->type.type = TYPE_DOUBLE;
+						// literal->value.floating = (double)literal->value.integer;
+						// literal->type.type = TYPE_DOUBLE;
 
 						binary->type.type = TYPE_BOOL;
 					} else if(
 						binary->right->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT
 					) {
-						LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
+						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
 
-						literal->value.floating = (double)literal->value.integer;
-						literal->type.type = TYPE_DOUBLE;
+						// literal->value.floating = (double)literal->value.integer;
+						// literal->type.type = TYPE_DOUBLE;
 
 						binary->type.type = TYPE_BOOL;
 					} else {
@@ -1506,10 +1538,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						);
 					}
 
-					binary->type = (ValueType){
-						.type = TYPE_BOOL,
-						.isNullable = leftType.isNullable || rightType.isNullable
-					};
+					binary->type.isNullable = leftType.isNullable || rightType.isNullable;
 					*outType = binary->type;
 				} break;
 
