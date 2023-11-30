@@ -12,7 +12,7 @@
 
 String* __Analyser_stringifyType(ValueType type);
 void __Analyser_registerBuiltInFunctions(Analyser *analyser);
-void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent);
+BlockScope* __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent);
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
 AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser);
@@ -116,6 +116,7 @@ BlockScope* BlockScope_alloc(BlockScope *parent) {
 	scope->parent = parent;
 	scope->variables = HashMap_alloc();
 	scope->function = NULL;
+	scope->loop = NULL;
 	return scope;
 }
 
@@ -214,6 +215,18 @@ FunctionDeclaration* Analyser_getNearestFunctionDeclaration(Analyser *analyser, 
 
 	while(scope) {
 		if(scope->function) return scope->function;
+
+		scope = scope->parent;
+	}
+
+	return NULL;
+}
+
+StatementASTNode /*<ForStatementASTNode | WhileStatementASTNode>*/* Analyser_getNearestLoop(Analyser *analyser, BlockScope *scope) {
+	(void)analyser;
+
+	while(scope) {
+		if(scope->loop) return scope->loop;
 
 		scope = scope->parent;
 	}
@@ -462,7 +475,7 @@ void __Analyser_registerBuiltInFunctions(Analyser *analyser) {
 	}
 }
 
-void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent) {
+BlockScope* __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent) {
 	block->scope = BlockScope_alloc(parent);
 
 	for(size_t i = 0; i < block->statements->size; i++) {
@@ -470,6 +483,8 @@ void __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block
 
 		__Analyser_createBlockScopeChaining_processNode(analyser, statement, block->scope);
 	}
+
+	return block->scope;
 }
 
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent) {
@@ -490,9 +505,11 @@ void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode
 			}
 		} break;
 
-		case NODE_WHILE_STATEMENT: {
-			WhileStatementASTNode *whileStatement = (WhileStatementASTNode*)node;
-			__Analyser_createBlockScopeChaining(analyser, whileStatement->body, parent);
+		case NODE_WHILE_STATEMENT:
+		case NODE_FOR_STATEMENT: {
+			WhileStatementASTNode *loopStatement = (WhileStatementASTNode*)node;
+			BlockScope *child = __Analyser_createBlockScopeChaining(analyser, loopStatement->body, parent);
+			child->loop = (StatementASTNode*)loopStatement;
 		} break;
 
 		case NODE_FUNCTION_DECLARATION: {
@@ -805,6 +822,61 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(!result.success) return result;
 			} break;
 
+			case NODE_FOR_STATEMENT: {
+				ForStatementASTNode *forStatement = (ForStatementASTNode*)statement;
+				RangeASTNode *range = forStatement->range;
+				assertf(range != NULL);
+
+				// Resolve types for the range
+				ValueType startType;
+				AnalyserResult result = Analyser_resolveExpressionType(analyser, range->start, block->scope, (ValueType){.type = TYPE_INT, .isNullable = false}, &startType);
+				if(!result.success) return result;
+
+				ValueType endType;
+				result = Analyser_resolveExpressionType(analyser, range->end, block->scope, (ValueType){.type = TYPE_INT, .isNullable = false}, &endType);
+				if(!result.success) return result;
+
+				// Check if the types are assignable
+				ValueType allowedType = (ValueType){.type = TYPE_INT, .isNullable = false};
+				bool isStart = is_value_assignable(allowedType, startType);
+				bool isEnd = is_value_assignable(allowedType, endType);
+				if(!isStart || !isEnd) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+						String_fromFormat(
+							"cannot convert value of type '%s' to specified type '%s'",
+							__Analyser_stringifyType(isStart ? startType : endType)->value,
+							__Analyser_stringifyType(allowedType)->value
+						),
+						NULL
+					);
+				}
+
+				// Create a new declaration for the loop variable
+				VariableDeclaration *declaration = new_VariableDeclaration(
+					analyser,
+					NULL,
+					true,
+					(ValueType){.type = TYPE_INT, .isNullable = false},
+					forStatement->iterator->name,
+					false,
+					true
+				);
+
+				// Add the new declaration to the scope of the for statement body
+				HashMap_set(forStatement->body->scope->variables, declaration->name->value, declaration);
+
+				// Assign the id of the iterator to the for statement for the codegen
+				forStatement->iterator->id = declaration->id;
+
+				// Assign the id to the for statement for the codegen
+				forStatement->id = Analyser_nextId(analyser);
+
+				// Analyse the body of the for statement
+				result = __Analyser_analyseBlock(analyser, forStatement->body);
+				if(!result.success) return result;
+			} break;
+
 			case NODE_FUNCTION_DECLARATION: {
 				FunctionDeclarationASTNode *function = (FunctionDeclarationASTNode*)statement;
 
@@ -899,6 +971,29 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				returnStatement->id = function->id;
 
 				function->isUsed = true;
+			} break;
+
+			case NODE_BREAK_STATEMENT:
+			case NODE_CONTINUE_STATEMENT: {
+				BreakStatementASTNode *breakStatement = (BreakStatementASTNode*)statement;
+
+				// Try to find the nearest loop
+				WhileStatementASTNode *loop = (WhileStatementASTNode*)Analyser_getNearestLoop(analyser, block->scope);
+
+				// Loop control statement is not inside a function
+				if(!loop) {
+					return AnalyserError(
+						RESULT_ERROR_SYNTACTIC_ANALYSIS, // This was requested by the examiner
+						String_fromFormat(
+							"'%s' is only allowed inside a loop",
+							breakStatement->_type == NODE_BREAK_STATEMENT ? "break" : "continue"
+						),
+						NULL
+					);
+				}
+
+				// Assign the id of the function to the return statement for the codegen
+				breakStatement->id = loop->id;
 			} break;
 
 			case NODE_EXPRESSION_STATEMENT: {

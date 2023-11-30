@@ -2319,6 +2319,37 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
 			EXPECT_EQUAL_PTR(function->node, declaration);
 		}
+		{
+			Lexer_setSource(
+				&lexer,
+				"func a() -> Int {return 1}" LF
+				"func a() -> Double {return 1.5}" LF
+				"" LF
+				"var v1 = a() > 4" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			EXPECT_STATEMENTS(parserResult.node, 3 + FUNCTIONS_COUNT);
+
+			VariableDeclaration *variable = Analyser_getVariableByName(&analyser, "v1", analyser.globalScope);
+			EXPECT_NOT_NULL(variable);
+
+			BinaryExpressionASTNode *expression = (BinaryExpressionASTNode*)variable->node->initializer;
+			EXPECT_TRUE(expression->_type == NODE_BINARY_EXPRESSION);
+
+			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression->left;
+			EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+			FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+			EXPECT_NOT_NULL(function);
+
+			FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
+			EXPECT_EQUAL_PTR(function->node, declaration);
+		}
 	} TEST_END();
 
 
@@ -3732,17 +3763,65 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 	ParserResult parserResult;
 	AnalyserResult analyserResult;
 
-	// TEST_BEGIN("Conversion of literals inside a complex expression") {
-	// 	Lexer_setSource(
-	// 		&lexer,
-	// 		"var a = 1 * (2 * 2) + 8 - 1.5" LF
-	// 	);
-	// 	parserResult = Parser_parse(&parser);
-	// 	EXPECT_TRUE(parserResult.success);
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 1 * (2 * 2) + 8 - 1.5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
 
-	// 	analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-	// 	EXPECT_TRUE(analyserResult.success);
-	// } TEST_END();
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 3 + (2 + (2 * 2) - 6) + (8 - 1.5) - 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 3 + (2 * (2 + 2) - 6) + (1 + 8 - 1.5) - 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 1 + 1.0 + 1" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 1 + 1 + 1.0" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
 
 	TEST_BEGIN("Conversion of literals inside a complex expression") {
 		Lexer_setSource(
@@ -3796,6 +3875,252 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 		Lexer_setSource(
 			&lexer,
 			"var a: Int = 5.5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside a complex expression") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2.0" LF
+			"var b = 2 + (a + 1)" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+
+		VariableDeclaration *var = Analyser_getVariableByName(&analyser, "b", analyser.globalScope);
+		EXPECT_NOT_NULL(var);
+
+		BinaryExpressionASTNode *binary = (BinaryExpressionASTNode*)var->node->initializer;
+		EXPECT_NOT_NULL(binary);
+		EXPECT_TRUE(binary->_type == NODE_BINARY_EXPRESSION);
+
+		EXPECT_TRUE(binary->type.type == TYPE_DOUBLE);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2" LF
+			"var b = a == 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2.0" LF
+			"var b = a != 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2" LF
+			"var b = a != 5.5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside LT/GT expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2" LF
+			"var b = a <= 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2.0" LF
+			"var b = a > 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2.0 > 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2" LF
+			"var b = a < 5.0" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 2" LF
+			"var b = a < 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 2" LF
+			"var b = 3.5" LF
+			"var c = a >= b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+}
+
+DESCRIBE(binary_ops, "Binary operators analysis") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var b = a == nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int = 5" LF
+			"var b = a != nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var b = a > 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int = 5" LF
+			"var b = a > 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Double = 5.5" LF
+			"var b = a <= 2.2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int = 5.0" LF
+			"var b = a >= 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int = 5" LF
+			"var b = a < 2.0" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
@@ -4178,4 +4503,269 @@ DESCRIBE(use_of_builtin_funcs, "Use of built-in functions") {
 	} TEST_END();
 
 	TEST_BEGIN("Invalid use of built-in functions") {} TEST_END();
+}
+
+DESCRIBE(for_in_loop, "Analysis of for-in loop") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Simple for-in loop") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("For-in loop with expression as range") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10+6 {}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid for-in loop with expression as range 1") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10+6.2 {}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid for-in loop with expression as range 2") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1.5...10+6 {}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Invalid for-in loop with expression as range 3") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1.5...10+6.2 {}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("For-in loop with underscore as iterator") {
+		Lexer_setSource(
+			&lexer,
+			"for _ in 1...10+6 {}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+}
+
+DESCRIBE(break_continue, "Analysis of break/continue statements") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Break outside any loop") {
+		Lexer_setSource(
+			&lexer,
+			"break" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Continue outside any loop") {
+		Lexer_setSource(
+			&lexer,
+			"continue" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Break inside simple loop") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "break" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Continue inside simple loop") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "continue" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Break inside loop with condition") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "if(i == 5) {" LF
+			TAB TAB "break" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Continue inside loop with condition") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "if(i == 5) {" LF
+			TAB TAB "continue" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Break inside nested loop") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "for j in 1...10 {" LF
+			TAB TAB "break" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Continue inside nested loop") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "for j in 1...10 {" LF
+			TAB TAB "continue" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Break inside mixed nested loops") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"for i in 1...10 {" LF
+			TAB "while a > 0 {" LF
+			TAB TAB "break" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Continue inside mixed nested loops") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"while a > 0 {" LF
+			TAB "for i in 1...10 {" LF
+			TAB TAB "break" LF
+			TAB "}" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Redeclaration of loop iterator variable") {
+		Lexer_setSource(
+			&lexer,
+			"for i in 1...10 {" LF
+			TAB "var i = 5" LF
+			"}" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
 }

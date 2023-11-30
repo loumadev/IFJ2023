@@ -43,6 +43,7 @@ typedef struct BlockScope {
 	struct BlockScope *parent;
 	HashMap /*<name: String, declaration: VariableDeclaration>*/ *variables;
 	FunctionDeclaration *function; // Defined when this is function body scope
+	StatementASTNode /*<loop: ForStatementASTNode | WhileStatementASTNode>*/ *loop; // Defined when this is loop body scope
 } BlockScope;
 
 typedef struct Analyser {
