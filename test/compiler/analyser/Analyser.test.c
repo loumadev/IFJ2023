@@ -4502,7 +4502,36 @@ DESCRIBE(use_of_builtin_funcs, "Use of built-in functions") {
 		}
 	} TEST_END();
 
-	TEST_BEGIN("Invalid use of built-in functions") {} TEST_END();
+	TEST_BEGIN("Valid use of non-built-in functions") {
+		{
+			Lexer_setSource(
+				&lexer,
+				"func foo() -> Void {" LF
+				TAB "write(\"Hello, World!\")" LF
+				"}" LF
+				"" LF
+				"foo()" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_TRUE(analyserResult.success);
+
+			FunctionDeclaration *function = Array_get(Analyser_getFunctionDeclarationsByName(&analyser, "foo"), 0);
+			EXPECT_NOT_NULL(function);
+			EXPECT_EQUAL_INT(function->node->builtin, FUNCTION_NONE);
+
+			EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+
+			FunctionCallASTNode *call = (FunctionCallASTNode*)((ExpressionStatementASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT))->expression;
+			EXPECT_NOT_NULL(call);
+			EXPECT_TRUE(call->_type == NODE_FUNCTION_CALL);
+
+			EXPECT_EQUAL_INT(call->id->id, function->id);
+			EXPECT_EQUAL_PTR(function, Analyser_getFunctionById(&analyser, call->id->id));
+		}
+	} TEST_END();
 }
 
 DESCRIBE(for_in_loop, "Analysis of for-in loop") {
