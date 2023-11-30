@@ -90,12 +90,12 @@ ReturnStatementASTNode* new_ReturnStatementASTNode(
 }
 
 BreakStatementASTNode* new_BreakStatementASTNode() {
-	prepare_node_of(BreakStatementASTNode, NODE_RETURN_STATEMENT)
+	prepare_node_of(BreakStatementASTNode, NODE_BREAK_STATEMENT)
 	return node;
 }
 
 ContinueStatementASTNode* new_ContinueStatementASTNode() {
-	prepare_node_of(ContinueStatementASTNode, NODE_RETURN_STATEMENT)
+	prepare_node_of(ContinueStatementASTNode, NODE_CONTINUE_STATEMENT)
 	return node;
 }
 
