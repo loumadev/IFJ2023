@@ -1289,12 +1289,12 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 		case NODE_UNARY_EXPRESSION: {
 			UnaryExpressionASTNode *unary = (UnaryExpressionASTNode*)node;
 
-			ValueType type;
-			AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, prefferedType, &type);
-			if(!result.success) return result;
-
 			switch(unary->operator) {
 				case OPERATOR_UNWRAP: {
+					ValueType type;
+					AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, (ValueType){.type = prefferedType.type, .isNullable = true}, &type);
+					if(!result.success) return result;
+
 					if(!type.isNullable) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_INVALID_TYPE, // TODO ?
@@ -1307,6 +1307,10 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				} break;
 
 				case OPERATOR_NOT: {
+					ValueType type;
+					AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, prefferedType, &type);
+					if(!result.success) return result;
+
 					if(type.type != TYPE_BOOL) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
@@ -1366,27 +1370,75 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// No function call
 				if(!isLeftFunctionCall && !isRightFunctionCall) {
 					// Resolve both types independently
-					result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
-					if(!result.success) return result;
+					AnalyserResult resultLeft = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+					AnalyserResult resultRight = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
 
-					result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
-					if(!result.success) return result;
+					// Both sides failed, return the error from the left side
+					if(!resultLeft.success && !resultRight.success) return resultLeft;
 
-					// Left is int, right is double
-					if(leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE) {
-						// Try to convert the left side to double
-						result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
-						if(!result.success) return result;
+					// Both sides resolved successfully
+					if(resultLeft.success && resultRight.success) {
+						// Left is int, right is double
+						if(leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE) {
+							// Try to convert the left side to double
+							result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+							if(!result.success) return result;
+						}
+						// Left is double, right is int
+						else if(leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT) {
+							// Try to convert the right side to double
+							result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+							if(!result.success) return result;
+						}
+						// Both types are same, we are done
+						else {
+							// Type casts resolved successfully, yay!
+						}
 					}
-					// Left is double, right is int
-					else if(leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT) {
-						// Try to convert the right side to double
+					// Right side failed, try to resolve it with left side type
+					else if(resultLeft.success) {
 						result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
-						if(!result.success) return result;
+
+						// Try to convert the right side to double
+						if(!result.success && leftType.type == TYPE_INT) {
+							// Try to resolve the left side with double
+							result = Analyser_resolveExpressionType(analyser, binary->left, scope, (ValueType){.type = TYPE_DOUBLE, .isNullable = leftType.isNullable}, &leftType);
+							if(result.success && leftType.type == TYPE_DOUBLE) {
+								// Try to resolve the right side with the left side type
+								result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+								if(!result.success) return result; // If this fails, there is nothing we can do
+							} else {
+								return resultRight; // If this fails, there is nothing we can do
+							}
+						} else if(!result.success) {
+							return resultRight; // If this fails, there is nothing we can do
+						} else {
+							// All resolved successfully, yay!
+						}
 					}
-					// Both types are same, we are done
-					else {
-						// Nothing to do here
+					// Left side failed, try to resolve it with right side type
+					else if(resultRight.success) {
+						result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+
+						// Try to convert the left side to double
+						if(!result.success && rightType.type == TYPE_INT) {
+							// Try to resolve the right side with double
+							result = Analyser_resolveExpressionType(analyser, binary->right, scope, (ValueType){.type = TYPE_DOUBLE, .isNullable = rightType.isNullable}, &rightType);
+							if(result.success && rightType.type == TYPE_DOUBLE) {
+								// Try to resolve the left side with the right side type
+								result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+								if(!result.success) return result; // If this fails, there is nothing we can do
+							} else {
+								return resultLeft; // If this fails, there is nothing we can do
+							}
+						} else if(!result.success) {
+							return resultLeft; // If this fails, there is nothing we can do
+						} else {
+							// All resolved successfully, yay!
+						}
+					} else {
+						// Both sides failed, return the error from the left side
+						return resultLeft;
 					}
 				}
 				// Left first (right function call)
