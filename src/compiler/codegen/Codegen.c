@@ -14,20 +14,24 @@ void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen);
 void __Codegen_generateHelperVariables();
 
 // Built-in functions
-void __Codegen_generateBuiltInFunctions(__attribute__((unused)) Codegen *codegen);
+void __Codegen_generateBuiltInFunctions(Codegen *codegen);
 void __Codegen_generateOrd();
 void __Codegen_generateChr();
 void __Codegen_generateLength();
 void __Codegen_generateSubstring();
 
+// User functions
+void __Codegen_generateUserFunctions(Codegen *codegen);
+void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration);
+
+
 // Walking AST functions
 void __Codegen_walkAST(Codegen *codegen);
 void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifStatement);
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement);
-void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration);
 void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNode *binaryExpression);
-void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression);
-void __Codegen_evaluateLiteral(LiteralExpressionASTNode *literal);
+void __Codegen_evaluateBinaryOperator(Codegen *codegen, BinaryExpressionASTNode *expression);
+void __Codegen_evaluateLiteral(Codegen *codegen, LiteralExpressionASTNode *literal);
 void __Codegen_evaluateVariableDeclaration(Codegen *codegen, VariableDeclarationASTNode *variableDeclaration);
 void __Codegen_evaluateVariableDeclarationList(Codegen *codegen, VariableDeclarationListASTNode *declarationList);
 void __Codegen_evaluateVariableDeclarator(Codegen *codegen, VariableDeclaratorASTNode *variableDeclarator);
@@ -35,6 +39,7 @@ void __Codegen_evaluateAssignmentStatement(Codegen *codegen, AssignmentStatement
 void __Codegen_evaluateExpressionStatement(Codegen *codegen, ExpressionStatementASTNode *expressionStatement);
 void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expression);
 void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block);
+void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *functionCall);
 
 void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAstNode);
 void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function);
@@ -45,6 +50,7 @@ void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 
 	codegen->analyser = analyser;
 	codegen->frame = FRAME_GLOBAL;
+    codegen->lastPushedType = TYPE_UNKNOWN;
 }
 
 //
@@ -70,6 +76,7 @@ void __Codegen_generate(Codegen *codegen) {
 	Instruction_jump("main");
 
 	__Codegen_generateBuiltInFunctions(codegen);
+	__Codegen_generateUserFunctions(codegen);
 
 	Instruction_label("main");
 
@@ -89,6 +96,9 @@ void __Codegen_generateHelperVariables() {
 	Instruction_defvar_where("READINT_TMP", FRAME_GLOBAL);
 	Instruction_defvar_where("READSTRING_TMP", FRAME_GLOBAL);
 	Instruction_defvar_where("READDOUBLE_TMP", FRAME_GLOBAL);
+    Instruction_defvar_where("CONCAT_ARG1", FRAME_GLOBAL);
+    Instruction_defvar_where("CONCAT_ARG2", FRAME_GLOBAL);
+    Instruction_defvar_where("CONCAT_OUTPUT", FRAME_GLOBAL);
 	NEWLINE
 }
 
@@ -313,6 +323,55 @@ void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen) {
 	}
 }
 
+void __Codegen_generateUserFunctions(Codegen *codegen) {
+	COMMENT("[User functions]")
+
+	Array *functions = HashMap_values(codegen->analyser->functions);
+
+	for(size_t i = 0; i < functions->size; i++) {
+		FunctionDeclarationASTNode *function = (FunctionDeclarationASTNode*)Array_get(functions, i);
+		__Codegen_generateFunctionDeclaration(codegen, function);
+	}
+
+	NEWLINE
+}
+
+void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
+	if(functionDeclaration->builtin != FUNCTION_NONE) {
+		return;
+	}
+
+	COMMENT_FUNC(functionDeclaration->id->id)
+
+	codegen->frame = FRAME_LOCAL;
+	Instruction_label_func(functionDeclaration->id->id);
+
+	// Overhead
+	Instruction_pushframe();
+
+	// Ensure return variable when necessary
+	if(functionDeclaration->returnType->type.type != TYPE_VOID) {
+		Instruction_defretvar(functionDeclaration->id->id, codegen->frame);
+	}
+
+	// Process arguments
+	ParameterListASTNode *parameterList = functionDeclaration->parameterList;
+	for(size_t i = 0; i < parameterList->parameters->size; ++i) {
+		ParameterASTNode *parameter = Array_get(parameterList->parameters, i);
+		Instruction_defvar(parameter->internalId->id, codegen->frame);
+		__Codegen_evaluateExpression(codegen, parameter->initializer);
+	}
+
+	// Process body
+	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
+
+	codegen->frame = FRAME_GLOBAL;
+
+	Instruction_popframe();
+	Instruction_return();
+	NEWLINE
+}
+
 void __Codegen_generateVariableDeclaration(Codegen *codegen, VariableDeclaration *variable) {
 	COMMENT_VAR(variable->id)
 	Instruction_defvar(variable->id, codegen->frame);
@@ -343,9 +402,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			__Codegen_evaluateWhileStatement(codegen, whileStatement);
 		} break;
 		case NODE_FUNCTION_DECLARATION: {
-            //Declarations will be at the beginning of the file
-			FunctionDeclarationASTNode *funcDeclaration = (FunctionDeclarationASTNode*)statementAstNode;
-			__Codegen_evaluateFunctionDeclaration(codegen, funcDeclaration);
+			// Declarations are at the beginning of the file
 		} break;
 		case NODE_RETURN_STATEMENT: {
 			ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statementAstNode;
@@ -361,7 +418,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			__Codegen_evaluateExpressionStatement(codegen, expressionStatement);
 		} break;
 		default:
-            fprintf(stderr, "Unknown ASTNode type: %d\n", statementAstNode->_type);
+			fprintf(stderr, "Unknown ASTNode type: %d\n", statementAstNode->_type);
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 	}
 }
@@ -403,7 +460,7 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 				fassertf("Unexpected ASTNode type. Analyser probably failed.");
 		}
 
-        Instruction_clears();
+		Instruction_clears();
 	}
 
 	Instruction_label_if_end(ifStatement->id);
@@ -415,15 +472,15 @@ void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *w
 	Instruction_label_while_start(whileStatement->id);
 
 	// Process test
-    if(whileStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
-        OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)whileStatement->test;
-        Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
-        Instruction_pushs_nil();
-        Instruction_eqs();
-        Instruction_nots();
-    } else {
-        __Codegen_evaluateExpression(codegen, whileStatement->test);
-    }
+	if(whileStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
+		OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)whileStatement->test;
+		Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
+		Instruction_pushs_nil();
+		Instruction_eqs();
+		Instruction_nots();
+	} else {
+		__Codegen_evaluateExpression(codegen, whileStatement->test);
+	}
 	Instruction_pushs_bool(true);
 
 	// Make actual test
@@ -441,48 +498,26 @@ void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *w
 	Instruction_clears();
 }
 
-void __Codegen_evaluateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
-	if(functionDeclaration->builtin != FUNCTION_NONE) {
-		return;
-	}
-
-	codegen->frame = FRAME_LOCAL;
-
-	Instruction_jump_func_end(functionDeclaration->id->id);
-	Instruction_label_func_start(functionDeclaration->id->id);
-
-	Instruction_pushframe();
-
-	// Ensure return variable
-	if(functionDeclaration->returnType->type.type != TYPE_VOID) {
-		Instruction_defretvar(functionDeclaration->id->id, FRAME_LOCAL);
-	}
-
-	// Process arguments
-	ParameterListASTNode *parameterList = functionDeclaration->parameterList;
-	for(size_t i = 0; i < parameterList->parameters->size; ++i) {
-		ParameterASTNode *parameter = Array_get(parameterList->parameters, i);
-		Instruction_defvar(parameter->internalId->id, codegen->frame);
-		__Codegen_evaluateExpression(codegen, parameter->initializer);
-	}
-
-	// Process body
-	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
-
-	codegen->frame = FRAME_GLOBAL;
-}
-
 void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNode *binaryExpression) {
 	__Codegen_evaluateExpression(codegen, binaryExpression->left);
 	__Codegen_evaluateExpression(codegen, binaryExpression->right);
-	__Codegen_evaluateBinaryOperator(binaryExpression);
+    __Codegen_evaluateBinaryOperator(codegen, binaryExpression);
 }
 
 // TODO: Careful, there are some exceptions when working with nils
-void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
+void __Codegen_evaluateBinaryOperator(Codegen *codegen, BinaryExpressionASTNode *expression) {
 	switch(expression->operator) {
-		case OPERATOR_PLUS:
-			return Instruction_adds();
+		case OPERATOR_PLUS:{
+            if (codegen->lastPushedType == TYPE_STRING) {
+                Instruction_pops_where("CONCAT_ARG2", codegen->frame);
+                Instruction_pops_where("CONCAT_ARG1", codegen->frame);
+                Instruction_concat(FRAME_GLOBAL, "CONCAT_OUTPUT", FRAME_GLOBAL, "CONCAT_ARG1", FRAME_GLOBAL, "CONCAT_ARG2");
+                Instruction_pushs_var_named("CONCAT_OUTPUT", codegen->frame);
+                return;
+            }
+            return Instruction_adds();
+        }
+
 		case OPERATOR_MINUS:
 			return Instruction_subs();
 		case OPERATOR_MUL:
@@ -523,8 +558,9 @@ void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
 	}
 }
 
-void __Codegen_evaluateLiteral(LiteralExpressionASTNode *literal) {
-	switch(literal->type.type) {
+void __Codegen_evaluateLiteral(Codegen *codegen, LiteralExpressionASTNode *literal) {
+    codegen->lastPushedType = literal->type.type;
+    switch(literal->type.type) {
 		case TYPE_NIL:
 			return Instruction_pushs_nil();
 		case TYPE_INT:
@@ -580,7 +616,7 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 	switch(expression->_type) {
 		case NODE_LITERAL_EXPRESSION: {
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)expression;
-			__Codegen_evaluateLiteral(literal);
+            __Codegen_evaluateLiteral(codegen, literal);
 		} break;
 		case NODE_IDENTIFIER: {
 			IdentifierASTNode *identifier = (IdentifierASTNode*)expression;
@@ -591,15 +627,8 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
 			if(builtin != FUNCTION_NONE) {
 				__Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
-				break;
-			}
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-
-			for(size_t i = 0; i < argumentList->arguments->size; ++i) {
-				ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
-				Instruction_defvar(argument->label->id, codegen->frame);
-				__Codegen_evaluateExpression(codegen, argument->expression);
-				Instruction_pops(argument->label->id, codegen->frame);
+			} else {
+				__Codegen_evaluateFunctionCall(codegen, functionCall);
 			}
 		} break;
 		case NODE_UNARY_EXPRESSION: {
@@ -614,7 +643,7 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 			fassertf("Interpolation not implemented yet.");
 		} break;
 		default:
-            fprintf(stderr, "Unknown ASTNode type: %d\n", expression->_type);
+			fprintf(stderr, "Unknown ASTNode type: %d\n", expression->_type);
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 	}
 }
@@ -741,4 +770,17 @@ void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *fun
 		case FUNCTION_NONE:
 			fassertf("Expected builtin function, got user defined.");
 	}
+}
+
+void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *functionCall) {
+	ArgumentListASTNode *argumentList = functionCall->argumentList;
+
+	for(size_t i = 0; i < argumentList->arguments->size; ++i) {
+		ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
+		Instruction_defvar(argument->label->id, codegen->frame);
+		__Codegen_evaluateExpression(codegen, argument->expression);
+		Instruction_pops(argument->label->id, codegen->frame);
+	}
+
+	// TODO: Handle returning arguments
 }

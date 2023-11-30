@@ -35,4 +35,17 @@ write("substr function", "\n")
 let f = substring(of: "abc", startingAt: 1,  endingBefore: 4)
 write("Substring of \"abc\" from 1 to 2: ", f, "\n")
 
+write("\n")
+
+write("concat function", "\n")
+
+let hello = "Hello"
+write("First string: ", hello, "\n")
+
+let world = "World"
+write("Second string: ", world, "\n")
+
+let hello_world = hello + ", " + world + "!"
+write("Concatenated string: ", hello_world, "\n")
+
 write("[TEST] Tests done.", "\n")
