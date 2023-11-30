@@ -1,9 +1,18 @@
+/**
+ * @file ExpressionParser.c
+ *
+ * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz>
+ * @brief Implementation of parsing of expressions.
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include "compiler/parser/ExpressionParser.h"
 
 #include <stdbool.h>
 
 #include "assertf.h"
-// #include "compiler/lexer/Lexer.h"
 #include "allocator/MemoryAllocator.h"
 #include "internal/Array.h"
 #include "compiler/lexer/Token.h"
@@ -36,6 +45,8 @@ int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input
 
 enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser *parser, PrefixStatus status) {
 	prefix = P_UNRESOLVED;
+	
+	// function or bottom of the stack
 	if(!token) {
 		if(isIdentifier) {
 			return I_ID;
@@ -43,6 +54,7 @@ enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser 
 		return I_DOLLAR;
 	}
 	LexerResult postfixPrefix;
+
 	switch(token->kind) {
 		case TOKEN_PLUS:
 		case TOKEN_MINUS:
@@ -202,11 +214,11 @@ StackItem* Expr_performReduction(Array *stack) {
 		}
 	}
 
-	// E -> E! or E -> !E
 	if(stack->size == 2) {
 		StackItem *argument = Array_pop(stack);
 		StackItem *operator = Array_pop(stack);
 
+		// E -> E!
 		if(operator->token->kind == TOKEN_EXCLAMATION && argument->Stype == S_NONTERMINAL) {
 			UnaryExpressionASTNode *unaryE = new_UnaryExpressionASTNode(argument->node, OPERATOR_UNWRAP, false);
 			operator->node = (ExpressionASTNode*)unaryE;
@@ -215,6 +227,8 @@ StackItem* Expr_performReduction(Array *stack) {
 			mem_free(argument);
 
 			return operator;
+
+		// E -> !E
 		} else if(operator->Stype == S_NONTERMINAL && argument->token->kind == TOKEN_EXCLAMATION) {
 			UnaryExpressionASTNode *unaryLogE = new_UnaryExpressionASTNode(operator->node, OPERATOR_NOT, true);
 			argument->node = (ExpressionASTNode*)unaryLogE;
@@ -245,42 +259,67 @@ StackItem* Expr_performReduction(Array *stack) {
 		enum OperatorType operatorType = 0;
 		if(leftOperand->Stype == S_NONTERMINAL && rightOperand->Stype == S_NONTERMINAL)
 			switch(operator->token->kind) {
+				// E -> E + E
 				case TOKEN_PLUS:
 					operatorType = OPERATOR_PLUS;
 					break;
+
+				// E -> E - E
 				case TOKEN_MINUS:
 					operatorType = OPERATOR_MINUS;
 					break;
+				
+				// E -> E * E
 				case TOKEN_STAR:
 					operatorType = OPERATOR_MUL;
 					break;
+
+				// E -> E / E
 				case TOKEN_SLASH:
 					operatorType = OPERATOR_DIV;
 					break;
+
+				// E -> E == E
 				case TOKEN_EQUALITY:
 					operatorType = OPERATOR_EQUAL;
 					break;
+
+				// E -> E != E
 				case TOKEN_NOT_EQUALITY:
 					operatorType = OPERATOR_NOT_EQUAL;
 					break;
+
+				// E -> E < E
 				case TOKEN_LESS:
 					operatorType = OPERATOR_LESS;
 					break;
+				
+				// E -> E > E
 				case TOKEN_GREATER:
 					operatorType = OPERATOR_GREATER;
 					break;
+
+				// E -> E <= E
 				case TOKEN_LESS_EQUAL:
 					operatorType = OPERATOR_LESS_EQUAL;
 					break;
+
+				// E -> E >= E
 				case TOKEN_GREATER_EQUAL:
 					operatorType = OPERATOR_GREATER_EQUAL;
 					break;
+
+				// E -> E ?? E
 				case TOKEN_NULL_COALESCING:
 					operatorType = OPERATOR_NULL_COALESCING;
 					break;
+
+				// E -> E || E
 				case TOKEN_LOG_OR:
 					operatorType = OPERATOR_OR;
 					break;
+				
+				// E -> E && E
 				case TOKEN_LOG_AND:
 					operatorType = OPERATOR_AND;
 					break;
@@ -333,8 +372,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	FLUSH_ERROR_BUFFER(parser);
 
 	Array *stack = Array_alloc(STACK_SIZE);
-	StackItem *bottom = mem_alloc(sizeof(StackItem));
 
+	StackItem *bottom = mem_alloc(sizeof(StackItem));
 	bottom->Stype = S_BOTTOM;
 	bottom->node = NULL;
 	bottom->token = NULL;
@@ -370,6 +409,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 					StackItem *identifier = Expr_getTopTerminal(stack);
 					enum PrecTableIndex identifierIndex = Expr_getPrecTbIndex(identifier->token, isIdentifier, parser, identifier->isPrefix);
 					
+					// check if there are no two IDs consecutively
 					if(identifierIndex != I_ID){
 						ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
 						if(!functionCallExpression.success) return functionCallExpression;
@@ -399,6 +439,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 					StackItem *id = Expr_getTopTerminal(stack);
 					enum PrecTableIndex idIndex = Expr_getPrecTbIndex(id->token, isIdentifier, parser, id->isPrefix);
 					
+					// check if there are no two IDs consecutively
 					if(idIndex != I_ID){
 						ParserResult stringInterpolation = __Parser_parseStringInterpolation(parser);
 						if(!stringInterpolation.success) return stringInterpolation;
@@ -419,7 +460,6 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 				}
 			}
 
-		
 			StackItem *topTerminal = Expr_getTopTerminal(stack);
 
 			enum PrecTableIndex topTerminalIndex = Expr_getPrecTbIndex(topTerminal->token, isIdentifier, parser, topTerminal->isPrefix);
@@ -428,6 +468,7 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 			operation = precedence_table[topTerminalIndex][currentTokenIndex];
 		}
 
+		// check for end of expression 
 		StackItem *isItFinal = Array_get(stack, stack->size - 1);
 		if(isItFinal->Stype == S_NONTERMINAL && stack->size == 2 && operation == X) {
 			StackItem *finalExpression = Array_pop(stack);
