@@ -165,7 +165,10 @@ bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id) {
 Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id) {
 	if(id == 0) return NULL;
 
-	return HashMap_get(analyser->idsPool, String_fromLong(id)->value);
+	String *key = String_fromLong(id)->value;
+	Declaration *declaration = HashMap_get(analyser->idsPool, key);
+	String_free(key);
+	return declaration;
 }
 
 FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id) {
