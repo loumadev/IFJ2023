@@ -105,6 +105,8 @@ void Instruction_muls();
 
 void Instruction_divs();
 
+void Instruction_idivs();
+
 void Instruction_lts();
 
 void Instruction_gts();
@@ -156,5 +158,7 @@ void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1S
 void Instruction_call_func(size_t id);
 
 void Instruction_label_func(size_t id);
+
+void Instruction_pushs_func_result(size_t id);
 
 #endif // INSTRUCTION_H

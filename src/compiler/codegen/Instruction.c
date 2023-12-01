@@ -181,6 +181,10 @@ void Instruction_divs() {
 	INSTRUCTION_NULLARY("DIVS")
 }
 
+void Instruction_idivs() {
+    INSTRUCTION_NULLARY("IDIVS")
+}
+
 void Instruction_lts() {
 	INSTRUCTION_NULLARY("LTS")
 }
@@ -280,4 +284,12 @@ void Instruction_call_func(size_t id){
 
 void Instruction_label_func(size_t id){
     fprintf(stdout, "LABEL $func_%lu\n", id);
+}
+
+void Instruction_move_arg(size_t id) {
+    fprintf(stdout, "MOVE LF@$%lu TF@%%0\n", id);
+}
+
+void Instruction_pushs_func_result(size_t id){
+    fprintf(stdout, "PUSHS TF@$ret_%lu\n", id);
 }
