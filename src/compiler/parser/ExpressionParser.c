@@ -412,8 +412,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 					StackItem *identifier = Expr_getTopTerminal(stack);
 					enum PrecTableIndex identifierIndex = Expr_getPrecTbIndex(identifier->token, isIdentifier, parser, identifier->isPrefix);
 					
-					// check if there are no two IDs consecutively
-					if(identifierIndex != I_ID){
+					// check if function parsing can continue
+					if(identifierIndex != I_ID && identifierIndex != I_RIGHT_PAREN && identifierIndex != I_UNWRAP_OP){
 						ParserResult functionCallExpression = __Parser_parseFunctionCallExpression(parser);
 						if(!functionCallExpression.success) return functionCallExpression;
 
@@ -442,8 +442,8 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 					StackItem *id = Expr_getTopTerminal(stack);
 					enum PrecTableIndex idIndex = Expr_getPrecTbIndex(id->token, isIdentifier, parser, id->isPrefix);
 					
-					// check if there are no two IDs consecutively
-					if(idIndex != I_ID){
+					// check if string interpolation parsing can continue
+					if(idIndex != I_ID && idIndex != I_RIGHT_PAREN && idIndex != I_UNWRAP_OP){
 						ParserResult stringInterpolation = __Parser_parseStringInterpolation(parser);
 						if(!stringInterpolation.success) return stringInterpolation;
 
