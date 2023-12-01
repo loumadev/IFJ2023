@@ -103,6 +103,80 @@ void String_replaceAll(String *string, char *value, char *replacement) {
 	}
 }
 
+Array* String_split(String *string, char *separator) {
+	if(!string) return NULL;
+	if(!separator) return NULL;
+	if(!string->value) return NULL;
+
+	Array *array = Array_alloc(0);
+	if(!array) return NULL;
+
+	size_t length = strlen(separator);
+
+	// Return an empty array if the string and separator are both empty
+	if(string->length == 0 && length == 0) return array;
+
+	if(string->length == 0 && length != 0) {
+		String *part = String_alloc("");
+		Array_push(array, part);
+		return array;
+	}
+
+	if(length == 0) {
+		for(size_t i = 0; i < string->length; i++) {
+			char c = string->value[i];
+			String *part = String_alloc(NULL);
+			String_appendChar(part, c);
+			Array_push(array, part);
+		}
+
+		return array;
+	}
+
+	// Split the string
+	char *str = string->value;
+	char *found;
+	while((found = strstr(str, separator)) != NULL) {
+		size_t len = found - str;
+		char *substring = mem_alloc(len + 1);
+		memcpy(substring, str, len);
+		substring[len] = '\0';
+		String *part = String_alloc(substring);
+		mem_free(substring);
+
+		Array_push(array, part);
+		str = found + length;
+	}
+
+	String *remaining = String_alloc(str);
+	Array_push(array, remaining);
+
+	return array;
+}
+
+String* String_join(Array *array, char *separator) {
+	if(!array) return NULL;
+	if(!separator) return NULL;
+
+	// Allocate memory for the string
+	String *string = String_alloc("");
+	if(!string) return NULL;
+
+	// Return an empty string if the array is empty
+	if(array->size == 0) return string;
+
+	// Join the strings
+	for(size_t i = 0; i < array->size; i++) {
+		String *part = Array_get(array, i);
+		if(!part) continue;
+
+		String_append(string, part->value);
+		if(i < array->size - 1) String_append(string, separator);
+	}
+
+	return string;
+}
+
 bool String_equals(String *string, char *value) {
 	if(!string) return false;
 	if(!value) return false;
@@ -142,6 +216,19 @@ long String_indexOf(String *string, char *value) {
 	if(!result) return -1;
 
 	return result - string->value;
+}
+
+char String_charAt(String *string, signed long index) {
+	if(!string) return '\0';
+	if(!string->value) return '\0';
+
+	// Resolve negative indices
+	if(index < 0) index = string->length + index;
+
+	// Index out of bounds
+	if(index < 0 || index > (signed long)string->length) return '\0';
+
+	return string->value[index];
 }
 
 void String_copy(String *string, char *dest, size_t length) {
@@ -303,6 +390,28 @@ String* String_fromDouble(double value) {
 	// Convert the long to a string
 	int length = snprintf(string->value, 31, "%lf", value);
 
+	string->length = length;
+	string->capacity = string->length;
+
+	return string;
+}
+
+String* String_fromRange(char *start, char *end) {
+	if(!start) return NULL;
+	if(!end) return NULL;
+	if(start > end) return NULL;
+
+	size_t length = end - start;
+
+	// Allocate memory for the string
+	String *string = String_alloc(NULL);
+	if(!string) return NULL;
+
+	// Copy the substring
+	String_resize(string, length + 1, true);
+	memcpy(string->value, start, length);
+
+	string->value[length] = '\0';
 	string->length = length;
 	string->capacity = string->length;
 

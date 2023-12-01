@@ -31,6 +31,10 @@ ParserResult __Parser_parseArgument(Parser *parser);
 ParserResult __Parser_parseArgumentList(Parser *parser);
 ParserResult __Parser_parseFunctionCallExpression(Parser *parser);
 ParserResult __Parser_parseAssignmentStatement(Parser *parser);
+ParserResult __Parser_parseRange(Parser *parser);
+ParserResult __Parser_parseForStatement(Parser *parser);
+ParserResult __Parser_parseBreakStatement(Parser *parser);
+ParserResult __Parser_parseContinueStatement(Parser *parser);
 
 /* Definitions of public functions */
 
@@ -212,10 +216,28 @@ ParserResult __Parser_parseStatement(Parser *parser) {
 		return ParserSuccess(whileResult.node);
 	}
 
+	if(peek.token->kind == TOKEN_FOR) {
+		ParserResult forResult = __Parser_parseForStatement(parser);
+		if(!forResult.success) return forResult;
+		return ParserSuccess(forResult.node);
+	}
+
 	if(peek.token->kind == TOKEN_RETURN) {
 		ParserResult returnResult = __Parser_parseReturnStatement(parser);
 		if(!returnResult.success) return returnResult;
 		return ParserSuccess(returnResult.node);
+	}
+
+	if(peek.token->kind == TOKEN_BREAK) {
+		ParserResult breakResult = __Parser_parseBreakStatement(parser);
+		if(!breakResult.success) return breakResult;
+		return ParserSuccess(breakResult.node);
+	}
+
+	if(peek.token->kind == TOKEN_CONTINUE) {
+		ParserResult continueResult = __Parser_parseContinueStatement(parser);
+		if(!continueResult.success) return continueResult;
+		return ParserSuccess(continueResult.node);
 	}
 
 	if(peek.token->kind == TOKEN_LET || peek.token->kind == TOKEN_VAR) {
@@ -728,6 +750,87 @@ ParserResult __Parser_parseWhileStatement(Parser *parser) {
 	return ParserSuccess(whileStatement);
 }
 
+ParserResult __Parser_parseRange(Parser *parser) {
+	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
+
+	// Parse start expression
+	ParserResult startResult = __Parser_parseExpression(parser);
+	if(!startResult.success) return startResult;
+
+	// Check for the '...' or '..<' token
+	LexerResult operatorResult = Lexer_nextToken(parser->lexer);
+	if(!operatorResult.success) return LexerToParserError(operatorResult);
+
+	if(operatorResult.token->kind != TOKEN_RANGE && operatorResult.token->kind != TOKEN_HALF_OPEN_RANGE) {
+		return ParserError(
+			String_fromFormat("expected '...' or '..<' in range"),
+			Array_fromArgs(1, operatorResult.token));
+	}
+
+	enum OperatorType operator = operatorResult.token->kind == TOKEN_RANGE ? OPERATOR_RANGE : OPERATOR_HALF_OPEN_RANGE;
+
+	// Parse end expression
+	ParserResult endResult = __Parser_parseExpression(parser);
+	if(!endResult.success) return endResult;
+
+	// Create the range node
+	RangeASTNode *range = new_RangeASTNode((ExpressionASTNode*)startResult.node, (ExpressionASTNode*)endResult.node, operator);
+
+	return ParserSuccess(range);
+}
+
+ParserResult __Parser_parseForStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
+
+	// Check for the keyword
+	LexerResult keyword = Lexer_nextToken(parser->lexer);
+	if(!keyword.success) return LexerToParserError(keyword);
+
+	if(keyword.token->kind != TOKEN_FOR) {
+		return ParserError(
+			String_fromFormat("expected 'for' in for statement"),
+			Array_fromArgs(1, keyword.token));
+	}
+
+	// Parse iterator identifier
+	LexerResult iteratorResult = Lexer_nextToken(parser->lexer);
+	if(!iteratorResult.success) return LexerToParserError(iteratorResult);
+
+	if(iteratorResult.token->type != TOKEN_IDENTIFIER) {
+		return ParserError(
+			String_fromFormat("expected identifier in for statement"),
+			Array_fromArgs(1, iteratorResult.token));
+	}
+
+	// Check for the 'in' token
+	LexerResult inResult = Lexer_nextToken(parser->lexer);
+	if(!inResult.success) return LexerToParserError(inResult);
+
+	if(inResult.token->kind != TOKEN_IN) {
+		return ParserError(
+			String_fromFormat("expected 'in' in for statement"),
+			Array_fromArgs(1, inResult.token));
+	}
+
+	// Parse range
+	ParserResult rangeResult = __Parser_parseRange(parser);
+	if(!rangeResult.success) return rangeResult;
+
+	// Parse block
+	ParserResult blockResult = __Parser_parseBlock(parser, true);
+	if(!blockResult.success) return blockResult;
+
+	// Create the for statement node
+	IdentifierASTNode *iterator = new_IdentifierASTNode(iteratorResult.token->value.string);
+	ForStatementASTNode *forStatement = new_ForStatementASTNode(iterator, (RangeASTNode*)rangeResult.node, (BlockASTNode*)blockResult.node);
+
+	return ParserSuccess(forStatement);
+}
+
 ParserResult __Parser_parseReturnStatement(Parser *parser) {
 	assertf(parser != NULL);
 
@@ -757,6 +860,46 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 	ReturnStatementASTNode *returnStatement = new_ReturnStatementASTNode((ExpressionASTNode*)expression);
 
 	return ParserSuccess(returnStatement);
+}
+
+ParserResult __Parser_parseBreakStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
+
+	// Check for the keyword
+	LexerResult keyword = Lexer_nextToken(parser->lexer);
+	if(!keyword.success) return LexerToParserError(keyword);
+
+	if(keyword.token->kind != TOKEN_BREAK) {
+		return ParserError(
+			String_fromFormat("expected 'break' in return statement"),
+			Array_fromArgs(1, keyword.token));
+	}
+
+	BreakStatementASTNode *breakStatement = new_BreakStatementASTNode();
+
+	return ParserSuccess(breakStatement);
+}
+
+ParserResult __Parser_parseContinueStatement(Parser *parser) {
+	assertf(parser != NULL);
+
+	FLUSH_ERROR_BUFFER(parser);
+
+	// Check for the keyword
+	LexerResult keyword = Lexer_nextToken(parser->lexer);
+	if(!keyword.success) return LexerToParserError(keyword);
+
+	if(keyword.token->kind != TOKEN_CONTINUE) {
+		return ParserError(
+			String_fromFormat("expected 'continue' in return statement"),
+			Array_fromArgs(1, keyword.token));
+	}
+
+	ContinueStatementASTNode *continueStatement = new_ContinueStatementASTNode();
+
+	return ParserSuccess(continueStatement);
 }
 
 ParserResult __Parser_parseVariableDeclarator(Parser *parser) {

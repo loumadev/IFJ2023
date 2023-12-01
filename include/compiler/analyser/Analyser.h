@@ -21,7 +21,7 @@ typedef struct Declaration {
 typedef struct VariableDeclaration {
 	enum DeclarationType _type;
 	size_t id;
-	struct VariableDeclaratorASTNode *node; // null if isUserDefined = 0
+	struct VariableDeclaratorASTNode /* | null*/ *node; // null if isUserDefined = 0
 	String *name;
 	ValueType type;
 	bool isConstant;
@@ -34,26 +34,27 @@ typedef struct FunctionDeclaration {
 	enum DeclarationType _type;
 	size_t id;
 	struct FunctionDeclarationASTNode *node;
-	HashMap /*<id: String, VariableDeclaration>*/ *variables;
+	HashMap /*<id: String, declaration: VariableDeclaration>*/ *variables;
 	bool isUsed;
 	ValueType returnType;
 } FunctionDeclaration;
 
 typedef struct BlockScope {
 	struct BlockScope *parent;
-	HashMap /*<name: String, VariableDeclaration>*/ *variables;
+	HashMap /*<name: String, declaration: VariableDeclaration>*/ *variables;
 	FunctionDeclaration *function; // Defined when this is function body scope
+	StatementASTNode /*<loop: ForStatementASTNode | WhileStatementASTNode>*/ *loop; // Defined when this is loop body scope
 } BlockScope;
 
 typedef struct Analyser {
 	ProgramASTNode *ast;
 	BlockScope *globalScope;
-	HashMap /*<name: String, Array<FunctionDeclaration>>*/ *overloads; // Relative to global scope
-	HashMap /*<id: String, FunctionDeclaration>*/ *functions; // Relative to global scope //! Unused
-	HashMap /*<id: String, VariableDeclaration>*/ *variables; // Relative to global scope //! Unused
-	HashMap /*<id: String, Declaration>*/ *idsPool;
+	HashMap /*<name: String, declarations: Array<FunctionDeclaration>>*/ *overloads; // Relative to global scope
+	HashMap /*<id: String, declaration: FunctionDeclaration>*/ *functions; // Relative to global scope //! Unused
+	HashMap /*<id: String, declaration: VariableDeclaration>*/ *variables; // Relative to global scope //! Unused
+	HashMap /*<id: String, declaration: Declaration>*/ *idsPool;
 	HashMap /*<String, String>*/ *types; // TODO: delete this
-	size_t idCounter;
+	size_t idCounter; // Do NOT directly modify this!
 } Analyser;
 
 ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind);
@@ -61,11 +62,12 @@ ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind);
 void Analyser_constructor(Analyser *analyser);
 void Analyser_destructor(Analyser *analyser);
 AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast);
-Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id);
-FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id);
-VariableDeclaration* Analyser_getVariableById(Analyser *analyser, size_t id);
-VariableDeclaration* Analyser_getVariableByName(Analyser *analyser, char *name, BlockScope *scope);
-Array /*<FunctionDeclaration> | NULL*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name);
+bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id);
+Declaration /*<VariableDeclaration | FunctionDeclaration> | null*/* Analyser_getDeclarationById(Analyser *analyser, size_t id);
+FunctionDeclaration /* | null*/* Analyser_getFunctionById(Analyser *analyser, size_t id);
+VariableDeclaration /* | null*/* Analyser_getVariableById(Analyser *analyser, size_t id);
+VariableDeclaration /* | null*/* Analyser_getVariableByName(Analyser *analyser, char *name, BlockScope *scope);
+Array /*<FunctionDeclaration> | null*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name);
 enum BuiltInFunction Analyser_getBuiltInFunctionById(Analyser *analyser, size_t id);
 
 enum BuiltInTypes Analyser_resolveBuiltInType(String *name);

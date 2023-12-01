@@ -20,6 +20,8 @@ enum ASTNodeType {
 	NODE_VARIABLE_DECLARATOR,
 	NODE_EXPRESSION_STATEMENT,
 	NODE_RETURN_STATEMENT,
+	NODE_BREAK_STATEMENT,
+	NODE_CONTINUE_STATEMENT,
 	NODE_PARAMETER,
 	NODE_PARAMETER_LIST,
 	NODE_FUNCTION_DECLARATION,
@@ -33,7 +35,9 @@ enum ASTNodeType {
 	NODE_IF_STATEMENT,
 	NODE_PATTERN,
 	NODE_OPTIONAL_BINDING_CONDITION,
+	NODE_RANGE,
 	NODE_WHILE_STATEMENT,
+	NODE_FOR_STATEMENT,
 	NODE_ASSIGNMENT_STATEMENT
 };
 
@@ -53,7 +57,9 @@ typedef enum OperatorType {
 	OPERATOR_GREATER_EQUAL,
 	OPERATOR_NOT,
 	OPERATOR_OR,
-	OPERATOR_AND
+	OPERATOR_AND,
+	OPERATOR_RANGE,
+	OPERATOR_HALF_OPEN_RANGE
 } OperatorType;
 
 enum BuiltInTypes {
@@ -128,7 +134,7 @@ typedef struct TypeReferenceASTNode {
 typedef struct VariableDeclaratorASTNode {
 	enum ASTNodeType _type;
 	struct PatternASTNode *pattern;
-	ExpressionASTNode *initializer;
+	ExpressionASTNode /* | null*/ *initializer;
 } VariableDeclaratorASTNode;
 
 typedef struct VariableDeclarationListASTNode {
@@ -149,17 +155,27 @@ typedef struct ExpressionStatementASTNode {
 
 typedef struct ReturnStatementASTNode {
 	enum ASTNodeType _type;
-	ExpressionASTNode *expression;
+	ExpressionASTNode /* | null*/ *expression;
 	size_t id;
 } ReturnStatementASTNode;
+
+typedef struct BreakStatementASTNode {
+	enum ASTNodeType _type;
+	size_t id;
+} BreakStatementASTNode;
+
+typedef struct ContinueStatementASTNode {
+	enum ASTNodeType _type;
+	size_t id;
+} ContinueStatementASTNode;
 
 typedef struct ParameterASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *internalId;
-	TypeReferenceASTNode *type;
-	ExpressionASTNode *initializer;
-	IdentifierASTNode *externalId;
-	bool isLabeless;
+	TypeReferenceASTNode /* | null*/ *type;
+	ExpressionASTNode /* | null*/ *initializer;
+	IdentifierASTNode /* | null*/ *externalId; // If null then internalId should be used
+	bool isLabeless; // true if externalId is '_'
 } ParameterASTNode;
 
 typedef struct ParameterListASTNode {
@@ -171,15 +187,15 @@ typedef struct FunctionDeclarationASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
 	ParameterListASTNode *parameterList;
-	TypeReferenceASTNode *returnType;
+	TypeReferenceASTNode /* | null*/ *returnType; // For fully resolved return type (e.g. Void) query analyser for declaration by id
 	BlockASTNode *body;
-	enum BuiltInFunction builtin;
+	enum BuiltInFunction builtin; // FUNCTION_NONE identifies user defined function
 } FunctionDeclarationASTNode;
 
 typedef struct ArgumentASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *expression;
-	IdentifierASTNode *label;
+	IdentifierASTNode /* | null*/ *label;
 } ArgumentASTNode;
 
 typedef struct ArgumentListASTNode {
@@ -221,6 +237,8 @@ typedef struct LiteralExpressionASTNode {
 	enum ASTNodeType _type;
 	union TokenValue value;
 	struct ValueType type;
+	union TokenValue originalValue;
+	struct ValueType originalType;
 } LiteralExpressionASTNode;
 
 typedef struct InterpolationExpressionASTNode {
@@ -232,7 +250,7 @@ typedef struct InterpolationExpressionASTNode {
 typedef struct PatternASTNode {
 	enum ASTNodeType _type;
 	IdentifierASTNode *id;
-	TypeReferenceASTNode *type;
+	TypeReferenceASTNode /* | null*/ *type;
 } PatternASTNode;
 
 typedef struct OptionalBindingConditionASTNode {
@@ -243,18 +261,33 @@ typedef struct OptionalBindingConditionASTNode {
 
 typedef struct IfStatementASTNode {
 	enum ASTNodeType _type;
-	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
-	BlockASTNode *body;
-	ASTNode /* BlockASTNode | IfStatementASTNode | null */ *alternate;
+	BlockASTNode *body; // This must be the second field
+	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test; // This must be the third field
+	ASTNode /*<BlockASTNode | IfStatementASTNode> | null*/ *alternate;
 	size_t id;
 } IfStatementASTNode;
 
 typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
-	ASTNode /* <ExpressionASTNode | OptionalBindingConditionASTNode> */ *test;
-	BlockASTNode *body;
+	BlockASTNode *body; // This must be the second field
+	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test; // This must be the third field
 	size_t id;
 } WhileStatementASTNode;
+
+typedef struct RangeASTNode {
+	enum ASTNodeType _type;
+	ExpressionASTNode *start;
+	ExpressionASTNode *end;
+	enum OperatorType operator;
+} RangeASTNode;
+
+typedef struct ForStatementASTNode {
+	enum ASTNodeType _type;
+	BlockASTNode *body; // This must be the second field
+	IdentifierASTNode *iterator;
+	RangeASTNode *range;
+	size_t id;
+} ForStatementASTNode;
 
 typedef struct AssignmentStatementASTNode {
 	enum ASTNodeType _type;
@@ -275,6 +308,8 @@ VariableDeclarationASTNode* new_VariableDeclarationASTNode(VariableDeclarationLi
 VariableDeclaratorASTNode* new_VariableDeclaratorASTNode(PatternASTNode *pattern, ExpressionASTNode *initializer);
 VariableDeclarationListASTNode* new_VariableDeclarationListASTNode(Array *declarators);
 ReturnStatementASTNode* new_ReturnStatementASTNode(ExpressionASTNode *expression);
+BreakStatementASTNode* new_BreakStatementASTNode();
+ContinueStatementASTNode* new_ContinueStatementASTNode();
 ParameterASTNode* new_ParameterASTNode(IdentifierASTNode *internalId, TypeReferenceASTNode *type, ExpressionASTNode *initializer, IdentifierASTNode *externalId, bool isLabeless);
 ParameterListASTNode* new_ParameterListASTNode(Array *parameters);
 FunctionDeclarationASTNode* new_FunctionDeclarationASTNode(IdentifierASTNode *id, ParameterListASTNode *parameterList, TypeReferenceASTNode *returnType, BlockASTNode *body);
@@ -289,6 +324,8 @@ PatternASTNode* new_PatternASTNode(IdentifierASTNode *id, TypeReferenceASTNode *
 OptionalBindingConditionASTNode* new_OptionalBindingConditionASTNode(IdentifierASTNode *id);
 IfStatementASTNode* new_IfStatementASTNode(ASTNode *test,  BlockASTNode *body, ASTNode *alternate);
 WhileStatementASTNode* new_WhileStatementASTNode(ASTNode *test,  BlockASTNode *body);
+ForStatementASTNode* new_ForStatementASTNode(IdentifierASTNode *iterator, RangeASTNode *range, BlockASTNode *body);
+RangeASTNode* new_RangeASTNode(ExpressionASTNode *start, ExpressionASTNode *end, OperatorType operator);
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(IdentifierASTNode *id, ExpressionASTNode *expression);
 ExpressionStatementASTNode* new_ExpressionStatementASTNode(ExpressionASTNode *expression);
 

@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "Array.h"
+
 #ifndef STRING_H
 #define STRING_H
 
@@ -104,6 +106,15 @@ bool String_endsWith(String *string, char *value);
 long String_indexOf(String *string, char *value);
 
 /**
+ * Returns the character at a given index in a String.
+ *
+ * @param string The String to get the character from.
+ * @param index The index of the character to get. (negative values start from the end)
+ * @return The character at the given index.
+ */
+char String_charAt(String *string, signed long index);
+
+/**
  * Copies the contents of the String to a given buffer of a given length.
  *
  * @param string The String to copy.
@@ -121,6 +132,23 @@ void String_copy(String *string, char *dest, size_t length);
  * @param replacement The value to replace the removed portion with.
  */
 void String_splice(String *string, size_t start, size_t end, char *replacement);
+
+/**
+ * Splits a String into an Array of Strings using a separator.
+ *
+ * @param string The String to split.
+ * @param separator The separator to use.
+ */
+Array* String_split(String *string, char *separator);
+
+/**
+ * Returns a new String created by joining the values of an Array with a separator.
+ *
+ * @param array The Array of Strings to join.
+ * @param separator The separator to use between values.
+ * @return A new String created by joining the values of the Array.
+ */
+String* String_join(Array *array, char *separator);
 
 /**
  * Returns a new String containing a portion of the original String.
@@ -174,6 +202,15 @@ String* String_fromLong(long value);
  * @return A new String created from the double.
  */
 String* String_fromDouble(double value);
+
+/**
+ * Returns a new String created from the given range.
+ *
+ * @param start The starting pointer of the range to use.
+ * @param end The ending pointer of the range to use.
+ * @return A new String created from the range.
+ */
+String* String_fromRange(char *start, char *end);
 
 /**
  * Allocates memory for a new String and initializes it with the given value.
