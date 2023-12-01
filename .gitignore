@@ -17,3 +17,4 @@ compile_commands.json
 .cache
 
 test/test_main.c
+test/compiler/codegen/compiled_codes

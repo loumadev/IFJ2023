@@ -152,10 +152,23 @@ void Analyser_destructor(Analyser *analyser) {
 	analyser->idCounter = 0;
 }
 
+bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id) {
+	if(id == 0) return false;
+
+	String *key = String_fromLong(id)->value;
+	bool isGlobal = HashMap_has(analyser->variables, key) || HashMap_has(analyser->functions, key);
+	String_free(key);
+
+	return isGlobal;
+}
+
 Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id) {
 	if(id == 0) return NULL;
 
-	return HashMap_get(analyser->idsPool, String_fromLong(id)->value);
+	String *key = String_fromLong(id)->value;
+	Declaration *declaration = HashMap_get(analyser->idsPool, key);
+	String_free(key);
+	return declaration;
 }
 
 FunctionDeclaration* Analyser_getFunctionById(Analyser *analyser, size_t id) {
