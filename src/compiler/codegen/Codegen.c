@@ -341,7 +341,7 @@ void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 		return;
 	}
 
-	COMMENT_FUNC(functionDeclaration->id->id)
+	COMMENT_FUNC(functionDeclaration)
 
 	codegen->frame = FRAME_LOCAL;
 	Instruction_label_func(functionDeclaration->id->id);
