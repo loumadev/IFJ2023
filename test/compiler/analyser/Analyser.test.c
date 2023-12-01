@@ -3823,6 +3823,30 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 	ParserResult parserResult;
 	AnalyserResult analyserResult;
 
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5.0 / 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a = Int2Double(5) / 2" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
 	TEST_BEGIN("Conversion of literals inside a complex expression") {
 		Lexer_setSource(
 			&lexer,
@@ -4857,4 +4881,142 @@ DESCRIBE(break_continue, "Analysis of break/continue statements") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 
+}
+
+DESCRIBE(ultimate_idk, "Donut.c") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Donut") {
+		Lexer_setSource(
+			&lexer,
+			"" LF
+			"let PI = 3.141592" LF
+			"let HPI = PI * 0.5" LF
+			"" LF
+			"func sin(_ x: Double) -> Double {" LF
+			"    var result = 0.0" LF
+			"    var sign = 1.0" LF
+			"    var power = 1.0" LF
+			"    while power <= 20.0 {" LF
+			"        result = result + (sign * (pow(x, power) / factorial(power)))" LF
+			"        sign = 0 - sign" LF
+			"        power = power + 2.0" LF
+			"    }" LF
+			"    return result" LF
+			"}" LF
+			"" LF
+			"func cos(_ x: Double) -> Double {" LF
+			"    return sin(HPI - x)" LF
+			"}" LF
+			"" LF
+			"func pow(_ x: Double, _ y: Double) -> Double {" LF
+			"    var result = 1.0" LF
+			"    var y = y" LF
+			"    while y > 0.0 {" LF
+			"        result = result * x" LF
+			"        y = y - 1.0" LF
+			"    }" LF
+			"    return result" LF
+			"}" LF
+			"" LF
+			"func factorial(_ n: Double) -> Double {" LF
+			"    var result = 1.0" LF
+			"    var n = n" LF
+			"    while n > 1.0 {" LF
+			"        result = result * n" LF
+			"        n = n - 1.0" LF
+			"    }" LF
+			"    return result" LF
+			"}" LF
+			"" LF
+			"" LF
+			"var A = 1.0," LF
+			"	B = 1.0"LF
+			"" LF
+			"while(true) {" LF
+			"	var b = \"\""LF
+			"	var z = \"\""LF
+			"	A = A + 0.07"LF
+			"	B = B + 0.03"LF
+			"	var cA = cos(A),"LF
+			"		sA = sin(A),"LF
+			"		cB = cos(B),"LF
+			"		sB = sin(B)"LF
+			"	var m = 0"LF
+			"	var k = 0"LF
+			"	while(k < 1760) {"LF
+			"		if(m == 79) {"LF
+			"			b = b + \"\""LF
+			"			m = 0"LF
+			"		}"LF
+			"		else {"LF
+			"			b = b + \" \""LF
+			"			m = m + 1"LF
+			"		}"LF
+			"		z = z + \" \""LF
+			"" LF
+			"		k = k + 1"LF
+			"	}"LF
+			"	var j = 0.0"LF
+			"	while(j < 6.28) {"LF
+			"		// j <=> theta"LF
+			"		var ct = cos(j),"LF
+			"			st = sin(j)"LF
+			"		var i = 0.0"LF
+			"		while(i < 6.28) {"LF
+			"			// i <=> phi"LF
+			"			var sp = sin(i),"LF
+			"				cp = cos(i),"LF
+			"				h = ct + 2, // R1 + R2*cos(theta)"LF
+			"				D = 1 / (sp * h * sA + st * cA + 5), // this is 1/z"LF
+			"				t = sp * h * cA - st * sA // this is a clever factoring of some of the terms in x' and y'"LF
+			"" LF
+			"			var x = Double2Int(40 + 30 * D * (cp * h * cB - t * sB)),"LF
+			"				y = Double2Int(12 + 15 * D * (cp * h * sB + t * cB)),"LF
+			"				o = x + 80 * y,"LF
+			"				N ="LF
+			"					Double2Int(8 *"LF
+			"						((st * sA - sp * ct * cA) * cB -"LF
+			"							sp * ct * sA -"LF
+			"							st * cA -"LF
+			"							cp * ct * sB))"LF
+			"			var z_o = Int2Double(ord(substring(of: z, startingAt: o, endingBefore: o + 1)!)) / 255.0"LF
+			"			if(y < 22 && y >= 0 && x >= 0 && x < 79 && D > z_o) {"LF
+			"				z = substring(of: z, startingAt: 0, endingBefore: o)! + chr(Double2Int(D * 255)) + substring(of: z, startingAt: o + 1, endingBefore: length(z))!"LF
+			"				var n = 0"LF
+			"				if(N > 0) {"LF
+			"					n = N"LF
+			"				}"LF
+			"				var c = substring(of: \".,-~:;=!*#$@\", startingAt: n, endingBefore: n + 1)!"LF
+			"				b = substring(of: b, startingAt: 0, endingBefore: o)! + c + substring(of: b, startingAt: o + 1, endingBefore: length(b))!"LF
+			"			}"LF
+			"" LF
+			"			i = i + 0.02"LF
+			"		}"LF
+			"" LF
+			"		j = j + 0.02"LF
+			"	}"LF
+			"	"LF
+			"	write(b)"LF
+			"}" LF
+			"" LF
+			"" LF
+			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
 }
