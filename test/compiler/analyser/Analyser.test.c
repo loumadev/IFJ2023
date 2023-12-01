@@ -3119,6 +3119,66 @@ DESCRIBE(declaration_registry, "Declaration registry") {
 		EXPECT_EQUAL_INT(func4->variables->size, 6);
 	} TEST_END();
 
+	TEST_BEGIN("Resolution of parameters in function declaration") {
+		Lexer_setSource(
+			&lexer,
+			"func foo(_ x: Int, b y: Int) {" LF
+			TAB "var n = x + y" LF
+			"}" LF
+			"" LF
+			"foo(5, b: 7)" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+
+		// Function declaration
+		FunctionDeclarationASTNode *funcDeclaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
+		EXPECT_NOT_NULL(funcDeclaration);
+		EXPECT_TRUE(funcDeclaration->_type == NODE_FUNCTION_DECLARATION);
+
+		// Function call
+		FunctionCallASTNode *functionCall = (FunctionCallASTNode*)((ExpressionStatementASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT))->expression;
+		EXPECT_NOT_NULL(functionCall);
+		EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+		// Parameters
+		Array *parameters = funcDeclaration->parameterList->parameters;
+		EXPECT_EQUAL_INT(parameters->size, 2);
+
+		ParameterASTNode *parameter1 = Array_get(parameters, 0);
+		EXPECT_NOT_NULL(parameter1);
+		EXPECT_NOT_EQUAL_INT(parameter1->internalId->id, 0);
+
+		ParameterASTNode *parameter2 = Array_get(parameters, 1);
+		EXPECT_NOT_NULL(parameter2);
+		EXPECT_NOT_EQUAL_INT(parameter2->internalId->id, 0);
+
+		// Arguments
+		Array *arguments = functionCall->argumentList->arguments;
+		EXPECT_EQUAL_INT(arguments->size, 2);
+
+		// Variable declaration
+		VariableDeclarationASTNode *varDeclaration = (VariableDeclarationASTNode*)Array_get(funcDeclaration->body->statements, 0);
+		EXPECT_NOT_NULL(varDeclaration);
+		EXPECT_TRUE(varDeclaration->_type == NODE_VARIABLE_DECLARATION);
+
+		VariableDeclaratorASTNode *varDeclarator = (VariableDeclaratorASTNode*)Array_get(varDeclaration->declaratorList->declarators, 0);
+
+		// Binary expression
+		EXPECT_BINARY_NODE(varDeclarator->initializer, OPERATOR_PLUS, NODE_IDENTIFIER, NODE_IDENTIFIER, binary);
+
+		IdentifierASTNode *left = (IdentifierASTNode*)binary->left;
+		IdentifierASTNode *right = (IdentifierASTNode*)binary->right;
+
+		EXPECT_EQUAL_INT(left->id, parameter1->internalId->id);
+		EXPECT_EQUAL_INT(right->id, parameter2->internalId->id);
+	} TEST_END();
+
 }
 
 DESCRIBE(return_statement, "Analysis of a return statement") {

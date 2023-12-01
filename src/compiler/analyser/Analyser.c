@@ -1966,7 +1966,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 				// Update the parameter with resolved type and id
 				parameter->type->type = variable->type;
-				parameter->type->id->id = variable->id;
+				parameter->internalId->id = variable->id;
 
 				// If the parameter is not in the hashmap yet
 				if(!HashMap_has(variables, name->value)) {
