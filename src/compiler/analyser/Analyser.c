@@ -2049,7 +2049,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 			}
 
 			// Found a matching overload
-			if(isMatching) {
+			if(isMatching || parameters->size == 0) {
 				return AnalyserError(
 					RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 					String_fromFormat("invalid redeclaration of '%s'", name->value),

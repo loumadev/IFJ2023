@@ -2823,6 +2823,18 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
+				"func foo() {}" LF
+				"func foo() {}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
 				"func f() -> Int? {return 1}" LF
 				"func f() -> Int? {return 1}" LF
 				"" LF
