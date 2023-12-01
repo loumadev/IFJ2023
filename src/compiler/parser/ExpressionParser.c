@@ -19,7 +19,7 @@ PrefixStatus prefix = P_UNRESOLVED;
 bool isPostfix = false;
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
-	// +-|*/| x!|??|r |i |( |)| !x||||&&|$
+  // +-|*/| x!|??|r |i |( |)| !x||||&&|$
 	{R, S, S, R, R, S, S, R, S, R, R, R}, // +-
 	{R, R, S, R, R, S, S, R, S, R, R, R}, // */
 	{R, R, X, R, R, X, X, R, X, R, R, R}, // x!
@@ -63,10 +63,12 @@ enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser 
 			if(!whitespace_left(token->whitespace)) {
 				if(isIdentifier){
 					isPostfix = true;
+					prefix = P_IS_POSTFIX;
 					return I_UNWRAP_OP;
 				}
 				if(isPostfix){
 					isPostfix = false;
+					prefix = P_IS_POSTFIX;
 					return I_UNWRAP_OP;
 				}
 				postfixPrefix = Lexer_peekToken(parser->lexer, 0);

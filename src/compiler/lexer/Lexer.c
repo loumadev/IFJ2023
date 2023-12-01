@@ -606,27 +606,27 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 
 	// If the string is multiline, the quote is already consumed
 	if(!isMultiline) ch = Lexer_advance(lexer); // Consume the first character
-	else {
-		ch = *lexer->currentChar;
-
-		if(ch != '\n') return LexerError(
-				String_fromFormat("multi-line string literal content must begin on a new line"),
-				ERROR_MARKER(0, 1)
-		);
-
-		// Consume the LF
-		ch = Lexer_advance(lexer);
-	}
+	else ch = *lexer->currentChar;
 
 	String *string = String_alloc("");
 
 	// Match string
 	while(isMultiline ? !Lexer_match(lexer, ML_QUOTE) : ch != '"') {
 		// Handle unterminated string literals
-		if(ch == '\0' || (ch == '\n' && !isMultiline)) return LexerError(
+		if(ch == '\0' || (ch == '\n' && !isMultiline)) {
+			return LexerError(
 				String_fromFormat("unterminated string literal"),
 				ERROR_MARKER(0, 1)
-		);
+			);
+		}
+
+		// Handle unprintable characters
+		if(!isMultiline && (ch < 0x20 || ch == 0x7F)) {
+			return LexerError(
+				String_fromFormat("unprintable ASCII character '%s' in string literal", format_char(ch)),
+				ERROR_MARKER(0, 1)
+			);
+		}
 
 		// TODO: Handle multiline string literals
 
@@ -717,10 +717,12 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 				char escaped = '\0';
 				bool res = __Lexer_resolveEscapedChar(toEscape, &escaped);
 
-				if(!res) return LexerError(
+				if(!res) {
+					return LexerError(
 						String_fromFormat("invalid escape sequence '\\%s' in literal", format_char(toEscape)),
 						ERROR_MARKER(0, 1)
-				);
+					);
+				}
 
 				String_appendChar(string, escaped);
 			}
@@ -739,81 +741,65 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	// If the string is multiline, the quote is already consumed
 	if(!isMultiline) Lexer_advance(lexer); // Consume the closing quote
 	else {
-		char *indentEnd = lexer->currentChar - 3 /*+ 1*/;
-		char *indentStart = indentEnd - 1 /* + 1*/;
+		Array *lines = String_split(string, "\n");
 
-		// Loop backwards until '\n' is found, keep track of the indentation
-		while(*indentStart != '\n') {
-			if(!is_space_like(*indentStart)) {
+		// Get the first
+		String *firstLine = Array_shift(lines);
+		assertf(firstLine != NULL);
+
+		// Check for empty first line
+		if(firstLine->length != 0 || lines->size == 0) {
+			return LexerError(
+				String_fromFormat("multi-line string literal content must begin on a new line"),
+				ERROR_MARKER(0, 1)
+			);
+		}
+
+		// Get the last line
+		String *lastLine = Array_pop(lines);
+		assertf(lastLine != NULL);
+
+		// Check for valid characters in the last line
+		for(size_t i = 0; i < lastLine->length; i++) {
+			char ch = String_charAt(lastLine, i);
+
+			if(!is_space_like(ch)) {
 				return LexerError(
 					String_fromFormat("multi-line string literal closing delimiter must begin on a new line"),
 					ERROR_MARKER(0, 1)
 				);
 			}
-
-			indentStart--;
 		}
-		indentStart++;
 
-		// Validate and remove the indentation from the string
-		size_t indentLength = indentEnd - indentStart;
-		String *cleanString = String_alloc("");
+		// Check and remove the indentation from the rest of the lines
+		for(size_t i = 0; i < lines->size; i++) {
+			String *line = Array_get(lines, i);
+			assertf(line != NULL);
 
-		char *ch = string->value;
-		while(*ch) {
-			// Match the indentation using memcmp
-			if(!memcmp(ch, indentStart, indentLength)) {
-				// Skip the indentation
-				ch += indentLength;
-			} else {
-				// The indentation does not match, the string is invalid
+			// Check for valid indentation
+			if(!String_startsWith(line, lastLine->value)) {
 				return LexerError(
-					String_fromFormat("multi-line string literal indentation is not consistent"),
+					String_fromFormat("insufficient indentation of line in multi-line string literal"),
 					ERROR_MARKER(0, 1)
 				);
 			}
 
-			if(*ch == '\n') String_appendChar(cleanString, *ch);
-			while(*ch && *ch != '\n') {
-				String_appendChar(cleanString, *ch);
-				ch++;
-			}
-			if(*ch) ch++;
-
-			// do {
-			// 	String_appendChar(cleanString, *ch);
-			// 	ch++;
-			// } while(*ch && *ch != '\n');
-			// ch++;
+			// Remove the indentation
+			String_splice(line, 0, lastLine->length, "");
 		}
 
-		// Replace the string with the cleaned one
+		// Join the lines back together
 		String_free(string);
-		string = cleanString;
+		string = String_join(lines, "\n");
 
-		// char *newLine = lexer->currentChar - 4;
+		// Free all the lines and the array
+		for(size_t i = 0; i < lines->size; i++) {
+			String_free(Array_get(lines, i));
+		}
+		Array_free(lines);
 
-		// if(*newLine != '\n') return LexerError(
-		// 		String_fromFormat("multi-line string literal closing delimiter must begin on a new line"),
-		// 		Array_fromArgs(
-		// 			1,
-		// 			Token_alloc(
-		// 				TOKEN_MARKER,
-		// 				TOKEN_CARET,
-		// 				WHITESPACE_NONE,
-		// 				TextRange_construct(
-		// 					newLine,
-		// 					newLine + 1,
-		// 					lexer->line,
-		// 					lexer->column
-		// 				),
-		// 				(union TokenValue){0}
-		// 			)
-		// 		)
-		// );
-
-		// Remove the trailing newline from the string
-		// String_splice(string, -1, 1, "");
+		String_free(lastLine);
+		String_free(firstLine);
 	}
 
 	// TODO: Fetch whitespace before end quotes
@@ -867,8 +853,13 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
 	else if(TextRange_compare(&range, "var")) kind = TOKEN_VAR;
 	else if(TextRange_compare(&range, "let")) kind = TOKEN_LET;
 	else if(TextRange_compare(&range, "while")) kind = TOKEN_WHILE;
+	else if(TextRange_compare(&range, "for")) kind = TOKEN_FOR;
+	else if(TextRange_compare(&range, "in")) kind = TOKEN_IN;
 	else if(TextRange_compare(&range, "func")) kind = TOKEN_FUNC;
 	else if(TextRange_compare(&range, "return")) kind = TOKEN_RETURN;
+	else if(TextRange_compare(&range, "break")) kind = TOKEN_BREAK;
+	else if(TextRange_compare(&range, "continue")) kind = TOKEN_CONTINUE;
+
 
 	// else if(TextRange_compare(&range, "class")) kind = TOKEN_CLASS;
 	// else if(TextRange_compare(&range, "else")) kind = TOKEN_ELSE;

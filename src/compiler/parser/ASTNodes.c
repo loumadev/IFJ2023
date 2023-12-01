@@ -89,6 +89,16 @@ ReturnStatementASTNode* new_ReturnStatementASTNode(
 	return node;
 }
 
+BreakStatementASTNode* new_BreakStatementASTNode() {
+	prepare_node_of(BreakStatementASTNode, NODE_BREAK_STATEMENT)
+	return node;
+}
+
+ContinueStatementASTNode* new_ContinueStatementASTNode() {
+	prepare_node_of(ContinueStatementASTNode, NODE_CONTINUE_STATEMENT)
+	return node;
+}
+
 ParameterASTNode* new_ParameterASTNode(
 	IdentifierASTNode *internalId,
 	TypeReferenceASTNode *type,
@@ -199,6 +209,23 @@ WhileStatementASTNode* new_WhileStatementASTNode(
 	return node;
 }
 
+ForStatementASTNode* new_ForStatementASTNode(IdentifierASTNode *iterator, RangeASTNode *range, BlockASTNode *body) {
+	prepare_node_of(ForStatementASTNode, NODE_FOR_STATEMENT)
+	node->iterator = iterator;
+	node->range = range;
+	node->body = body;
+	node->id = 0;
+	return node;
+}
+
+RangeASTNode* new_RangeASTNode(ExpressionASTNode *start, ExpressionASTNode *end, OperatorType operator) {
+	prepare_node_of(RangeASTNode, NODE_RANGE)
+	node->start = start;
+	node->end = end;
+	node->operator = operator;
+	return node;
+}
+
 AssignmentStatementASTNode* new_AssignmentStatementASTNode(
 	IdentifierASTNode *id,
 	ExpressionASTNode *expression
@@ -240,6 +267,8 @@ LiteralExpressionASTNode* new_LiteralExpressionASTNode(
 	prepare_node_of(LiteralExpressionASTNode, NODE_LITERAL_EXPRESSION)
 	node->type = type;
 	node->value = value;
+	node->originalType = type;
+	node->originalValue = value;
 	return node;
 }
 
