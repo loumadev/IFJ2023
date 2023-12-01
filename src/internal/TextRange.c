@@ -35,6 +35,9 @@ size_t TextRange_compare(TextRange *range, char *str) {
 
 	size_t len = strlen(str);
 
+	// If the range is not the same length as the string, they cannot be equal
+	if((size_t)(range->end - range->start) != len) return 0;
+
 	return strncmp(range->start, str, len) == 0 ? len : 0;
 }
 
