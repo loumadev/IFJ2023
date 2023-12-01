@@ -777,7 +777,7 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 			assertf(line != NULL);
 
 			// Check for valid indentation
-			if(!String_startsWith(line, lastLine->value)) {
+			if(line->length != 0 && !String_startsWith(line, lastLine->value)) {
 				return LexerError(
 					String_fromFormat("insufficient indentation of line in multi-line string literal"),
 					ERROR_MARKER(0, 1)

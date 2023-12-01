@@ -1550,6 +1550,18 @@ DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on multi
 		);
 		EXPECT_FALSE(result.success);
 	} TEST_END();
+
+	TEST_BEGIN("Insufficient indentation 2") {
+		result = Lexer_tokenize(
+			&lexer,
+			"var a = \"\"\"" LF
+			"  A" LF
+			"" LF
+			"  B" LF
+			"  \"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
 }
 
 DESCRIBE(ml_string_token_escape, "Multiline string literals tokenization with escape sequences") {
