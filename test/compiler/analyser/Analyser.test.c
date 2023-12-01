@@ -2823,6 +2823,18 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 		{
 			Lexer_setSource(
 				&lexer,
+				"func foo() {}" LF
+				"func foo() {}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
 				"func f() -> Int? {return 1}" LF
 				"func f() -> Int? {return 1}" LF
 				"" LF
@@ -5012,6 +5024,72 @@ DESCRIBE(ultimate_idk, "Donut.c") {
 			"" LF
 			"" LF
 			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+}
+
+DESCRIBE(boolean_ext, "Boolean extension analysis") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Bool? = true" LF
+			"var b = (!a)!" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Bool? = true" LF
+			"var b = !(a!)" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Bool? = true" LF
+			"var b = !a!" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Bool? = true" LF
+			"var b = !(a)!" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
