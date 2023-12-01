@@ -15,6 +15,7 @@ typedef struct Codegen {
 	Analyser *analyser;
 	enum Frame frame;
     enum BuiltInTypes lastPushedType;
+    bool containsReturns;
 } Codegen;
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser);
