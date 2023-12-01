@@ -784,7 +784,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					);
 				}
 
-				if(HashMap_has(block->scope->variables, variable->name->value)) variable->isInitialized = true; // This is too much strict
+				if(HashMap_has(block->scope->variables, variable->name->value)) variable->isInitialized = true; // This is too strict
 				variable->isUsed = true;
 				assignment->id->id = variable->id;
 			} break;
