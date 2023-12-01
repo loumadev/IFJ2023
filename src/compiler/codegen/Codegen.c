@@ -324,6 +324,7 @@ void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen) {
 }
 
 void __Codegen_generateUserFunctions(Codegen *codegen) {
+	NEWLINE
 	COMMENT("[User functions]")
 
 	Array *functions = HashMap_values(codegen->analyser->functions);
@@ -342,7 +343,7 @@ void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 		return;
 	}
 
-	COMMENT_FUNC(functionDeclaration->id->id)
+	COMMENT_FUNC(functionDeclaration)
 
 	codegen->frame = FRAME_LOCAL;
 	Instruction_label_func(functionDeclaration->id->id);
@@ -402,7 +403,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			}
 
 			Instruction_popretvar(returnStatement->id, codegen->frame);
-            Instruction_popframe();
+			Instruction_popframe();
 			Instruction_return();
 		} break;
 		case NODE_EXPRESSION_STATEMENT: {
@@ -782,10 +783,10 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 		Instruction_pops(parameterId, FRAME_TEMPORARY);
 	}
 
-    if(functionDeclaration->returnType.type != TYPE_VOID) {
-        Instruction_defretvar(functionCall->id->id, FRAME_TEMPORARY);
-    }
+	if(functionDeclaration->returnType.type != TYPE_VOID) {
+		Instruction_defretvar(functionCall->id->id, FRAME_TEMPORARY);
+	}
 
 	Instruction_call_func(functionCall->id->id);
-    Instruction_pushs_func_result(functionCall->id->id);
+	Instruction_pushs_func_result(functionCall->id->id);
 }

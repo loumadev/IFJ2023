@@ -13,8 +13,8 @@
 #define COMMENT(comment) \
     fprintf(stdout, "# %s\n", comment);
 
-#define COMMENT_FUNC(id) \
-    fprintf(stdout, "# Function %lu\n", id);
+#define COMMENT_FUNC(declaration) \
+    fprintf(stdout, "# Function %s (%lu)\n", declaration->id->name->value, declaration->id->id);
 
 #define COMMENT_VAR(id) \
     fprintf(stdout, "# Variable %lu\n", id);
