@@ -62,6 +62,7 @@ ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind);
 void Analyser_constructor(Analyser *analyser);
 void Analyser_destructor(Analyser *analyser);
 AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast);
+bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id);
 Declaration /*<VariableDeclaration | FunctionDeclaration> | null*/* Analyser_getDeclarationById(Analyser *analyser, size_t id);
 FunctionDeclaration /* | null*/* Analyser_getFunctionById(Analyser *analyser, size_t id);
 VariableDeclaration /* | null*/* Analyser_getVariableById(Analyser *analyser, size_t id);
