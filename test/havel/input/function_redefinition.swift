@@ -1,0 +1,7 @@
+func foo() {
+
+}
+
+func foo() {
+
+}

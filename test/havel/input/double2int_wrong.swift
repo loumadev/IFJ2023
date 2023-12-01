@@ -1,0 +1,1 @@
+Double2Int("Hello")

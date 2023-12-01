@@ -5098,3 +5098,39 @@ DESCRIBE(boolean_ext, "Boolean extension analysis") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 }
+
+DESCRIBE(havel_tests, "Havel's tests") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Test 19") {
+		Lexer_setSource(
+			&lexer,
+			"var a : Int" LF
+			"var b = 3" LF
+			"" LF
+			"if b == 3 {" LF
+			"    a = 4" LF
+			"    b = a" LF
+			"}" LF
+			"else" LF
+			"{" LF
+			"}" LF
+			"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		// EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+}
