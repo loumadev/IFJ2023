@@ -10,6 +10,8 @@
 #include "compiler/analyser/Analyser.h"
 #include "compiler/codegen/Codegen.h"
 
+#include "colors.h"
+
 #define BUFFER_SIZE 1024
 
 int main(int argc, const char *argv[]) {
@@ -46,7 +48,7 @@ int main(int argc, const char *argv[]) {
 	ParserResult result = Parser_parse(&parser);
 	if(!result.success) {
 		// TODO: Add error utils here
-		fprintf(stderr, "error: %s\n", result.message->value);
+		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n", result.message->value);
 
 		Allocator_cleanup();
 		return result.type;
@@ -56,7 +58,7 @@ int main(int argc, const char *argv[]) {
 	AnalyserResult analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)result.node);
 	if(!analyserResult.success) {
 		// TODO: Add error utils here
-		fprintf(stderr, "error: %s\n", analyserResult.message->value);
+		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n", analyserResult.message->value);
 
 		Allocator_cleanup();
 		return analyserResult.type;
