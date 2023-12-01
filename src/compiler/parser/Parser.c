@@ -927,7 +927,7 @@ ParserResult __Parser_parseVariableDeclarator(Parser *parser) {
 		initializer = initializerResult.node;
 	} else if(!patternNode->type) {
 		return ParserError(
-			String_fromFormat("type anotation missing in pattern"),
+			String_fromFormat("type annotation missing in pattern"),
 			NULL);
 	}
 
