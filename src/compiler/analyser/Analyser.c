@@ -590,7 +590,7 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 	} else {
 		// Get the type of the test expression
 		ValueType type;
-		AnalyserResult result = Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, (ValueType){.type = TYPE_BOOL, .isNullable = false}, &type);
+		AnalyserResult result = Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, (ValueType){.type = TYPE_UNKNOWN /* TYPE_BOOL */, .isNullable = false}, &type);
 		if(!result.success) return result;
 
 		// Validate the type of the test expression
