@@ -92,7 +92,7 @@ DESCRIBE(epxr_parser_internal, "Expression parser internal functions"){
 
 }
 
-DESCRIBE(expressions, "Expression parsing"){
+DESCRIBE(expressions, "basic expression parsing"){
     Lexer lexer;
 	Lexer_constructor(&lexer);
 

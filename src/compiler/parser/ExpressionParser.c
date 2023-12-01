@@ -28,16 +28,16 @@ PrefixStatus prefix = P_UNRESOLVED;
 bool isPostfix = false;
 
 int precedence_table[TABLE_SIZE][TABLE_SIZE] = {   // [stack top terminal][input token]
-  // +-|*/| x!|??|r |i |( |)| !x||||&&|$
+ // +-|*/| x!|??|r |i |( |)| !x||||&&|$
 	{R, S, S, R, R, S, S, R, S, R, R, R}, // +-
 	{R, R, S, R, R, S, S, R, S, R, R, R}, // */
-	{R, R, X, R, R, X, X, R, X, R, R, R}, // x!
+	{R, R, X, R, R, X, X, R, R, R, R, R}, // x!
 	{S, S, S, S, S, S, S, R, S, S, S, R}, // ??
 	{S, S, S, R, X, S, S, R, S, R, R, R}, // r (==, !=, <, >, <=, >=)
 	{R, R, R, R, R, X, X, R, X, R, R, R}, // i
 	{S, S, S, S, S, S, S, E, S, S, S, X}, // (
 	{R, R, R, R, R, X, X, R, X, R, R, R}, // )
-	{R, R, R, R, R, S, X, R, X, R, R, R}, // !x
+	{R, R, S, R, R, S, S, R, X, R, R, R}, // !x
 	{S, S, S, S, S, S, S, R, S, R, R, R}, // ||
 	{S, S, S, S, S, S, S, R, S, R, R, R}, // &&
 	{S, S, S, S, S, S, S, X, S, S, S, X}  // $
@@ -86,7 +86,8 @@ enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser 
 				postfixPrefix = Lexer_peekToken(parser->lexer, 0);
 				if(postfixPrefix.success) {
 					if((postfixPrefix.token->type == TOKEN_IDENTIFIER) ||
-					   (postfixPrefix.token->type == TOKEN_LITERAL)) {
+					   (postfixPrefix.token->type == TOKEN_LITERAL) ||
+					   (postfixPrefix.token->kind == TOKEN_RIGHT_PAREN)) {
 						prefix = P_IS_POSTFIX;
 						return I_UNWRAP_OP;
 					}
@@ -98,7 +99,8 @@ enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser 
 				postfixPrefix = Lexer_peekToken(parser->lexer, 2);
 				if(postfixPrefix.success) {
 					if((postfixPrefix.token->type == TOKEN_IDENTIFIER) ||
-					   (postfixPrefix.token->type == TOKEN_LITERAL)) {
+					   (postfixPrefix.token->type == TOKEN_LITERAL) ||
+					   (postfixPrefix.token->kind == TOKEN_LEFT_PAREN)) {
 						prefix = P_IS_PREFIX;
 						return I_NOT;
 					}
@@ -344,6 +346,7 @@ StackItem* Expr_performReduction(Array *stack) {
 bool Expr_Reduce(Array *stack, StackItem *currentToken) {
 	Array *reduceStack = Array_alloc(STACK_SIZE);
 
+	// nothing to reduce
 	if(stack->size == 1) {
 		return false;
 	}
