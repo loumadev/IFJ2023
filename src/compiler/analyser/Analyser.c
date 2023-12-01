@@ -155,8 +155,8 @@ void Analyser_destructor(Analyser *analyser) {
 bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id) {
 	if(id == 0) return false;
 
-	String *key = String_fromLong(id)->value;
-	bool isGlobal = HashMap_has(analyser->variables, key) || HashMap_has(analyser->functions, key);
+	String *key = String_fromLong(id);
+	bool isGlobal = HashMap_has(analyser->variables, key->value) || HashMap_has(analyser->functions, key->value);
 	String_free(key);
 
 	return isGlobal;
@@ -165,8 +165,8 @@ bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id) {
 Declaration* Analyser_getDeclarationById(Analyser *analyser, size_t id) {
 	if(id == 0) return NULL;
 
-	String *key = String_fromLong(id)->value;
-	Declaration *declaration = HashMap_get(analyser->idsPool, key);
+	String *key = String_fromLong(id);
+	Declaration *declaration = HashMap_get(analyser->idsPool, key->value);
 	String_free(key);
 	return declaration;
 }
