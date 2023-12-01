@@ -13,6 +13,9 @@
 #define COMMENT(comment) \
     fprintf(stdout, "# %s\n", comment);
 
+#define COMMENT_FUNC(declaration) \
+    fprintf(stdout, "# Function %s (%lu)\n", declaration->id->name->value, declaration->id->id);
+
 #define COMMENT_VAR(id) \
     fprintf(stdout, "# Variable %lu\n", id);
 
@@ -46,11 +49,19 @@ void Instruction_jumpifneqs_while_end(size_t id);
 
 void Instruction_jump_while_start(size_t id);
 
-void Instruction_jumpifneqs_if_end(size_t id);
+void Instruction_jumpifneqs_if_else(size_t id);
+
+void Instruction_label_if_else(size_t id);
+
+void Instruction_jump_if_else(size_t id);
+
+void Instruction_jump_if_end(size_t id);
 
 void Instruction_label_if_end(size_t id);
 
 void Instruction_popretvar(size_t id, enum Frame frame);
+
+void Instruction_pushs_var_named(char * var, enum Frame frame);
 
 // --- INSTUCTIONS ---
 
@@ -58,11 +69,11 @@ void Instruction_return();
 
 void Instruction_pushframe();
 
-void Instruction_readString(size_t id, enum Frame frame);
+void Instruction_readString(char *var, enum Frame frame);
 
-void Instruction_readInt(size_t id, enum Frame frame);
+void Instruction_readInt(char *var, enum Frame frame);
 
-void Instruction_readFloat(size_t id, enum Frame frame);
+void Instruction_readFloat(char *var, enum Frame frame);
 
 void Instruction_write(char * id, enum Frame frame);
 
@@ -94,6 +105,8 @@ void Instruction_muls();
 
 void Instruction_divs();
 
+void Instruction_idivs();
+
 void Instruction_lts();
 
 void Instruction_gts();
@@ -109,5 +122,43 @@ void Instruction_nots();
 void Instruction_jump_func_end(size_t id);
 
 void Instruction_label_func_start(size_t id);
+
+void Instruction_int2floats();
+
+void Instruction_float2ints();
+
+void Instruction_strlen(enum Frame resultScope, char *result, char *input, enum Frame inputScope);
+
+void Instruction_int2char(enum Frame resultScope, char *result, enum Frame inputScope, char *input);
+
+void Instruction_stri2int(enum Frame resultScope, char *result, enum Frame inputScope, char *input, int index);
+
+void Instruction_label(char *label);
+
+void Instruction_jump_ifeqs_chr_end();
+
+void Instruction_jump(char *label);
+
+void Instruction_move(enum Frame destinationScope, char* destination, enum Frame sourceScope, char* source);
+
+void Instruction_popframe();
+
+void Instruction_createframe();
+
+void Instruction_call(char *label);
+
+void Instruction_return();
+
+void Instruction_jump_ifeqs(char *label);
+
+void Instruction_getchar(enum Frame resultScope, char *result, enum Frame inputScope, char *input, enum Frame indexScope, char *index);
+
+void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1Scope, char *input1, enum Frame input2Scope, char *input2);
+
+void Instruction_call_func(size_t id);
+
+void Instruction_label_func(size_t id);
+
+void Instruction_pushs_func_result(size_t id);
 
 #endif // INSTRUCTION_H

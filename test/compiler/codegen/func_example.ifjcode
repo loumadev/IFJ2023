@@ -1,0 +1,9 @@
+.IFJCODE23
+
+PUSHS int@5
+PUSHS int@10
+MULS
+
+DEFVAR GF@result
+POPS GF@result
+WRITE GF@result

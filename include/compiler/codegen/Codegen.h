@@ -14,6 +14,7 @@ enum Frame {
 typedef struct Codegen {
 	Analyser *analyser;
 	enum Frame frame;
+    enum BuiltInTypes lastPushedType;
 } Codegen;
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser);
@@ -21,7 +22,5 @@ void Codegen_constructor(Codegen *codegen, Analyser *analyser);
 void Codegen_destructor(Codegen *codegen);
 
 void Codegen_generate(Codegen *codegen);
-
-void Codegen_escapeString(String *string);
 
 #endif // CODEGEN_H
