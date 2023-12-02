@@ -32,7 +32,7 @@ void __Codegen_walkAST(Codegen *codegen);
 void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifStatement);
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement);
 void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNode *binaryExpression);
-void __Codegen_evaluateBinaryOperator(Codegen *codegen, BinaryExpressionASTNode *expression);
+void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression);
 void __Codegen_evaluateLiteral(Codegen *codegen, LiteralExpressionASTNode *literal);
 void __Codegen_evaluateVariableDeclaration(Codegen *codegen, VariableDeclarationASTNode *variableDeclaration);
 void __Codegen_evaluateVariableDeclarationList(Codegen *codegen, VariableDeclarationListASTNode *declarationList);
@@ -520,11 +520,11 @@ void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *w
 void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNode *binaryExpression) {
 	__Codegen_evaluateExpression(codegen, binaryExpression->left);
 	__Codegen_evaluateExpression(codegen, binaryExpression->right);
-	__Codegen_evaluateBinaryOperator(codegen, binaryExpression);
+    __Codegen_evaluateBinaryOperator(binaryExpression);
 }
 
 // TODO: Careful, there are some exceptions when working with nils
-void __Codegen_evaluateBinaryOperator(Codegen *codegen, BinaryExpressionASTNode *expression) {
+void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
 	switch(expression->operator) {
 		case OPERATOR_PLUS: {
 			if(expression->type.type == TYPE_STRING) {
