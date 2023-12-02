@@ -4029,6 +4029,23 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Double? = 2.0" LF
+			"var b = a ?? 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		VariableDeclaration *var = Analyser_getVariableByName(&analyser, "b", analyser.globalScope);
+		EXPECT_NOT_NULL(var);
+		EXPECT_TRUE(var->type.type == TYPE_DOUBLE);
+	} TEST_END();
+
 	TEST_BEGIN("Invalid conversion of literals inside EQ/NEQ expressions") {
 		Lexer_setSource(
 			&lexer,
