@@ -10,6 +10,7 @@ const SOURCES_DIR = path.join(ROOT, "/src");
 const HEADERS_DIR = path.join(ROOT, "/include");
 const MAIN = path.join(SOURCES_DIR, "/main.c");
 
+const STATIC_DIR = path.join(__dirname, "/static_files");
 const OUTPUT_DIR = path.join(__dirname, "/output");
 const PROJECT_DIR = path.join(OUTPUT_DIR, "/project");
 
@@ -202,6 +203,17 @@ all: \$(OUT)
 	}
 
 
+	Utils.info("Injecting static files...");
+	{
+		const staticFiles = Utils.readDirRecursive(STATIC_DIR);
+		for(const file of staticFiles) {
+			const newPath = path.join(PROJECT_DIR, path.relative(STATIC_DIR, file));
+			Utils.createDirectory(path.dirname(newPath));
+			fs.copyFileSync(file, newPath);
+		}
+	}
+
+
 	Utils.info("Compiling...");
 	{
 		const proc = spawnSync("make", {
@@ -241,6 +253,12 @@ all: \$(OUT)
 	}
 
 
+	Utils.info("Cleaning up...");
+	{
+		cleanProjectDirectory();
+	}
+
+
 	Utils.info(`Done in ${Date.now() - start}ms`);
 })();
 
@@ -254,6 +272,15 @@ function resolveDependencies(project, file) {
 	if(project.dependencies[file.path]) return project.dependencies[file.path];
 
 	const source = fs.readFileSync(file.path, "utf8");
+
+	// Add file header
+	{
+		const content = addFileHeader(file.path, source);
+		if(content) {
+			Utils.warn(`Updating header of file "${file.relative}"...`);
+			fs.writeFileSync(file.path, content);
+		}
+	}
 
 	// Collect all includes
 	/** @type {ProjectFile[]} */
@@ -275,8 +302,13 @@ function resolveDependencies(project, file) {
 			continue;
 		}
 
-		const include = resolveDependencies(project, includeFile);
-		include.dependents.push(file);
+		try {
+			const include = resolveDependencies(project, includeFile);
+			include.dependents.push(file);
+		} catch(err) {
+			Utils.error(`Failed to resolve dependency "${includeFile.relative}" of file "${file.relative}"!`);
+			throw err;
+		}
 	}
 
 	project.dependencies[file.path].isResolved = true;
@@ -312,12 +344,80 @@ function getFileByName(project, name) {
 
 function prepareOutputDirectories() {
 	// Create diretories
+	Utils.createDirectory(STATIC_DIR);
 	Utils.createDirectory(OUTPUT_DIR);
 	Utils.createDirectory(PROJECT_DIR);
 
+	// Remove all existing files
+	cleanOutputDirectories();
+}
+
+function cleanOutputDirectories() {
 	// Remove all existing files
 	const files = Utils.readDirRecursive(OUTPUT_DIR);
 	for(const file of files) {
 		fs.unlinkSync(file);
 	}
+}
+
+function cleanProjectDirectory() {
+	// Remove all existing files
+	const files = Utils.readDirRecursive(PROJECT_DIR);
+	for(const file of files) {
+		fs.unlinkSync(file);
+	}
+}
+
+
+/**
+ * @param {string} filePath
+ * @param {string} content
+ * @return {string | null}
+ */
+function addFileHeader(filePath, content) {
+	const projetName = "IFJ23";
+
+	const defaultAuthor = "Author Name";
+	const defaultEmail = "<xlogin00@stud.fit.vutbr.cz>";
+	const defaultBrief = `This file is part of the ${projetName} project.`;
+
+	// const stats = fs.statSync(filePath);
+
+	// @ts-ignore
+	const fileIdentifier = filePath.replace(ROOT, "").replaceAll(path.sep, "/").slice(1);
+	const existingHeader = (content.match(/^\/\*\*\r?\n \*[\S\s]*?\*\/\r?\n\r?\n?/m) || [])[0];
+	const existingFooter = (content.match(/\s*\/\*\* End of file .* \*\*\/\s*$/m) || [])[0];
+
+	const authorsMatches = existingHeader && [...existingHeader.matchAll(/@author\s+(.*?)\s+(<.*?>)/g)];
+	const authors = authorsMatches && authorsMatches.map(([m, name, email]) => ({name, email})) || [];
+
+	const brief = existingHeader && existingHeader.match(/@brief\s+(.*)/)?.[1];
+
+	if(authors.length === 0) authors.push({name: defaultAuthor, email: defaultEmail});
+
+	if(!existingHeader) {
+		Utils.warn(`File "${fileIdentifier}" is missing header! Creating new one...`);
+	}
+
+	if(authors.some(e => !e.name || !e.email || e.name === defaultAuthor || e.email === defaultEmail)) {
+		Utils.warn(`File "${fileIdentifier}" is missing author information!`);
+	}
+
+	const header = `/**
+ * @file ${fileIdentifier}
+${authors.map(e => ` * @author ${e.name || defaultAuthor} ${e.email || defaultEmail}`).join("\n")}
+ * @brief ${brief || defaultBrief}
+ * @copyright Copyright (c) ${new Date().getFullYear()}
+ */`;
+	// * @date ${Utils.formatDate(stats.birthtime)}
+
+	const footer = `/** End of file ${fileIdentifier} **/`;
+
+	const newContent = header + "\n\n" +
+		content
+			.replace(existingHeader || "", "")
+			.replace(existingFooter || "", "") +
+		"\n\n" + footer + "\n";
+
+	return newContent === content ? null : newContent;
 }
