@@ -2872,8 +2872,330 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(if_statement->test);
 		EXPECT_TRUE(if_statement->test->_type == NODE_OPTIONAL_BINDING_CONDITION);
 
-		// TODO
+		OptionalBindingConditionASTNode *binding_condition = (OptionalBindingConditionASTNode*)if_statement->test;
 
+		id = binding_condition->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "a"));
+
+		// else
+	    EXPECT_NOT_NULL(if_statement->alternate);
+		EXPECT_TRUE(if_statement->alternate->_type == NODE_BLOCK);
+
+
+	    BlockASTNode* body = (BlockASTNode*)if_statement->alternate;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+	    // write("Chyba pri nacitani celeho cisla!\n")
+		statement = (StatementASTNode*)Array_get(body->statements, 0);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		expression_statement = (ExpressionStatementASTNode*)statement;
+
+		function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 1);
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "Chyba pri nacitani celeho cisla!\n"));
+
+		// if body
+		body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+	    // if (a < 0) {write("Faktorial nelze spocitat\n")}
+		statement = (StatementASTNode*)Array_get(body->statements, 0);
+
+	    EXPECT_TRUE(statement->_type == NODE_IF_STATEMENT);
+
+		if_statement = (IfStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_TRUE(if_statement->test->_type == NODE_BINARY_EXPRESSION);
+
+	    BinaryExpressionASTNode *binary_test = (BinaryExpressionASTNode*)if_statement->test;
+		EXPECT_BINARY_NODE(binary_test, OPERATOR_LESS, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, test_binary)
+
+		IdentifierASTNode* id_left = (IdentifierASTNode*)test_binary->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "a"));
+
+		LiteralExpressionASTNode* literal_right = (LiteralExpressionASTNode*)test_binary->right;
+		EXPECT_TRUE(literal_right->type.type == TYPE_INT);
+        EXPECT_EQUAL_INT(literal_right->value.integer, 0)
+
+		body = if_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 1);
+
+        // write("Faktorial nelze spocitat\n")
+		statement = (StatementASTNode*)Array_get(arr, 0);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		expression_statement = (ExpressionStatementASTNode*)statement;
+
+		function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 1);
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "Faktorial nelze spocitat\n"));
+
+	    EXPECT_NOT_NULL(if_statement->alternate);
+		EXPECT_TRUE(if_statement->alternate->_type == NODE_BLOCK);
+
+	    body = (BlockASTNode*)if_statement->alternate;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 4);
+
+        // var a = Int2Double(a)
+		statement = (StatementASTNode*)Array_get(arr, 0);
+
+		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
+		declaration = (VariableDeclarationASTNode*)statement;
+
+		EXPECT_FALSE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		Array* arr_declarators = list->declarators;
+		EXPECT_EQUAL_INT(arr_declarators->size, 1);
+
+		declarator = Array_get(arr_declarators, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NULL(pattern->type);
+
+		id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "a"));
+
+		// Int2Double(a)
+		function_call = (FunctionCallASTNode*)declarator->initializer;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "Int2Double"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 1);
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		id = (IdentifierASTNode*)argument->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "a"));
+
+        // var vysl : Double = 1
+		statement = (StatementASTNode*)Array_get(arr, 1);
+
+		declaration = (VariableDeclarationASTNode*)statement;
+		EXPECT_FALSE(declaration->isConstant);
+		EXPECT_NOT_NULL(declaration->declaratorList);
+
+		list = declaration->declaratorList;
+		EXPECT_NOT_NULL(list->declarators);
+
+		arr_declarators = list->declarators;
+		EXPECT_EQUAL_INT(arr_declarators->size, 1);
+
+		declarator = Array_get(arr_declarators, 0);
+		EXPECT_NOT_NULL(declarator);
+
+		pattern = declarator->pattern;
+		EXPECT_NOT_NULL(pattern);
+		EXPECT_NOT_NULL(pattern->type);
+		EXPECT_TRUE(pattern->_type == NODE_PATTERN);
+		EXPECT_TRUE(pattern->type->_type == NODE_TYPE_REFERENCE);
+		EXPECT_TRUE(String_equals(pattern->type->id->name, "Double"));
+
+		id = pattern->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "vysl"));
+
+		LiteralExpressionASTNode *initializer = (LiteralExpressionASTNode*)declarator->initializer;
+		EXPECT_NOT_NULL(initializer);
+		EXPECT_TRUE(initializer->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(initializer->type.type == TYPE_INT);
+		EXPECT_EQUAL_INT(initializer->value.integer, 1);
+
+		// write(\"Vysledek je: \", vysl, \"\\n\")
+		statement = (StatementASTNode*)Array_get(arr, 3);
+		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
+
+		expression_statement = (ExpressionStatementASTNode*)statement;
+
+		function_call = (FunctionCallASTNode*)expression_statement->expression;
+		EXPECT_NOT_NULL(function_call);
+		EXPECT_TRUE(function_call->_type == NODE_FUNCTION_CALL);
+
+		id = function_call->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "write"));
+
+		EXPECT_NOT_NULL(function_call->argumentList)
+		arguments = (Array*)function_call->argumentList->arguments;
+
+		EXPECT_NOT_NULL(arguments->data);
+		EXPECT_TRUE(arguments->size == 3);
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 0);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "Vysledek je: "));
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 1);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+
+		id = (IdentifierASTNode*)argument->expression;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "vysl"));
+
+		argument = (ArgumentASTNode*)Array_get(arguments, 2);
+		EXPECT_NOT_NULL(argument);
+		EXPECT_NULL(argument->label);
+		argument_expression = (LiteralExpressionASTNode*)argument->expression;
+		EXPECT_NOT_NULL(argument_expression);
+		EXPECT_TRUE(argument_expression->_type == NODE_LITERAL_EXPRESSION);
+		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
+		EXPECT_TRUE(String_equals(argument_expression->value.string, "\n"));
+
+
+        // while (a > 0) {
+		statement = (StatementASTNode*)Array_get(arr, 2);
+
+	    EXPECT_TRUE(statement->_type == NODE_WHILE_STATEMENT);
+
+		WhileStatementASTNode* while_statement = (WhileStatementASTNode*)statement;
+
+		EXPECT_NOT_NULL(if_statement->test);
+		EXPECT_TRUE(if_statement->test->_type == NODE_BINARY_EXPRESSION);
+
+	    binary_test = (BinaryExpressionASTNode*)while_statement->test;
+		EXPECT_BINARY_NODE(binary_test, OPERATOR_GREATER, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, binary)
+
+		id_left = (IdentifierASTNode*)binary->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "a"));
+
+		literal_right = (LiteralExpressionASTNode*)binary->right;
+		EXPECT_TRUE(literal_right->type.type == TYPE_INT);
+        EXPECT_EQUAL_INT(literal_right->value.integer, 0)
+
+		body = while_statement->body;
+		EXPECT_NOT_NULL(body->statements);
+		arr = body->statements;
+		EXPECT_NOT_NULL(arr->data);
+		EXPECT_EQUAL_INT(arr->size, 2);
+
+        // vysl = vysl * a
+		statement = (StatementASTNode*)Array_get(arr, 0);
+
+	    EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
+		AssignmentStatementASTNode *assign_statement = (AssignmentStatementASTNode*)statement;
+
+		id = assign_statement->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "vysl"));
+
+		EXPECT_TRUE(assign_statement->expression->_type ==NODE_BINARY_EXPRESSION);
+
+        binary_test = (BinaryExpressionASTNode*)assign_statement->expression;
+		EXPECT_BINARY_NODE(binary_test, OPERATOR_MUL, NODE_IDENTIFIER, NODE_IDENTIFIER, binary_vysl)
+
+		id_left = (IdentifierASTNode*)binary_vysl->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "vysl"));
+
+	    IdentifierASTNode* id_right = (IdentifierASTNode*)binary_vysl->right;
+		EXPECT_NOT_NULL(id_right);
+		EXPECT_TRUE(String_equals(id_right->name, "a"));
+
+		
+        // a = a - 1
+		statement = (StatementASTNode*)Array_get(arr, 1);
+
+	    EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
+		assign_statement = (AssignmentStatementASTNode*)statement;
+
+		id = assign_statement->id;
+		EXPECT_NOT_NULL(id);
+		EXPECT_TRUE(String_equals(id->name, "a"));
+
+
+		EXPECT_TRUE(assign_statement->expression->_type ==NODE_BINARY_EXPRESSION);
+
+        binary_test = (BinaryExpressionASTNode*)assign_statement->expression;
+		EXPECT_BINARY_NODE(binary_test, OPERATOR_MINUS, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, binary_a)
+
+		id_left = (IdentifierASTNode*)binary_a->left;
+		EXPECT_NOT_NULL(id_left);
+		EXPECT_TRUE(String_equals(id_left->name, "a"));
+
+		literal_right = (LiteralExpressionASTNode*)binary_a->right;
+		EXPECT_TRUE(literal_right->type.type == TYPE_INT);
+        EXPECT_EQUAL_INT(literal_right->value.integer, 1)
 
 	} TEST_END();
 
@@ -3078,7 +3400,6 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(id);
 		EXPECT_TRUE(String_equals(id->name, "str1"));
 
-		// "write(\"Pozice retezce \\\"text\\\" v str2: \", i, \"\\n\")" LF
 		// write(...)
 		statement = (StatementASTNode*)Array_get(statements, 4);
 		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
@@ -3363,9 +3684,6 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		arr = body->statements;
 		EXPECT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 0);
-
-
-
 	}
 	TEST_END();
 
