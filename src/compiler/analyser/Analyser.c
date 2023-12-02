@@ -1048,7 +1048,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			// Revert implicit type conversions
 			else if(
 				/*prefferedType.type == TYPE_INT && literal->originalType.type == TYPE_INT*/
-				literal->originalType.type == TYPE_INT && literal->type.type != TYPE_DOUBLE
+				literal->originalType.type == TYPE_INT && literal->type.type != TYPE_INT
 			) {
 				literal->value = literal->originalValue;
 				literal->type = literal->originalType;
