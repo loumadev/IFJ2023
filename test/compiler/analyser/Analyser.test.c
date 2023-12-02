@@ -5213,6 +5213,19 @@ DESCRIBE(havel_tests, "Havel's tests") {
 		EXPECT_TRUE(analyserResult.success);
 	} TEST_END();
 
+	TEST_BEGIN("Test 70") {
+		Lexer_setSource(
+			&lexer,
+			"let opt2 : Int? = 5" LF
+			"let val2 = (opt2 ?? 1) + 6" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
 	TEST_BEGIN("Test 71") {
 		Lexer_setSource(
 			&lexer,

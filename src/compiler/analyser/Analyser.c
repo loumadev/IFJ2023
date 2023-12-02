@@ -1694,12 +1694,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						// TODO: Maybe error here? The assignment lacks this edge case...
 					}
 
-					if(leftType.isNullable) {
-						binary->type.isNullable = true;
-					} else {
-						binary->type.isNullable = false;
-					}
-
+					binary->type.isNullable = leftType.isNullable && rightType.isNullable;
 					binary->type.type = rightType.type;
 					*outType = binary->type;
 				} break;
