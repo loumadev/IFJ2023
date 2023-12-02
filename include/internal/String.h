@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "Array.h"
+#include "internal/Array.h"
 
 #ifndef STRING_H
 #define STRING_H
