@@ -19,7 +19,10 @@ execTest() {
 	printf "\n" >>tmp_output2.txt
 	if [ $returnCode -ne $4 ]; then
 		printf "\e[1m\e[31mFailed\e[0m Test %02d: $1:\n" $testNum
-		printf "\tWrong return code, expected $4, got $returnCode"
+		printf "\tWrong return code, expected $4, got $returnCode\n"
+		if [ $returnCode -ne 0 ]; then
+			cat <tmp_output.txt
+		fi
 	elif [ -z "$(diff --ignore-trailing-space --ignore-blank-lines tmp_output2.txt $3)" ]; then
 		printf "\e[1m\e[32mPassed\e[0m Test %02d: $1\n" $testNum
 	else
@@ -62,9 +65,12 @@ execTest "Function call with wrong parameter type" "input/func_call_wrong_type.s
 execTest "Function call with wrong number of params" "input/func_call_wrong_param_count.swift" "output/empty.txt" 4
 execTest "Modify function parameter" "input/func_call_modify_param.swift" "output/empty.txt" 9
 execTest "Eearly return from procedure" "input/proc_return.swift" "output/empty.txt" 0
-execTest "Try to return value from procedure" "input/proc_return_with_type.swift" "output/empty.txt" 2
-execTest "Try to return without value from function" "input/func_return_without_value.swift" "output/empty.txt" 2
-execTest "Return wrong type from function" "input/func_wrong_return_type.swift" "output/empty.txt" 6
+# execTest "Try to return value from procedure" "input/proc_return_with_type.swift" "output/empty.txt" 2
+execTest "Try to return value from procedure" "input/proc_return_with_type.swift" "output/empty.txt" 6
+# execTest "Try to return without value from function" "input/func_return_without_value.swift" "output/empty.txt" 2
+execTest "Try to return without value from function" "input/func_return_without_value.swift" "output/empty.txt" 6
+# execTest "Return wrong type from function" "input/func_wrong_return_type.swift" "output/empty.txt" 6
+execTest "Return wrong type from function" "input/func_wrong_return_type.swift" "output/empty.txt" 4
 execTest "Return statement in global scope" "input/return_in_global_scope.swift" "output/empty.txt" 2
 execTest "Return statement in global scope" "input/return_in_global_scope_with_value.swift" "output/empty.txt" 2
 execTest "Modify constant" "input/modify_const_variable.swift" "output/empty.txt" 9
