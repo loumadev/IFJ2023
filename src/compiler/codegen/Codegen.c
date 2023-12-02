@@ -104,6 +104,8 @@ void __Codegen_generateHelperVariables() {
 	Instruction_defvar_where("CONCAT_OUTPUT", FRAME_GLOBAL);
     Instruction_defvar_where("COALESCING_TMP1", FRAME_GLOBAL);
     Instruction_defvar_where("COALESCING_TMP2", FRAME_GLOBAL);
+    Instruction_defvar_where("TYPE_TMP", FRAME_GLOBAL);
+    Instruction_defvar_where("TYPE_RESULT", FRAME_GLOBAL);
     NEWLINE
 }
 
@@ -294,8 +296,17 @@ void __Codegen_generateSubstring() {
 	Instruction_pushs_string(&string);
 	Instruction_pops_where("SUBSTR_BUFFER", FRAME_LOCAL);
 	Instruction_defvar_where("SUBSTR_GETCHAR", FRAME_LOCAL);
+    Instruction_move(FRAME_LOCAL, "RETVAL_SUBSTR", FRAME_LOCAL, "SUBSTR_BUFFER");
 
 	Instruction_label("substr_loop");
+
+    // Check if i < j
+    Instruction_pushs_var_named("I_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs_var_named("J_SUBSTR", FRAME_LOCAL);
+    Instruction_lts();
+    Instruction_pushs_bool(false);
+    Instruction_jump_ifeqs("substr_end");
+
 	Instruction_getchar(FRAME_LOCAL, "SUBSTR_GETCHAR", FRAME_LOCAL, "INPUT_SUBSTR", FRAME_LOCAL, "I_SUBSTR");
 	Instruction_concat(FRAME_LOCAL, "SUBSTR_BUFFER", FRAME_LOCAL, "SUBSTR_BUFFER", FRAME_LOCAL, "SUBSTR_GETCHAR");
 
@@ -305,17 +316,11 @@ void __Codegen_generateSubstring() {
 	Instruction_adds();
 	Instruction_pops_where("I_SUBSTR", FRAME_LOCAL);
 
-	// Check if i < j
-	Instruction_pushs_var_named("I_SUBSTR", FRAME_LOCAL);
-	Instruction_pushs_var_named("J_SUBSTR", FRAME_LOCAL);
-	Instruction_lts();
-	Instruction_pushs_bool(true);
-	Instruction_jump_ifeqs("substr_loop");
-
-	// Handle generated string
+    // Handle generated string
 	Instruction_move(FRAME_LOCAL, "RETVAL_SUBSTR", FRAME_LOCAL, "SUBSTR_BUFFER");
+    Instruction_jump("substr_loop");
 
-	Instruction_label("substr_end");
+    Instruction_label("substr_end");
 	Instruction_popframe();
 	Instruction_return();
 }
@@ -522,22 +527,21 @@ void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNod
 void __Codegen_evaluateBinaryOperator(Codegen *codegen, BinaryExpressionASTNode *expression) {
 	switch(expression->operator) {
 		case OPERATOR_PLUS: {
-			if(codegen->lastPushedType == TYPE_STRING) {
-				Instruction_pops_where("CONCAT_ARG2", codegen->frame);
-				Instruction_pops_where("CONCAT_ARG1", codegen->frame);
+			if(expression->type.type == TYPE_STRING) {
+				Instruction_pops_where("CONCAT_ARG2", FRAME_GLOBAL);
+				Instruction_pops_where("CONCAT_ARG1", FRAME_GLOBAL);
 				Instruction_concat(FRAME_GLOBAL, "CONCAT_OUTPUT", FRAME_GLOBAL, "CONCAT_ARG1", FRAME_GLOBAL, "CONCAT_ARG2");
-				Instruction_pushs_var_named("CONCAT_OUTPUT", codegen->frame);
+				Instruction_pushs_var_named("CONCAT_OUTPUT", FRAME_GLOBAL);
 				return;
 			}
 			return Instruction_adds();
 		}
-
 		case OPERATOR_MINUS:
 			return Instruction_subs();
 		case OPERATOR_MUL:
 			return Instruction_muls();
 		case OPERATOR_DIV:
-			if(codegen->lastPushedType == TYPE_INT) {
+			if(expression->type.type == TYPE_INT) {
 				return Instruction_idivs();
 			} else {
 				return Instruction_divs();
