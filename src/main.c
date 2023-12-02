@@ -55,7 +55,7 @@ int main(int argc, const char *argv[]) {
 	ParserResult result = Parser_parse(&parser);
 	if(!result.success) {
 		// TODO: Add error utils here
-		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n", result.message->value);
+		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n" RST, result.message->value);
 
 		Allocator_cleanup();
 		return result.type;
@@ -65,14 +65,13 @@ int main(int argc, const char *argv[]) {
 	AnalyserResult analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)result.node);
 	if(!analyserResult.success) {
 		// TODO: Add error utils here
-		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n", analyserResult.message->value);
+		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n" RST, analyserResult.message->value);
 
 		Allocator_cleanup();
 		return analyserResult.type;
 	}
 
 	// Generate the assembly
-	// TODO: Hook up the assembly generator here
 	Codegen_generate(&codegen);
 
 	Allocator_cleanup();
