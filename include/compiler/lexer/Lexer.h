@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/lexer/Lexer.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "internal/Array.h"
 #include "compiler/lexer/LexerResult.h"
 
@@ -27,3 +34,5 @@ LexerResult Lexer_tokenize(Lexer *lexer, char *source);
 void Lexer_printTokens(Lexer *lexer);
 
 #endif
+
+/** End of file include/compiler/lexer/Lexer.h **/

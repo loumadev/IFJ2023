@@ -1,3 +1,10 @@
+/**
+ * @file include/assertf.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -40,3 +47,5 @@
 	: fprintf(stderr, YELLOW "[WARN] " M "\n    at %s:%d\n" RESET, ## __VA_ARGS__, __FILE__, __LINE__)
 
 #endif
+
+/** End of file include/assertf.h **/

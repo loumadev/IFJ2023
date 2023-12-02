@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/parser/ParserResult.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/parser/ParserResult.h"
 
 void ParserResult_constructor(
@@ -28,3 +35,5 @@ ParserResult ParserResult_construct(
 	ParserResult_constructor(&result, type, severity, message, markers, node);
 	return result;
 }
+
+/** End of file src/compiler/parser/ParserResult.c **/

@@ -1,3 +1,10 @@
+/**
+ * @file include/overload.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #ifndef OVERLOAD_H
 #define OVERLOAD_H
 
@@ -9,3 +16,5 @@
 #define overload(vrg_f, ...) vrg_cat(vrg_f, vrg_argn(__VA_ARGS__))(__VA_ARGS__)
 
 #endif
+
+/** End of file include/overload.h **/

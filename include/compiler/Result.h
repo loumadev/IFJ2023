@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/Result.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdbool.h>
 #include "internal/String.h"
 #include "internal/Array.h"
@@ -50,3 +57,5 @@ void Result_constructor(
 void Result_destructor(Result *result);
 
 #endif
+
+/** End of file include/compiler/Result.h **/

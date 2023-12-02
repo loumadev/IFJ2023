@@ -1,3 +1,10 @@
+/**
+ * @file include/inspector.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 
 #include "colors.h"
@@ -122,3 +129,5 @@ char* format_char(char ch);
 void print_string(char *str, char *end);
 
 #endif
+
+/** End of file include/inspector.h **/

@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/analyser/Analyser.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "internal/Array.h"
 #include "internal/String.h"
 #include "internal/HashMap.h"
@@ -100,3 +107,5 @@ BlockScope* BlockScope_alloc(BlockScope *parent);
  */
 
 #endif
+
+/** End of file include/compiler/analyser/Analyser.h **/

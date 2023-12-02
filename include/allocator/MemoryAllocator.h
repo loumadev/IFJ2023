@@ -1,3 +1,10 @@
+/**
+ * @file include/allocator/MemoryAllocator.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,3 +33,5 @@ void* safe_realloc(void *ptr, size_t size);
 void safe_free(void *ptr);
 
 void Allocator_cleanup();
+
+/** End of file include/allocator/MemoryAllocator.h **/

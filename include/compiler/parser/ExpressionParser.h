@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/parser/ExpressionParser.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/lexer/Token.h"
 #include "compiler/parser/ASTNodes.h"
 #include "compiler/parser/Parser.h"
@@ -47,15 +54,6 @@ typedef struct StackItem {
 	PrefixStatus isPrefix;
 } StackItem;
 
-/**
- * Gets the index in the precedence table for the given token.
- *
- * @param token The token to determine the index for.
- * @param isIdentifier Indicates whether the token is an identifier.
- * @param parser The parser instance.
- * @param status The prefix status of the token.
- * @return The index in the precedence table.
- */
 enum PrecTableIndex Expr_getPrecTbIndex(Token *token, bool isIdentifier, Parser *parser, PrefixStatus status);
 
 /**
@@ -99,3 +97,5 @@ bool Expr_Reduce(Array *stack, StackItem *currentToken);
 ParserResult __Parser_parseExpression(Parser *parser);
 
 #endif
+
+/** End of file include/compiler/parser/ExpressionParser.h **/

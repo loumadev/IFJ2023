@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/analyser/AnalyserResult.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/Result.h"
 
 #ifndef ANALYSER_RESULT_H
@@ -34,3 +41,5 @@ AnalyserResult AnalyserResult_construct(
 #define AnalyserError(type, message, markers) AnalyserResult_construct(type, SEVERITY_ERROR, message, markers)
 
 #endif
+
+/** End of file include/compiler/analyser/AnalyserResult.h **/

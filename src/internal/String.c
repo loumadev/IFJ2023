@@ -1,3 +1,10 @@
+/**
+ * @file src/internal/String.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdarg.h>
 #include <string.h>
 #include "inspector.h"
@@ -460,3 +467,5 @@ void String_print(String *string, unsigned int depth, int isProperty) {
 
 	print_type_end();
 }
+
+/** End of file src/internal/String.c **/

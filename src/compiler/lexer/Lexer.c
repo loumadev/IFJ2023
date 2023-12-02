@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/lexer/Lexer.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdbool.h>
 #include <string.h>
 
@@ -1085,3 +1092,5 @@ void Lexer_printTokens(Lexer *lexer) {
 		Token_print((Token*)Array_get(lexer->tokens, i), 0, false);
 	}
 }
+
+/** End of file src/compiler/lexer/Lexer.c **/

@@ -1,3 +1,10 @@
+/**
+ * @file src/allocator/PointerSet.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "allocator/MemoryAllocator.h"
 #include "allocator/PointerSet.h"
 
@@ -89,3 +96,5 @@ void PointerSet_free(PointerSet *pointerSet) {
 	PointerSet_clear(pointerSet);
 	safe_free(pointerSet);
 }
+
+/** End of file src/allocator/PointerSet.c **/

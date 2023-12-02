@@ -1,3 +1,10 @@
+/**
+ * @file include/internal/HashMap.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 #include "internal/String.h"
@@ -23,11 +30,6 @@ typedef struct HashMapEntry {
 	int deleted; // Flag to mark deleted entries
 } HashMapEntry;
 
-/**
- * Initializes a new HashMap instance.
- *
- * @param map The HashMap instance to initialize.
- */
 void HashMap_constructor(HashMap *map);
 
 /**
@@ -141,3 +143,5 @@ void HashMap_print_compact(HashMap *map);
 void HashMap_print(HashMap *map, unsigned int depth, int isProperty);
 
 #endif
+
+/** End of file include/internal/HashMap.h **/

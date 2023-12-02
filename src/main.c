@@ -1,3 +1,10 @@
+/**
+ * @file src/main.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,3 +78,5 @@ int main(int argc, const char *argv[]) {
 	Allocator_cleanup();
 	return 0;
 }
+
+/** End of file src/main.c **/

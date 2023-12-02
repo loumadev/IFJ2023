@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/parser/ASTNodes.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdbool.h>
 
 #include "internal/Array.h"
@@ -342,3 +349,5 @@ void ASTNode_print(ASTNode *node);
 #define prepare_node_of(dataType, nodeType) dataType *node = (dataType*)ASTNode_alloc(sizeof(dataType), nodeType);
 
 #endif
+
+/** End of file include/compiler/parser/ASTNodes.h **/

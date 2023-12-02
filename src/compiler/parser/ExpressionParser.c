@@ -1,11 +1,8 @@
 /**
- * @file ExpressionParser.c
- *
+ * @file src/compiler/parser/ExpressionParser.c
  * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz>
  * @brief Implementation of parsing of expressions.
- * 
  * @copyright Copyright (c) 2023
- * 
  */
 
 #include "compiler/parser/ExpressionParser.h"
@@ -537,3 +534,5 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	}
 	return ParserNoMatch();
 }
+
+/** End of file src/compiler/parser/ExpressionParser.c **/

@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/parser/ParserResult.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/Result.h"
 #include "compiler/parser/ASTNodes.h"
 
@@ -39,3 +46,5 @@ ParserResult ParserResult_construct(
 #define LexerToParserError(lexerResult) ParserResult_construct(lexerResult.type, lexerResult.severity, lexerResult.message, lexerResult.markers, NULL)
 
 #endif
+
+/** End of file include/compiler/parser/ParserResult.h **/

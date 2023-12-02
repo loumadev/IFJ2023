@@ -1,3 +1,10 @@
+/**
+ * @file include/internal/String.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -13,12 +20,6 @@ typedef struct String {
 	size_t capacity;
 } String;
 
-/**
- * Initializes a String with the given value.
- *
- * @param string The String to initialize.
- * @param value The value to initialize the String with.
- */
 void String_constructor(String *string, char *value);
 
 /**
@@ -244,3 +245,5 @@ void String_print_compact(String *string);
 void String_print(String *string, unsigned int depth, int isProperty);
 
 #endif
+
+/** End of file include/internal/String.h **/

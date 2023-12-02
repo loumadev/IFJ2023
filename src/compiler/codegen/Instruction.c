@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/codegen/Instruction.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -314,3 +321,5 @@ void Instruction_move_nil(enum Frame destinationScope, char *destination) {
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value){
     fprintf(stdout, "ADD %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
 }
+
+/** End of file src/compiler/codegen/Instruction.c **/

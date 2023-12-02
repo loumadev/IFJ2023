@@ -1,3 +1,10 @@
+/**
+ * @file src/allocator/MemoryAllocator.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "assertf.h"
 #include "allocator/MemoryAllocator.h"
 #include "allocator/PointerSet.h"
@@ -193,3 +200,5 @@ void mem_free(void *ptr) {
 }
 
 #undef PREFIX
+
+/** End of file src/allocator/MemoryAllocator.c **/

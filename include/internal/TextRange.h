@@ -1,3 +1,10 @@
+/**
+ * @file include/internal/TextRange.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdlib.h>
 
 #ifndef TEXT_RANGE_H
@@ -11,15 +18,6 @@ typedef struct {
 	size_t length;
 } TextRange;
 
-/**
- * Initializes a TextRange struct.
- *
- * @param range The TextRange struct to initialize.
- * @param start A pointer to the start of the text range.
- * @param end A pointer to the end of the text range.
- * @param line The line number of the text range.
- * @param column The column number of the text range.
- */
 void TextRange_constructor(TextRange *range, char *start, char *end, int line, int column);
 
 /**
@@ -83,3 +81,5 @@ void TextRange_print_compact(TextRange *range);
 void TextRange_print(TextRange *range, unsigned int depth, int isProperty);
 
 #endif
+
+/** End of file include/internal/TextRange.h **/

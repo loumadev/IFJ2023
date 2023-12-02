@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/lexer/LexerResult.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/Result.h"
 #include "compiler/lexer/Token.h"
 
@@ -39,3 +46,5 @@ LexerResult LexerResult_construct(
 #define LexerErrorCustom(type, message, markers) LexerResult_construct(type, SEVERITY_ERROR, message, markers, NULL)
 
 #endif
+
+/** End of file include/compiler/lexer/LexerResult.h **/

@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/codegen/Instruction.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
 
@@ -172,3 +179,5 @@ void Instruction_move_nil(enum Frame destinationScope, char *destination);
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value);
 
 #endif // INSTRUCTION_H
+
+/** End of file include/compiler/codegen/Instruction.h **/

@@ -1,3 +1,10 @@
+/**
+ * @file include/colors.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #define BLACK "\033[30m"
 #define DARK_BLUE "\033[34m"
 #define DARK_GREEN "\033[32m"
@@ -76,3 +83,5 @@
    ```
 
  */
+
+/** End of file include/colors.h **/

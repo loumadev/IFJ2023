@@ -1,3 +1,10 @@
+/**
+ * @file src/inspector.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "inspector.h"
 
 char* format_char(char ch) {
@@ -131,3 +138,5 @@ void _print_TextRange(TextRange *var) {
 void _print_Token(Token *var) {
 	Token_print(var, 0, 0);
 }
+
+/** End of file src/inspector.c **/

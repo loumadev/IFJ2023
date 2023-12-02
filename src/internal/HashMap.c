@@ -1,3 +1,10 @@
+/**
+ * @file src/internal/HashMap.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 
 #include "internal/HashMap.h"
@@ -322,3 +329,5 @@ void HashMap_print(HashMap *map, unsigned int depth, int isProperty) {
 
 	print_type_end();
 }
+
+/** End of file src/internal/HashMap.c **/

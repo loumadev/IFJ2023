@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/analyser/AnalyserResult.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/analyser/AnalyserResult.h"
 
 #include "internal/String.h"
@@ -38,3 +45,5 @@ AnalyserResult AnalyserResult_construct(
 	AnalyserResult_constructor(&result, type, severity, message, markers);
 	return result;
 }
+
+/** End of file src/compiler/analyser/AnalyserResult.c **/

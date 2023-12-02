@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/analyser/Analyser.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/analyser/Analyser.h"
 
 #include "allocator/MemoryAllocator.h"
@@ -2036,3 +2043,5 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 
 	return AnalyserSuccess();
 }
+
+/** End of file src/compiler/analyser/Analyser.c **/
