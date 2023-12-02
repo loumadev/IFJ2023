@@ -5139,7 +5139,7 @@ DESCRIBE(havel_tests, "Havel's tests") {
 		Lexer_setSource(
 			&lexer,
 			"let z: Bool? = false" LF
-			"let a = !true!" LF
+			"let a = !z!" LF
 			"write(a)" LF
 		);
 		parserResult = Parser_parse(&parser);
@@ -5167,7 +5167,7 @@ DESCRIBE(havel_tests, "Havel's tests") {
 		Lexer_setSource(
 			&lexer,
 			"var a = (1 + 2)" LF
-			"write(b)" LF
+			"write(a)" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
