@@ -21,6 +21,9 @@ void __Codegen_generateChr();
 void __Codegen_generateLength();
 void __Codegen_generateSubstring();
 
+// Extra functions
+void __Codegen_generateCoalescing();
+
 // User functions
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration);
 
@@ -99,7 +102,9 @@ void __Codegen_generateHelperVariables() {
 	Instruction_defvar_where("CONCAT_ARG1", FRAME_GLOBAL);
 	Instruction_defvar_where("CONCAT_ARG2", FRAME_GLOBAL);
 	Instruction_defvar_where("CONCAT_OUTPUT", FRAME_GLOBAL);
-	NEWLINE
+    Instruction_defvar_where("COALESCING_TMP1", FRAME_GLOBAL);
+    Instruction_defvar_where("COALESCING_TMP2", FRAME_GLOBAL);
+    NEWLINE
 }
 
 void __Codegen_generateBuiltInFunctions(__attribute__((unused)) Codegen *codegen) {
@@ -107,6 +112,7 @@ void __Codegen_generateBuiltInFunctions(__attribute__((unused)) Codegen *codegen
 	__Codegen_generateChr();
 	__Codegen_generateLength();
 	__Codegen_generateSubstring();
+    __Codegen_generateCoalescing();
 }
 
 void __Codegen_generateOrd() {
@@ -314,6 +320,26 @@ void __Codegen_generateSubstring() {
 	Instruction_return();
 }
 
+void __Codegen_generateCoalescing(){
+    COMMENT("[Builtin] coalescing(a, b)")
+    Instruction_label("coalescing");
+
+    // Overhead
+    Instruction_pushframe();
+    Instruction_defvar_where("RETVAL_COA", FRAME_LOCAL);
+
+    Instruction_move(FRAME_LOCAL, "RETVAL_COA", FRAME_LOCAL, "ARG_RIGHT_COA");
+
+    Instruction_pushs_var_named("ARG_LEFT_COA", FRAME_LOCAL);
+    Instruction_pushs_nil();
+    Instruction_jump_ifeqs("coalescing_return");
+    Instruction_move(FRAME_LOCAL, "RETVAL_COA", FRAME_LOCAL, "ARG_LEFT_COA");
+
+    Instruction_label("coalescing_return");
+    Instruction_popframe();
+    Instruction_return();
+}
+
 void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen) {
 	Array *variables = HashMap_values(codegen->analyser->variables);
 
@@ -391,13 +417,18 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		} break;
 		case NODE_RETURN_STATEMENT: {
 			ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statementAstNode;
+            FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, returnStatement->id);
 
 			if(returnStatement->expression != NULL) {
 				__Codegen_evaluateExpression(codegen, returnStatement->expression);
-                Instruction_popretvar(returnStatement->id, codegen->frame);
+
+				if(functionDeclaration->returnType.type != TYPE_VOID) {
+                    Instruction_popretvar(returnStatement->id, codegen->frame);
+                }
 			}
 
             Instruction_popframe();
+            Instruction_return();
 		} break;
 		case NODE_EXPRESSION_STATEMENT: {
 			ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statementAstNode;
@@ -413,7 +444,9 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 	COMMENT_IF(ifStatement->id)
 	if(ifStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
 		OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)ifStatement->test;
-		Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
+        Instruction_defvar(optionalBindingCondition->id->id, codegen->frame);
+        Instruction_move_id(codegen->frame, optionalBindingCondition->id->id, FRAME_GLOBAL, optionalBindingCondition->fromId);
+        Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
 		Instruction_pushs_nil();
 		Instruction_eqs();
 		Instruction_nots();
@@ -535,8 +568,19 @@ void __Codegen_evaluateBinaryOperator(Codegen *codegen, BinaryExpressionASTNode 
 			return Instruction_ors();
 		case OPERATOR_AND:
 			return Instruction_ands();
+        case OPERATOR_NULL_COALESCING: {
+            Instruction_createframe();
+            Instruction_defvar_where("ARG_RIGHT_COA", FRAME_TEMPORARY);
+            Instruction_pops_where("ARG_RIGHT_COA", FRAME_TEMPORARY);
+
+            Instruction_defvar_where("ARG_LEFT_COA", FRAME_TEMPORARY);
+            Instruction_pops_where("ARG_LEFT_COA", FRAME_TEMPORARY);
+
+            Instruction_call("coalescing");
+            Instruction_pushs_var_named("RETVAL_COA", FRAME_TEMPORARY);
+            return;
+        }
 		case OPERATOR_UNWRAP:
-		case OPERATOR_NULL_COALESCING:
 		case OPERATOR_DEFAULT:
 		case OPERATOR_RANGE:
 		case OPERATOR_HALF_OPEN_RANGE: {

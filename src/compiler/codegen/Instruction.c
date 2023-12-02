@@ -28,7 +28,7 @@ void __Instruction_escape_string(String *string) {
 
 	for(size_t i = 0; i < string->length; i++) {
 		char c = string->value[i];
-		if((0 <= c && c <= 32) || c == 35 || c == 92) {
+		if(c <= 32 || c == 35 || c == 92) {
 			String *replacement = String_fromFormat("\\0%d", c);
 			String_append(&buffer, replacement->value);
 			String_free(replacement);
@@ -292,4 +292,8 @@ void Instruction_move_arg(size_t id) {
 
 void Instruction_pushs_func_result(size_t id){
     fprintf(stdout, "PUSHS TF@$ret_%lu\n", id);
+}
+
+void Instruction_move_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source) {
+    fprintf(stdout, "MOVE %s@$%lu %s@$%lu\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source);
 }

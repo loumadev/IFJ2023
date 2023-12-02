@@ -161,4 +161,6 @@ void Instruction_label_func(size_t id);
 
 void Instruction_pushs_func_result(size_t id);
 
+void Instruction_move_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source);
+
 #endif // INSTRUCTION_H
