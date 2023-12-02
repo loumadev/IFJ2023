@@ -1487,6 +1487,43 @@ DESCRIBE(ml_string_token_single, "Multiline string literals tokenization on a si
 		EXPECT_TRUE(String_equals(token->value.string, "\t Hello!"));
 		EXPECT_EQUAL_INT(token->value.string->length, 8);
 	} TEST_END();
+
+	TEST_BEGIN("Single empty blank line") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"" LF
+			"\"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, ""));
+		EXPECT_EQUAL_INT(token->value.string->length, 0);
+	} TEST_END();
+
+	TEST_BEGIN("Indented content with empty blank line") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\"\"" LF
+			"  A" LF
+			"" LF
+			"  B" LF
+			"  \"\"\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "A\n\nB"));
+		EXPECT_EQUAL_INT(token->value.string->length, 4);
+
+	} TEST_END();
 }
 
 DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on multiple lines") {
@@ -1549,18 +1586,6 @@ DESCRIBE(ml_string_token_multi, "Multiline string literals tokenization on multi
 			"  \"\"\"" LF
 		);
 		EXPECT_FALSE(result.success);
-	} TEST_END();
-
-	TEST_BEGIN("Insufficient indentation 2") {
-		result = Lexer_tokenize(
-			&lexer,
-			"var a = \"\"\"" LF
-			"  A" LF
-			"" LF
-			"  B" LF
-			"  \"\"\"" LF
-		);
-		EXPECT_TRUE(result.success);
 	} TEST_END();
 }
 
