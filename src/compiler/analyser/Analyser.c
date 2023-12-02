@@ -655,7 +655,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						if(!result.success) return result;
 
 						// This was requested by the assignment
-						if(declaration->type.type == TYPE_VOID) {
+						if(type.type == TYPE_VOID) {
 							return AnalyserError(
 								RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 								String_fromFormat("cannot use initializer for variable of type 'Void'"),

@@ -1739,7 +1739,7 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 			EXPECT_TRUE(parserResult.success);
 
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-			EXPECT_TRUE(analyserResult.success);
+			EXPECT_FALSE(analyserResult.success);
 		}
 		{
 			Lexer_setSource(
@@ -3496,7 +3496,7 @@ DESCRIBE(return_statement, "Analysis of a return statement") {
 		EXPECT_TRUE(parserResult.success);
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-		EXPECT_TRUE(analyserResult.success);
+		EXPECT_FALSE(analyserResult.success);
 	} TEST_END();
 
 	TEST_BEGIN("Invalid return statement with nullable expression") {
@@ -5510,6 +5510,19 @@ DESCRIBE(bin_gt_null, "GT/LT analysis with nullable arguments") {
 			&lexer,
 			"var a: Int? = 5" LF
 			"var c = nil > a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"var c = f()" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
