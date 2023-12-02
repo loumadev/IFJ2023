@@ -529,6 +529,14 @@ ParserResult __Parser_parsePattern(Parser *parser) {
 			Array_fromArgs(1, result.token));
 	}
 
+	// Check for '_' identifier (has no point, but required by the assignment)
+	if(String_equals(result.token->value.string, "_")) {
+		return ParserError(
+			String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+			Array_fromArgs(1, result.token)
+		);
+	}
+
 	IdentifierASTNode *patternName = new_IdentifierASTNode(result.token->value.string);
 	TypeReferenceASTNode *type = NULL;
 
@@ -566,6 +574,14 @@ ParserResult __Parser_parseOptionalBindingCondition(Parser *parser) {
 		return ParserError(
 			String_fromFormat("let must be followed by identifier"),
 			Array_fromArgs(1, peek.token));
+	}
+
+	// Check for '_' identifier (has no point, but required by the assignment)
+	if(String_equals(peek.token->value.string, "_")) {
+		return ParserError(
+			String_fromFormat("'_' can only appear in a pattern or on the left side of an assignment"),
+			Array_fromArgs(1, peek.token)
+		);
 	}
 
 	result = Lexer_nextToken(parser->lexer);

@@ -2301,6 +2301,35 @@ DESCRIBE(invalid_underscore, "Invalid use of underscore identifier") {
 		EXPECT_FALSE(result.success);
 	} TEST_END();
 
+	TEST_BEGIN("Underscore as variable name") {
+		Lexer_setSource(
+			&lexer,
+			"var _: Int = 5" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Underscore as parameter name") {
+		Lexer_setSource(
+			&lexer,
+			"func a(a _: Int) {}" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
+
+	TEST_BEGIN("Underscore as conditional binding name") {
+		Lexer_setSource(
+			&lexer,
+			"if let _ {}" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_FALSE(result.success);
+	} TEST_END();
 }
 
 DESCRIBE(invalid_equals, "Invalid use of equals sign") {
