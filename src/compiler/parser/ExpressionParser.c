@@ -383,10 +383,10 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	bottom->isPrefix = P_UNRESOLVED;
 	Array_push(stack, bottom);
 
-	bool reductionSuccess;
+	bool reductionSuccess = false;
 	bool isIdentifier = false;
 	int offset = 1;
-	enum PrecTableRelation operation;
+	enum PrecTableRelation operation = R;
 
 	LexerResult current = Lexer_peekToken(parser->lexer, offset);
 
