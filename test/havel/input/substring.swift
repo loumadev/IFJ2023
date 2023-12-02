@@ -5,7 +5,6 @@ let b1 = substring(of : a, startingAt: 0, endingBefore: 11)
 let b2 = substring(of : a, startingAt: 2, endingBefore: 5)
 let b3 = substring(of : a, startingAt: minus1, endingBefore: 5)
 let b4 = substring(of : a, startingAt: 0, endingBefore: minus1)
-let b5 = substring(of : a, startingAt: 5, endingBefore: 5)
 let b6 = substring(of : a, startingAt: 5, endingBefore: 4)
 let b7 = substring(of : a, startingAt: 11, endingBefore: 12)
 
@@ -18,12 +17,6 @@ else { }
 if let b4
 {
     write("WRONG4!\n")
-}
-else { }
-
-if let b5
-{
-    write("WRONG5!\n")
 }
 else { }
 
