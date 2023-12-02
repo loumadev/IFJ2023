@@ -1271,7 +1271,8 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter has a label, but argument has no label
 				if(!parameter->isLabeless && !argument->label) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
+						// RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
+						RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
 						String_fromFormat("missing argument label '%s' in call", externalName->value),
 						NULL
 					);
@@ -1280,7 +1281,8 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				// Parameter has a label, but argument has a different label
 				if(!parameter->isLabeless && argument->label && !String_equals(externalName, argument->label->name->value)) {
 					return AnalyserError(
-						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
+						// RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
+						RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
 						String_fromFormat(
 							"incorrect argument label in call (have '%s', expected '%s')",
 							argument->label->name->value,
