@@ -11,6 +11,8 @@
 #include "internal/HashMap.h"
 #include "internal/TextRange.h"
 
+#include "compiler/lexer/Token.h"
+
 #define TYPE YELLOW
 #define FIELD BLUE
 #define NUMBER GREEN
@@ -39,6 +41,7 @@ void _print_String(String *var);
 void _print_Array(Array *var);
 void _print_HashMap(HashMap *var);
 void _print_TextRange(TextRange *var);
+void _print_Token(Token *var);
 
 #define dumpvar(...) do { \
 		printf("\n" DARK_GREY "from %s:%d:" ENDL, __FILE__, __LINE__); \
@@ -63,6 +66,8 @@ void _print_TextRange(TextRange *var);
 		         Array * : _print_Array, \
 		         HashMap * : _print_HashMap, \
 		         TextRange * : _print_TextRange, \
+		         /* Project type */ \
+		         Token * : _print_Token, \
 			 default: _print_pointer \
 		)(var); \
 } while(0);

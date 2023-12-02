@@ -127,3 +127,7 @@ void _print_TextRange(TextRange *var) {
 	TextRange_print(var, 0, 0);
 	#endif
 }
+
+void _print_Token(Token *var) {
+	Token_print(var, 0, 0);
+}
