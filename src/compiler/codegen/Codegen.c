@@ -17,7 +17,7 @@
 void __Codegen_generate(Codegen *codegen);
 void __Codegen_generatePreamble();
 void __Codegen_generateVariableDeclaration(Codegen *codegen, VariableDeclaration *variable);
-void __Codegen_generateBuiltInFunctions(Codegen *codegen);
+void __Codegen_generateBuiltInFunctions();
 void __Codegen_generateUserFunctions(Codegen *codegen);
 void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen);
 void __Codegen_generateHelperVariables();
@@ -28,14 +28,11 @@ void __Codegen_generateChr();
 void __Codegen_generateLength();
 void __Codegen_generateSubstring();
 
-// Extra functions
-void __Codegen_generateCoalescing();
-
 // User functions
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration);
 
 // Walking AST functions
-void __Codegen_walkAST(Codegen *codegen);
+void __Codegen_generateMain(Codegen *codegen);
 void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifStatement);
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement);
 void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNode *binaryExpression);
@@ -49,9 +46,15 @@ void __Codegen_evaluateExpressionStatement(Codegen *codegen, ExpressionStatement
 void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expression);
 void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block);
 void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *functionCall);
-
 void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAstNode);
+void __Codegen_evaluateReturnStatement(Codegen *codegen, ReturnStatementASTNode *returnStatement);
+void __Codegen_evaluateBindingCondition(Codegen *codegen, const OptionalBindingConditionASTNode *optionalBindingCondition);
+
+// Optimalizations
+void __Codegen_generateCoalescing();
 void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function);
+void __Codegen_stackAssignment(Codegen *codegen, AssignmentStatementASTNode *assignmentStatement, bool isGlobalVariable);
+void __Codegen_directAssignment(const Codegen *codegen, const AssignmentStatementASTNode *assignmentStatement, bool isGlobalVariable);
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 	assertf(codegen != NULL);
@@ -61,13 +64,12 @@ void Codegen_constructor(Codegen *codegen, Analyser *analyser) {
 	codegen->frame = FRAME_GLOBAL;
 }
 
-//
-// void Codegen_destructor(Codegen *codegen) {
-//	assertf(codegen != NULL);
-//	assertf(codegen->analyser != NULL);
-//
-//	codegen->analyser = NULL;
-// }
+void Codegen_destructor(Codegen *codegen) {
+	assertf(codegen != NULL);
+	assertf(codegen->analyser != NULL);
+
+	codegen->analyser = NULL;
+}
 
 void Codegen_generate(Codegen *codegen) {
 	assertf(codegen != NULL);
@@ -81,15 +83,20 @@ void __Codegen_generate(Codegen *codegen) {
 	__Codegen_generatePreamble();
 	__Codegen_generateHelperVariables();
 
+	// Jump to main
 	Instruction_jump("main");
+	NEWLINE
 
-	__Codegen_generateBuiltInFunctions(codegen);
+	__Codegen_generateBuiltInFunctions();
 	__Codegen_generateUserFunctions(codegen);
 
+	// Main
+	COMMENT("--- [Main] ---")
 	Instruction_label("main");
+	NEWLINE
 
 	__Codegen_generateGlobalVariablesDeclarations(codegen);
-	__Codegen_walkAST(codegen);
+	__Codegen_generateMain(codegen);
 }
 
 void __Codegen_generatePreamble() {
@@ -100,7 +107,8 @@ void __Codegen_generatePreamble() {
 }
 
 void __Codegen_generateHelperVariables() {
-	COMMENT("[Helper variables]")
+	COMMENT("--- [Helper variables] ---")
+
 	Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
 	Instruction_defvar_where("READINT_TMP", FRAME_GLOBAL);
 	Instruction_defvar_where("READSTRING_TMP", FRAME_GLOBAL);
@@ -108,14 +116,12 @@ void __Codegen_generateHelperVariables() {
 	Instruction_defvar_where("CONCAT_ARG1", FRAME_GLOBAL);
 	Instruction_defvar_where("CONCAT_ARG2", FRAME_GLOBAL);
 	Instruction_defvar_where("CONCAT_OUTPUT", FRAME_GLOBAL);
-	Instruction_defvar_where("COALESCING_TMP1", FRAME_GLOBAL);
-	Instruction_defvar_where("COALESCING_TMP2", FRAME_GLOBAL);
-	Instruction_defvar_where("TYPE_TMP", FRAME_GLOBAL);
-	Instruction_defvar_where("TYPE_RESULT", FRAME_GLOBAL);
 	NEWLINE
 }
 
-void __Codegen_generateBuiltInFunctions(__attribute__((unused)) Codegen *codegen) {
+void __Codegen_generateBuiltInFunctions() {
+	COMMENT("--- [Built-in functions] ---")
+
 	__Codegen_generateOrd();
 	__Codegen_generateChr();
 	__Codegen_generateLength();
@@ -159,6 +165,7 @@ void __Codegen_generateOrd() {
 	// Handle return value
 	Instruction_popframe();
 	Instruction_return();
+
 	NEWLINE
 }
 
@@ -177,6 +184,7 @@ void __Codegen_generateLength() {
 
 	Instruction_popframe();
 	Instruction_return();
+
 	NEWLINE
 }
 
@@ -196,6 +204,7 @@ void __Codegen_generateChr() {
 	// Handle return value
 	Instruction_popframe();
 	Instruction_return();
+
 	NEWLINE
 }
 
@@ -294,6 +303,8 @@ void __Codegen_generateSubstring() {
 	Instruction_label("substr_end");
 	Instruction_popframe();
 	Instruction_return();
+
+	NEWLINE
 }
 
 void __Codegen_generateCoalescing() {
@@ -318,6 +329,8 @@ void __Codegen_generateCoalescing() {
 	Instruction_label("coalescing_return");
 	Instruction_popframe();
 	Instruction_return();
+
+	NEWLINE
 }
 
 void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen) {
@@ -330,7 +343,7 @@ void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen) {
 }
 
 void __Codegen_generateUserFunctions(Codegen *codegen) {
-	COMMENT("[User functions]")
+	COMMENT("--- [User-defined functions] ---")
 
 	Array *functions = HashMap_values(codegen->analyser->functions);
 
@@ -338,8 +351,6 @@ void __Codegen_generateUserFunctions(Codegen *codegen) {
 		FunctionDeclaration *function = (FunctionDeclaration*)Array_get(functions, i);
 		__Codegen_generateFunctionDeclaration(codegen, function->node);
 	}
-
-	NEWLINE
 }
 
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
@@ -355,23 +366,39 @@ void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 	// Overhead
 	Instruction_pushframe();
 
-
 	// Process body
 	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
+
+	// Implicit return
 	Instruction_return();
 	codegen->frame = FRAME_GLOBAL;
 	NEWLINE
 }
 
 void __Codegen_generateVariableDeclaration(Codegen *codegen, VariableDeclaration *variable) {
-	COMMENT_VAR(variable->id)
+	COMMENT_VAR(variable)
 	Instruction_defvar(variable->id, codegen->frame);
 	NEWLINE
 }
 
-void __Codegen_walkAST(Codegen *codegen) {
+void __Codegen_generateMain(Codegen *codegen) {
 	BlockASTNode *block = codegen->analyser->ast->block;
 	__Codegen_evaluateBlock(codegen, block);
+}
+
+void __Codegen_evaluateReturnStatement(Codegen *codegen, ReturnStatementASTNode *returnStatement) {
+	FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, returnStatement->id);
+
+	if(returnStatement->expression != NULL) {
+		__Codegen_evaluateExpression(codegen, returnStatement->expression);
+
+		if(functionDeclaration->returnType.type != TYPE_VOID) {
+			Instruction_popretvar(returnStatement->id, codegen->frame);
+		}
+	}
+
+	Instruction_popframe();
+	Instruction_return();
 }
 
 void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAstNode) {
@@ -392,44 +419,37 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			WhileStatementASTNode *whileStatement = (WhileStatementASTNode*)statementAstNode;
 			__Codegen_evaluateWhileStatement(codegen, whileStatement);
 		} break;
-		case NODE_FUNCTION_DECLARATION: {
-			// Declarations are at the beginning of the file
-		} break;
 		case NODE_RETURN_STATEMENT: {
 			ReturnStatementASTNode *returnStatement = (ReturnStatementASTNode*)statementAstNode;
-			FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, returnStatement->id);
+			__Codegen_evaluateReturnStatement(codegen, returnStatement);
 
-			if(returnStatement->expression != NULL) {
-				__Codegen_evaluateExpression(codegen, returnStatement->expression);
-
-				if(functionDeclaration->returnType.type != TYPE_VOID) {
-					Instruction_popretvar(returnStatement->id, codegen->frame);
-				}
-			}
-
-			Instruction_popframe();
-			Instruction_return();
 		} break;
 		case NODE_EXPRESSION_STATEMENT: {
 			ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statementAstNode;
 			__Codegen_evaluateExpressionStatement(codegen, expressionStatement);
 		} break;
+		case NODE_FUNCTION_DECLARATION: {
+			// Declarations are generated at the beginning of the file
+		} break;
 		default:
-			fprintf(stderr, "Unknown ASTNode type: %d\n", statementAstNode->_type);
-			fassertf("Unexpected ASTNode type. Analyser probably failed.");
+			fassertf("[Codegen] Unexpected ASTNode type (evaluateStatement).");
 	}
+}
+
+void __Codegen_evaluateBindingCondition(Codegen *codegen, const OptionalBindingConditionASTNode *optionalBindingCondition) {
+	Instruction_defvar(optionalBindingCondition->id->id, codegen->frame);
+	Instruction_move_id(codegen->frame, optionalBindingCondition->id->id, FRAME_GLOBAL, optionalBindingCondition->fromId);
+	Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
+	Instruction_pushs_nil();
+	Instruction_eqs();
+	Instruction_nots();
 }
 
 void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifStatement) {
 	COMMENT_IF(ifStatement->id)
 	if(ifStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
 		OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)ifStatement->test;
-		Instruction_defvar(optionalBindingCondition->id->id, codegen->frame);
-		Instruction_move_id(codegen->frame, optionalBindingCondition->id->id, FRAME_GLOBAL, optionalBindingCondition->fromId);
-		Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
-		Instruction_pushs_nil();
-		Instruction_eqs();
-		Instruction_nots();
+		__Codegen_evaluateBindingCondition(codegen, optionalBindingCondition);
 	} else {
 		__Codegen_evaluateExpression(codegen, ifStatement->test);
 	}
@@ -454,7 +474,7 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 				__Codegen_evaluateIfStatement(codegen, (IfStatementASTNode*)ifStatement->alternate);
 				break;
 			default:
-				fassertf("Unexpected ASTNode type. Analyser probably failed.");
+				fassertf("[Codegen] Unexpected ASTNode type (evaluateIfStatement).");
 		}
 
 	}
@@ -470,10 +490,7 @@ void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *w
 	// Process test
 	if(whileStatement->test->_type == NODE_OPTIONAL_BINDING_CONDITION) {
 		OptionalBindingConditionASTNode *optionalBindingCondition = (OptionalBindingConditionASTNode*)whileStatement->test;
-		Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
-		Instruction_pushs_nil();
-		Instruction_eqs();
-		Instruction_nots();
+		__Codegen_evaluateBindingCondition(codegen, optionalBindingCondition);
 	} else {
 		__Codegen_evaluateExpression(codegen, whileStatement->test);
 	}
@@ -563,7 +580,7 @@ void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
 		case OPERATOR_DEFAULT:
 		case OPERATOR_RANGE:
 		case OPERATOR_HALF_OPEN_RANGE: {
-			fassertf("Unknown operator. Analysis probably failed.");
+			fassertf("[Codegen] Unknown operator.");
 		}
 	}
 }
@@ -581,11 +598,10 @@ void __Codegen_evaluateLiteral(LiteralExpressionASTNode *literal) {
 		case TYPE_STRING:
 			return Instruction_pushs_string(literal->value.string);
 		case TYPE_VOID:
-			// TODO: Careful, you need to think this through
-			return;
+		// void is *practically* not a literal
 		case TYPE_UNKNOWN:
 		case TYPE_INVALID:
-			fassertf("Unknown or invalid type. Analysis probably failed.");
+			fassertf("[Codegen] Unknown or invalid literal type.");
 	}
 }
 
@@ -615,13 +631,52 @@ void __Codegen_evaluateVariableDeclarator(Codegen *codegen, VariableDeclaratorAS
 	NEWLINE
 }
 
-void __Codegen_evaluateAssignmentStatement(Codegen *codegen, AssignmentStatementASTNode *assignmentStatement) {
+void __Codegen_stackAssignment(Codegen *codegen, AssignmentStatementASTNode *assignmentStatement, bool isGlobalVariable) {
 	__Codegen_evaluateExpression(codegen, assignmentStatement->expression);
-	if(Analyser_isDeclarationGlobal(codegen->analyser, assignmentStatement->id->id)) {
+	if(isGlobalVariable) {
 		Instruction_pops(assignmentStatement->id->id, FRAME_GLOBAL);
 	} else {
 		Instruction_pops(assignmentStatement->id->id, codegen->frame);
 	}
+}
+
+void __Codegen_directAssignment(const Codegen *codegen, const AssignmentStatementASTNode *assignmentStatement, bool isGlobalVariable) {
+	LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)assignmentStatement->expression;
+	enum Frame currentFrame = isGlobalVariable ? FRAME_GLOBAL : codegen->frame;
+
+	switch(literal->type.type) {
+		case TYPE_INT:
+			Instruction_move_int_id(currentFrame, assignmentStatement->id->id, literal->value.integer);
+			break;
+		case TYPE_DOUBLE:
+			Instruction_move_float_id(currentFrame, assignmentStatement->id->id, literal->value.floating);
+			break;
+		case TYPE_BOOL:
+			Instruction_move_bool_id(currentFrame, assignmentStatement->id->id, literal->value.boolean);
+			break;
+		case TYPE_STRING:
+			Instruction_move_string_id(currentFrame, assignmentStatement->id->id, literal->value.string);
+			break;
+		case TYPE_NIL:
+			Instruction_move_nil_id(currentFrame, assignmentStatement->id->id);
+			break;
+		case TYPE_VOID:
+		case TYPE_UNKNOWN:
+		case TYPE_INVALID:
+			fassertf("[Codegen] Unknown or invalid literal type.");
+	}
+}
+
+void __Codegen_evaluateAssignmentStatement(Codegen *codegen, AssignmentStatementASTNode *assignmentStatement) {
+	bool isGlobalVariable = Analyser_isDeclarationGlobal(codegen->analyser, assignmentStatement->id->id);
+
+	// Optimization shortcut
+	if(assignmentStatement->expression->_type == NODE_LITERAL_EXPRESSION) {
+		__Codegen_directAssignment(codegen, assignmentStatement, isGlobalVariable);
+	} else {
+		__Codegen_stackAssignment(codegen, assignmentStatement, isGlobalVariable);
+	}
+
 	NEWLINE
 }
 
@@ -663,9 +718,8 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 		} break;
 		case NODE_INTERPOLATION_EXPRESSION: {
 			fassertf("Interpolation not implemented yet.");
-		} break;
+		}
 		default:
-			fprintf(stderr, "Unknown ASTNode type: %d\n", expression->_type);
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 	}
 }

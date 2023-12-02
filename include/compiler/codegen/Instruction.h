@@ -23,8 +23,8 @@
 #define COMMENT_FUNC(declaration) \
     fprintf(stdout, "# Function %s (%lu)\n", declaration->id->name->value, declaration->id->id);
 
-#define COMMENT_VAR(id) \
-    fprintf(stdout, "# Variable %lu\n", id);
+#define COMMENT_VAR(declaration) \
+    fprintf(stdout, "# Variable %s (%lu)\n", declaration->name->value, declaration->id);
 
 #define COMMENT_WHILE(id) \
     fprintf(stdout, "# While statement %lu\n", id);
@@ -175,6 +175,20 @@ void Instruction_move_int(enum Frame destinationScope, char *destination, int va
 void Instruction_move_string(enum Frame destinationScope, char *destination, String *value);
 
 void Instruction_move_nil(enum Frame destinationScope, char *destination);
+
+void Instruction_move_float(enum Frame destinationScope, char *destination, double value);
+
+void Instruction_move_bool(enum Frame destinationScope, char *destination, bool value);
+
+void Instruction_move_int_id(enum Frame destinationScope, size_t id, long int value);
+
+void Instruction_move_string_id(enum Frame destinationScope, size_t id, String *value);
+
+void Instruction_move_nil_id(enum Frame destinationScope, size_t id);
+
+void Instruction_move_float_id(enum Frame destinationScope, size_t id, double value);
+
+void Instruction_move_bool_id(enum Frame destinationScope, size_t id, bool value);
 
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value);
 

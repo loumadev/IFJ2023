@@ -318,6 +318,35 @@ void Instruction_move_nil(enum Frame destinationScope, char *destination) {
     fprintf(stdout, "MOVE %s@$%s nil@nil\n", __Instruction_getFrame(destinationScope), destination);
 }
 
+void Instruction_move_float(enum Frame destinationScope, char *destination, double value) {
+    fprintf(stdout, "MOVE %s@$%s float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
+}
+
+void Instruction_move_bool(enum Frame destinationScope, char *destination, bool value) {
+    fprintf(stdout, "MOVE %s@$%s bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
+}
+
+void Instruction_move_int_id(enum Frame destinationScope, size_t destination, long int value) {
+    fprintf(stdout, "MOVE %s@$%lu int@%ld\n", __Instruction_getFrame(destinationScope), destination, value);
+}
+
+void Instruction_move_string_id(enum Frame destinationScope, size_t destination, String *value) {
+    __Instruction_escape_string(value);
+    fprintf(stdout, "MOVE %s@$%lu string@%s\n", __Instruction_getFrame(destinationScope), destination, value->value);
+}
+
+void Instruction_move_nil_id(enum Frame destinationScope, size_t destination) {
+    fprintf(stdout, "MOVE %s@$%lu nil@nil\n", __Instruction_getFrame(destinationScope), destination);
+}
+
+void Instruction_move_float_id(enum Frame destinationScope, size_t destination, double value) {
+    fprintf(stdout, "MOVE %s@$%lu float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
+}
+
+void Instruction_move_bool_id(enum Frame destinationScope, size_t destination, bool value) {
+    fprintf(stdout, "MOVE %s@$%lu bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
+}
+
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value){
     fprintf(stdout, "ADD %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
 }
