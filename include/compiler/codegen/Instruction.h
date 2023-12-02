@@ -139,7 +139,7 @@ void Instruction_jump_ifeqs_chr_end();
 
 void Instruction_jump(char *label);
 
-void Instruction_move(enum Frame destinationScope, char* destination, enum Frame sourceScope, char* source);
+void Instruction_move_vars(enum Frame destinationScope, char* destination, enum Frame sourceScope, char* source);
 
 void Instruction_popframe();
 
@@ -163,6 +163,12 @@ void Instruction_pushs_func_result(size_t id);
 
 void Instruction_move_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source);
 
-void Instruction_type(enum Frame resultScope, char *result, enum Frame inputScope, char *input);
+void Instruction_move_int(enum Frame destinationScope, char *destination, int value);
+
+void Instruction_move_string(enum Frame destinationScope, char *destination, String *value);
+
+void Instruction_move_nil(enum Frame destinationScope, char *destination);
+
+void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value);
 
 #endif // INSTRUCTION_H
