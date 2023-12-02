@@ -585,34 +585,31 @@ ParserResult __Parser_parseTest(Parser *parser) {
 
 	ASTNode *test = NULL;
 
-	// consume '(' optionally
-	bool hasOptionalParen = false;
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
 
 	if(peek.token->kind == TOKEN_LEFT_PAREN) {
-		LexerResult result = Lexer_nextToken(parser->lexer);
-		if(!result.success) return LexerToParserError(result);
+		LexerResult peek = Lexer_peekToken(parser->lexer, 2);
+		if(!peek.success) return LexerToParserError(peek);
 
-		hasOptionalParen = true;
+		if(peek.token->kind == TOKEN_VAR) {
+			return ParserError(
+				String_fromFormat("cannot use var in optional binding condition"),
+				Array_fromArgs(1, peek.token));
+		}
+
+		if(peek.token->kind == TOKEN_LET) {
+			return ParserError(
+				String_fromFormat("cannot use optional binding in condition with parentheses"),
+				Array_fromArgs(1, peek.token));
+		}
 	}
-
-	peek = Lexer_peekToken(parser->lexer, 1);
-	if(!peek.success) return LexerToParserError(peek);
 
 	if(peek.token->kind == TOKEN_VAR) {
 		return ParserError(
 			String_fromFormat("cannot use var in optional binding condition"),
 			Array_fromArgs(1, peek.token));
-	}
-
-	if(peek.token->kind == TOKEN_LET) {
-		if(hasOptionalParen) {
-			return ParserError(
-				String_fromFormat("cannot use optional binding in condition with parentheses"),
-				Array_fromArgs(1, peek.token));
-		}
-
+	} else if(peek.token->kind == TOKEN_LET) {
 		ParserResult bindingConditionResult = __Parser_parseOptionalBindingCondition(parser);
 		if(!bindingConditionResult.success) return bindingConditionResult;
 		test = (ASTNode*)bindingConditionResult.node;
@@ -620,21 +617,6 @@ ParserResult __Parser_parseTest(Parser *parser) {
 		ParserResult expressionResult = __Parser_parseExpression(parser);
 		if(!expressionResult.success) return expressionResult;
 		test = (ASTNode*)expressionResult.node;
-	}
-
-	peek = Lexer_peekToken(parser->lexer, 1);
-	if(!peek.success) return LexerToParserError(peek);
-
-	// consume ')' if we consumed '('
-	if(hasOptionalParen) {
-		if(peek.token->kind == TOKEN_RIGHT_PAREN) {
-			LexerResult result = Lexer_nextToken(parser->lexer);
-			if(!result.success) return LexerToParserError(result);
-		} else {
-			return ParserError(
-				String_fromFormat("expected ')' in condition"),
-				Array_fromArgs(1, peek.token));
-		}
 	}
 
 	return ParserSuccess(test);
