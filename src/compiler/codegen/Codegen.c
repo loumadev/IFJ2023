@@ -1,7 +1,7 @@
 /**
  * @file src/compiler/codegen/Codegen.c
- * @author Author Name <xlogin00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Jaroslav Novotny <xnovot2r@stud.fit.vutbr.cz>
+ * @brief Implementation of code generation.
  * @copyright Copyright (c) 2023
  */
 

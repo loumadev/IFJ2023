@@ -1,7 +1,7 @@
 /**
  * @file src/compiler/codegen/Instruction.c
- * @author Author Name <xlogin00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Jaroslav Novotny <xnovot2r@stud.fit.vutbr.cz>
+ * @brief Implementation of instruction set.
  * @copyright Copyright (c) 2023
  */
 
@@ -34,8 +34,12 @@ void __Instruction_escape_string(String *string) {
 	String_constructor(&buffer, "");
 
 	for(size_t i = 0; i < string->length; i++) {
-		char c = string->value[i];
-		if(c <= 32 || c == 35 || c == 92) {
+		unsigned char c = string->value[i];
+		if(c < 10) {
+			String *replacement = String_fromFormat("\\00%d", c);
+			String_append(&buffer, replacement->value);
+			String_free(replacement);
+		} else if(c <= 32 || c == 35 || c == 92) {
 			String *replacement = String_fromFormat("\\0%d", c);
 			String_append(&buffer, replacement->value);
 			String_free(replacement);
@@ -189,7 +193,7 @@ void Instruction_divs() {
 }
 
 void Instruction_idivs() {
-    INSTRUCTION_NULLARY("IDIVS")
+	INSTRUCTION_NULLARY("IDIVS")
 }
 
 void Instruction_lts() {
@@ -238,117 +242,117 @@ void Instruction_strlen(enum Frame resultScope, char *result, char *input, enum 
 }
 
 void Instruction_int2char(enum Frame resultScope, char *result, enum Frame inputScope, char *input) {
-    fprintf(stdout, "INT2CHAR %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(inputScope), input);
+	fprintf(stdout, "INT2CHAR %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(inputScope), input);
 }
 
 void Instruction_stri2int(enum Frame resultScope, char *result, enum Frame inputScope, char *input, int index) {
-    fprintf(stdout, "STRI2INT %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(inputScope), input, index);
+	fprintf(stdout, "STRI2INT %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(inputScope), input, index);
 }
 
 void Instruction_label(char *label) {
-    fprintf(stdout, "LABEL $%s\n", label);
+	fprintf(stdout, "LABEL $%s\n", label);
 }
 
-void Instruction_jump_ifeqs_chr_end(){
-    fprintf(stdout, "JUMPIFEQS $chr_empty\n");
+void Instruction_jump_ifeqs_chr_end() {
+	fprintf(stdout, "JUMPIFEQS $chr_empty\n");
 }
 
 void Instruction_jump(char *label) {
-    fprintf(stdout, "JUMP $%s\n", label);
+	fprintf(stdout, "JUMP $%s\n", label);
 }
 
-void Instruction_move_vars(enum Frame destinationScope, char* destination, enum Frame sourceScope, char* source) {
-    fprintf(stdout, "MOVE %s@$%s %s@$%s\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source);
+void Instruction_move_vars(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source) {
+	fprintf(stdout, "MOVE %s@$%s %s@$%s\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source);
 }
 
 void Instruction_popframe() {
-    INSTRUCTION_NULLARY("POPFRAME")
+	INSTRUCTION_NULLARY("POPFRAME")
 }
 
 void Instruction_call(char *label) {
-    fprintf(stdout, "CALL $%s\n", label);
+	fprintf(stdout, "CALL $%s\n", label);
 }
 
 void Instruction_createframe() {
-    INSTRUCTION_NULLARY("CREATEFRAME")
+	INSTRUCTION_NULLARY("CREATEFRAME")
 }
 
 void Instruction_jump_ifeqs(char *label) {
-    fprintf(stdout, "JUMPIFEQS $%s\n", label);
+	fprintf(stdout, "JUMPIFEQS $%s\n", label);
 }
 
-void Instruction_getchar(enum Frame resultScope, char *result, enum Frame inputScope, char *input, enum Frame indexScope, char *index){
-    fprintf(stdout, "GETCHAR %s@$%s %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(inputScope), input, __Instruction_getFrame(indexScope), index);
+void Instruction_getchar(enum Frame resultScope, char *result, enum Frame inputScope, char *input, enum Frame indexScope, char *index) {
+	fprintf(stdout, "GETCHAR %s@$%s %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(inputScope), input, __Instruction_getFrame(indexScope), index);
 }
 
-void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1Scope, char *input1, enum Frame input2Scope, char *input2){
-    fprintf(stdout, "CONCAT %s@$%s %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(input1Scope), input1, __Instruction_getFrame(input2Scope), input2);
+void Instruction_concat(enum Frame resultScope, char *result, enum Frame input1Scope, char *input1, enum Frame input2Scope, char *input2) {
+	fprintf(stdout, "CONCAT %s@$%s %s@$%s %s@$%s\n", __Instruction_getFrame(resultScope), result, __Instruction_getFrame(input1Scope), input1, __Instruction_getFrame(input2Scope), input2);
 }
 
-void Instruction_call_func(size_t id){
-    fprintf(stdout, "CALL $func_%lu\n", id);
+void Instruction_call_func(size_t id) {
+	fprintf(stdout, "CALL $func_%lu\n", id);
 }
 
-void Instruction_label_func(size_t id){
-    fprintf(stdout, "LABEL $func_%lu\n", id);
+void Instruction_label_func(size_t id) {
+	fprintf(stdout, "LABEL $func_%lu\n", id);
 }
 
 void Instruction_move_arg(size_t id) {
-    fprintf(stdout, "MOVE LF@$%lu TF@%%0\n", id);
+	fprintf(stdout, "MOVE LF@$%lu TF@%%0\n", id);
 }
 
-void Instruction_pushs_func_result(size_t id){
-    fprintf(stdout, "PUSHS TF@$ret_%lu\n", id);
+void Instruction_pushs_func_result(size_t id) {
+	fprintf(stdout, "PUSHS TF@$ret_%lu\n", id);
 }
 
 void Instruction_move_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source) {
-    fprintf(stdout, "MOVE %s@$%lu %s@$%lu\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source);
+	fprintf(stdout, "MOVE %s@$%lu %s@$%lu\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source);
 }
 
 void Instruction_move_int(enum Frame destinationScope, char *destination, int value) {
-    fprintf(stdout, "MOVE %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, value);
+	fprintf(stdout, "MOVE %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, value);
 }
 
 void Instruction_move_string(enum Frame destinationScope, char *destination, String *value) {
-    __Instruction_escape_string(value);
-    fprintf(stdout, "MOVE %s@$%s string@%s\n", __Instruction_getFrame(destinationScope), destination, value->value);
+	__Instruction_escape_string(value);
+	fprintf(stdout, "MOVE %s@$%s string@%s\n", __Instruction_getFrame(destinationScope), destination, value->value);
 }
 
 void Instruction_move_nil(enum Frame destinationScope, char *destination) {
-    fprintf(stdout, "MOVE %s@$%s nil@nil\n", __Instruction_getFrame(destinationScope), destination);
+	fprintf(stdout, "MOVE %s@$%s nil@nil\n", __Instruction_getFrame(destinationScope), destination);
 }
 
 void Instruction_move_float(enum Frame destinationScope, char *destination, double value) {
-    fprintf(stdout, "MOVE %s@$%s float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
+	fprintf(stdout, "MOVE %s@$%s float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
 }
 
 void Instruction_move_bool(enum Frame destinationScope, char *destination, bool value) {
-    fprintf(stdout, "MOVE %s@$%s bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
+	fprintf(stdout, "MOVE %s@$%s bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
 }
 
 void Instruction_move_int_id(enum Frame destinationScope, size_t destination, long int value) {
-    fprintf(stdout, "MOVE %s@$%lu int@%ld\n", __Instruction_getFrame(destinationScope), destination, value);
+	fprintf(stdout, "MOVE %s@$%lu int@%ld\n", __Instruction_getFrame(destinationScope), destination, value);
 }
 
 void Instruction_move_string_id(enum Frame destinationScope, size_t destination, String *value) {
-    __Instruction_escape_string(value);
-    fprintf(stdout, "MOVE %s@$%lu string@%s\n", __Instruction_getFrame(destinationScope), destination, value->value);
+	__Instruction_escape_string(value);
+	fprintf(stdout, "MOVE %s@$%lu string@%s\n", __Instruction_getFrame(destinationScope), destination, value->value);
 }
 
 void Instruction_move_nil_id(enum Frame destinationScope, size_t destination) {
-    fprintf(stdout, "MOVE %s@$%lu nil@nil\n", __Instruction_getFrame(destinationScope), destination);
+	fprintf(stdout, "MOVE %s@$%lu nil@nil\n", __Instruction_getFrame(destinationScope), destination);
 }
 
 void Instruction_move_float_id(enum Frame destinationScope, size_t destination, double value) {
-    fprintf(stdout, "MOVE %s@$%lu float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
+	fprintf(stdout, "MOVE %s@$%lu float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
 }
 
 void Instruction_move_bool_id(enum Frame destinationScope, size_t destination, bool value) {
-    fprintf(stdout, "MOVE %s@$%lu bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
+	fprintf(stdout, "MOVE %s@$%lu bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
 }
 
-void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value){
-    fprintf(stdout, "ADD %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
+void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value) {
+	fprintf(stdout, "ADD %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
 }
 
 /** End of file src/compiler/codegen/Instruction.c **/
