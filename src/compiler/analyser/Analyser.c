@@ -965,6 +965,15 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					AnalyserResult result = Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, function->returnType, &type);
 					if(!result.success) return result;
 
+					// This was requested by the assignment
+					if(type.type == TYPE_VOID) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_RETURN_TYPE,
+							String_fromFormat("cannot return value of type 'Void'"),
+							NULL
+						);
+					}
+
 					// Validate the type of the return expression
 					if(!is_value_assignable(function->returnType, type)) {
 						if(function->returnType.type == TYPE_VOID) {
