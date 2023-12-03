@@ -1858,6 +1858,19 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 		{
 			Lexer_setSource(
 				&lexer,
+				"if(true) {" LF
+				TAB "func a() { }" LF
+				"}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
 				"func a() -> Int {}" LF
 				"" LF
 				"a()" LF

@@ -902,6 +902,15 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 			case NODE_FUNCTION_DECLARATION: {
 				FunctionDeclarationASTNode *function = (FunctionDeclarationASTNode*)statement;
 
+				// Local scope function declarations are not supported
+				if(block->scope->parent) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat("function declarations are not allowed inside local scope"),
+						NULL
+					);
+				}
+
 				AnalyserResult result = __Analyser_analyseBlock(analyser, function->body);
 				if(!result.success) return result;
 
