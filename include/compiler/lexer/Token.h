@@ -126,12 +126,48 @@ typedef struct Token {
 } Token;
 
 
+/**
+ * Constructs an instance of Token.
+ * @param token
+ * @param type
+ * @param kind
+ * @param whitespace
+ * @param range
+ * @param value
+ */
 void Token_constructor(Token *token, enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value);
+
+/**
+ * Destructs an instance of Token.
+ * @param token
+ */
 void Token_destructor(Token *token);
+
+/**
+ * Allocates a new instance of Token.
+ * @param type
+ * @param kind
+ * @param whitespace
+ * @param range
+ * @param value
+ * @return New instance of Token
+ */
 Token* Token_alloc(enum TokenType type, enum TokenKind kind, enum WhitespaceType whitespace, TextRange range, union TokenValue value);
+
+/**
+ * Frees an instance of Token.
+ * @param token
+ */
 void Token_free(Token *token);
-void Token_print(Token *token, unsigned int depth, int isProperty);
+
+/**
+ * Stringifies a token contents.
+ * @param token
+ * @return char*
+ */
 char* Token_toString(Token *token);
+
+void Token_print(Token *token, unsigned int depth, int isProperty);
 
 #endif
 

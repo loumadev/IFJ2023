@@ -21,7 +21,7 @@ enum Frame {
 typedef struct Codegen {
 	Analyser *analyser;
 	enum Frame frame;
-    enum BuiltInTypes lastPushedType;
+    enum BuiltInType lastPushedType;
     bool containsReturns;
 } Codegen;
 

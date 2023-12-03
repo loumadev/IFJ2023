@@ -16,14 +16,14 @@
 #include "compiler/lexer/Lexer.h"
 #include "compiler/parser/Parser.h"
 
-
+/* Private methods */
 String* __Analyser_stringifyType(ValueType type);
-void __Analyser_registerBuiltInFunctions(Analyser *analyser);
 BlockScope* __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent);
-void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
 AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType);
 AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser);
+void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
+void __Analyser_registerBuiltInFunctions(Analyser *analyser);
 bool __Analyser_isReturnReachable_processNode(Analyser *analyser, StatementASTNode *node);
 bool __Analyser_isReturnReachable(Analyser *analyser, BlockASTNode *block);
 
@@ -71,8 +71,6 @@ VariableDeclaration* new_VariableDeclaration(
 	if(node) {
 		declaration->node = node;
 		declaration->name = node->pattern->id->name;
-		// declaration->type = node->pattern->type ? node->pattern->type->id->name : NULL;
-		// declaration->isNullable = node->pattern->type ? node->pattern->type->isNullable : false;
 		declaration->type.type = node->pattern->type ? Analyser_resolveBuiltInType(node->pattern->type->id->name) : TYPE_UNKNOWN;
 		declaration->type.isNullable = node->pattern->type ? node->pattern->type->isNullable : false;
 		declaration->isUserDefined = true;
@@ -354,7 +352,6 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 			}
 
 			// Non-matching parameter type
-			// TODO: try casting an argument to the parameter type
 			if(!is_value_assignable(parameterType, argumentType)) {
 				hasMatched = false;
 				break;
@@ -369,7 +366,7 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 	return AnalyserSuccess();
 }
 
-enum BuiltInTypes Analyser_resolveBuiltInType(String *name) {
+enum BuiltInType Analyser_resolveBuiltInType(String *name) {
 	if(String_equals(name, "Int")) return TYPE_INT;
 	if(String_equals(name, "Double")) return TYPE_DOUBLE;
 	if(String_equals(name, "Bool")) return TYPE_BOOL;
@@ -509,8 +506,6 @@ BlockScope* __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode
 }
 
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent) {
-	// if(node->_type != NODE_BLOCK) return;
-
 	switch(node->_type) {
 		case NODE_IF_STATEMENT: {
 			IfStatementASTNode *ifStatement = (IfStatementASTNode*)node;
@@ -635,12 +630,8 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						declaratorNode->pattern->type->type.isNullable = declaratorNode->pattern->type->isNullable;
 
 						if(declaratorNode->pattern->type->type.type == TYPE_INVALID) {
-							// return AnalyserError(
-							// 	RESULT_ERROR_SEMANTIC_INVALID_TYPE,
-							// 	String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
-							// 	NULL
-							// );
 							return AnalyserError(
+								// RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 								RESULT_ERROR_SYNTACTIC_ANALYSIS,
 								String_fromFormat("cannot find type '%s' in scope", declaratorNode->pattern->type->id->name->value),
 								NULL
@@ -674,7 +665,6 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						if(declaratorNode->pattern->type) {
 							declaratorNode->pattern->type->type = Analyser_TypeReferenceToValueType(declaratorNode->pattern->type);
 
-							// TODO: Convert Int to Double if needed
 							if(!is_value_assignable(declaratorNode->pattern->type->type, type)) {
 								return AnalyserError(
 									RESULT_ERROR_SEMANTIC_INVALID_TYPE,
@@ -1041,7 +1031,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 			} break;
 
 			default: {
-				warnf("TODO: Analyse statement %d", statement->_type);
+				fassertf("Invalid statemtnt type: %d", statement->_type);
 			} break;
 		}
 
@@ -1309,7 +1299,6 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 					);
 				}
 
-				// TODO: Might need to retype all the parameters to match the overload
 				ValueType type;
 				AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, parameter->type->type, &type);
 				if(!result.success) return result;
@@ -1516,22 +1505,12 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 						binary->left->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE
 					) {
-						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->left;
-
-						// literal->value.floating = (double)literal->value.integer;
-						// literal->type.type = TYPE_DOUBLE;
-
 						binary->type.type = TYPE_DOUBLE;
 					} else if(
 						binary->operator != OPERATOR_DIV &&
 						binary->right->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT
 					) {
-						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
-
-						// literal->value.floating = (double)literal->value.integer;
-						// literal->type.type = TYPE_DOUBLE;
-
 						binary->type.type = TYPE_DOUBLE;
 					} else {
 						return AnalyserError(
@@ -1568,21 +1547,11 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 						binary->left->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE
 					) {
-						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->left;
-
-						// literal->value.floating = (double)literal->value.integer;
-						// literal->type.type = TYPE_DOUBLE;
-
 						binary->type.type = TYPE_BOOL;
 					} else if(
 						binary->right->_type == NODE_LITERAL_EXPRESSION &&
 						leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT
 					) {
-						// LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)binary->right;
-
-						// literal->value.floating = (double)literal->value.integer;
-						// literal->type.type = TYPE_DOUBLE;
-
 						binary->type.type = TYPE_BOOL;
 					} else {
 						return AnalyserError(
@@ -1740,133 +1709,6 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 	return AnalyserSuccess();
 }
 
-// AnalyserResult __Analyser_collectGlobalVariables(Analyser *analyser) {
-// 	for(int i = 0; i < analyser->ast->block->statements->size; i++) {
-// 		StatementASTNode *statement = Array_get(analyser->ast->block->statements, i);
-
-// 		if(statement->_type != NODE_VARIABLE_DECLARATION) continue;
-
-// 		VariableDeclarationASTNode *declarationNode = (VariableDeclarationASTNode*)statement;
-// 		Array *declarators = declarationNode->declaratorList->declarators;
-
-// 		for(int j = 0; j < declarators->size; j++) {
-// 			VariableDeclaratorASTNode *declaratorNode = Array_get(declarators, j);
-
-// 			VariableDeclaration *declaration = new_VariableDeclaration(
-// 				analyser,
-// 				declaratorNode,
-// 				declarationNode->isConstant,
-// 				NULL, NULL, false, false, false
-// 			);
-
-// 			if(!declaratorNode->initializer && !declaratorNode->pattern->type) {
-// 				return AnalyserError(
-// 					RESULT_ERROR_SEMANTIC_OTHER,
-// 					String_fromFormat("type annotation missing in pattern"),
-// 					NULL
-// 				);
-// 			}
-
-// 			if(HashMap_has(analyser->globalScope->variables, declaration)) {
-// 				return AnalyserError(
-// 					RESULT_ERROR_SEMANTIC_OTHER,
-// 					String_fromFormat("invalid redeclaration of '%s'", declaration->name),
-// 					NULL
-// 				);
-// 			}
-
-// 			HashMap_set(analyser->globalScope->variables, declaration->name, declaration);
-// 		}
-// 	}
-
-// 	for(int i = 0; i < analyser->ast->block->statements->size; i++) {
-// 		StatementASTNode *statement = Array_get(analyser->ast->block->statements, i);
-
-// 		// 2. variable declarations, assignements
-// 		// * declarations:
-// 		// if !has type && !has initializer:
-// 		//   Error
-// 		// if has type && !has initializer:
-// 		//   if is constant:
-// 		//     Error
-// 		//   else:
-// 		//     OK
-// 		// if has initializer:
-// 		//   actual type = get type of initializer
-
-// 		//   if has type:
-// 		//     if type != actual type:
-// 		//       Error
-// 		//   else:
-// 		//     if actual type == nil:
-// 		//       Error
-// 		//     else:
-// 		//       set type to actual type
-// 		//       OK
-
-// 		// * assignements:
-// 		// variable = resolve variable by name
-// 		// actual type = get type of expression
-
-// 		// if variable is constant:
-// 		//   Error
-// 		// else:
-// 		//   if type != actual type:
-// 		//     Error
-// 		//   else:
-// 		//     if is actual type nullable && !is type nullable:
-// 		//       Error
-
-// 		switch(statement->_type) {
-// 			case NODE_VARIABLE_DECLARATION: {
-// 				VariableDeclarationASTNode *declarationNode = (VariableDeclarationASTNode*)statement;
-// 				Array *declarators = declarationNode->declaratorList->declarators;
-
-// 				for(int j = 0; j < declarators->size; j++) {
-// 					VariableDeclaratorASTNode *declaratorNode = Array_get(declarators, j);
-
-// 					VariableDeclaration *declaration = new_VariableDeclaration(
-// 						analyser,
-// 						declaratorNode,
-// 						declarationNode->isConstant,
-// 						NULL, NULL, false, false, false
-// 					);
-
-// 					if(HashMap_has(analyser->globalScope->variables, declaration)) {
-// 						return AnalyserError(
-// 							RESULT_ERROR_SEMANTIC_OTHER,
-// 							String_fromFormat("invalid redeclaration of '%s'", declaration->name),
-// 							NULL
-// 						);
-// 					}
-
-// 					HashMap_set(analyser->globalScope->variables, declaration->name, declaration);
-// 				}
-// 			} break;
-
-// 			case NODE_EXPRESSION_STATEMENT: {
-// 				ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statement;
-// 				ExpressionASTNode *expression = expressionStatement->expression;
-
-// 				if(expression->_type != NODE_ASSIGNMENT_EXPRESSION) continue;
-
-// 				AssignmentExpressionASTNode *assignment = (AssignmentExpressionASTNode*)expression;
-// 				VariableDeclaration *variable = Analyser_resolveVariable(analyser, assignment->id->name, analyser->globalScope);
-
-// 				if(!variable) {
-// 					return AnalyserError(
-// 						RESULT_ERROR_SEMANTIC_OTHER,
-// 						String_fromFormat("use of undeclared identifier '%s'", assignment->id->name),
-// 						NULL
-// 					);
-// 				}
-
-
-// 			}
-// 		}
-// 	}
-// }
-
 AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 	for(size_t i = 0; i < analyser->ast->block->statements->size; i++) {
 		StatementASTNode *statement = Array_get(analyser->ast->block->statements, i);
@@ -1897,11 +1739,6 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					String_fromFormat("cannot find type '%s' in scope", declarationNode->returnType->id->name->value),
 					NULL
 				);
-				// return AnalyserError(
-				// 	RESULT_ERROR_SEMANTIC_OTHER,
-				// 	String_fromFormat("cannot find type '%s' in scope", declarationNode->returnType->id->name->value),
-				// 	NULL
-				// );
 			}
 		} else {
 			declaration->returnType = (ValueType){.type = TYPE_VOID, .isNullable = false};
@@ -1945,7 +1782,7 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				}
 
 				String *typeName = parameter->type->id->name;
-				enum BuiltInTypes resolvedType = Analyser_resolveBuiltInType(typeName);
+				enum BuiltInType resolvedType = Analyser_resolveBuiltInType(typeName);
 
 				if(!is_type_valid(resolvedType)) {
 					return AnalyserError(

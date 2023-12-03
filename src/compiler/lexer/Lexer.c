@@ -568,39 +568,6 @@ LexerResult __Lexer_parseUnicodeEscapeSequence(Lexer *lexer, char *out) {
 	return LexerSuccess();
 }
 
-// Swift multiline string literals
-// LexerResult __Lexer_tokenizeMultilineStringLiteral(Lexer *lexer) {
-// 	char *start = lexer->currentChar;
-// 	char ch = *lexer->currentChar;
-
-// 	// Asserts and consumes the string literal start
-// 	assertf(Lexer_match(lexer, "\"\"\""), "Unexpected character '%s' (expected '\"' at the source stream head)", format_char(ch));
-
-// 	// Check and consume the LF
-// 	if(!Lexer_advance(lexer) != '\n') return LexerError(
-// 			String_fromFormat("multi-line string literal content must begin on a new line"),
-// 			Token_alloc(
-// 				TOKEN_MARKER,
-// 				TOKEN_CARET,
-// 				WHITESPACE_NONE,
-// 				TextRange_construct(
-// 					lexer->currentChar,
-// 					lexer->currentChar + 1,
-// 					lexer->line,
-// 					lexer->column
-// 				),
-// 				(union TokenValue){0}
-// 			)
-// 	);
-
-// 	Array *tokens = Array_alloc(1);
-
-// 	// Read the string content
-// 	// TODO: Tokenize the whole string at once (with interpolation), push the tokens into some internal cache and return the first one, then when calling next(), return the next token from the cache until it's empty, then tokenize the input string.
-// 	// TODO: After all the string tokens are collected, process them (remove heading indents)
-// }
-
-// TODO: Implement string parsing from specifiaction
 LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 	char *start = lexer->currentChar;
 	char ch = *lexer->currentChar;
@@ -635,8 +602,6 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 			);
 		}
 
-		// TODO: Handle multiline string literals
-
 		// This consumes two characters, so in case of `\<quote>`, both backslash
 		// and the quote are consumed and therefore the loop will not terminate
 		if(ch == '\\') {
@@ -645,7 +610,6 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 
 			// Pick the escaping strategy
 			if(toEscape == 'u') {
-				// TODO: Add support for unicode and hex escapes according to the language specification
 				// Consume the 'u'
 				Lexer_advance(lexer);
 
@@ -657,8 +621,6 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 				String_appendChar(string, escaped);
 				lexer->currentChar--; // Go back one character
 			} else if(toEscape == '(') {
-				// TODO: Add escape sequences for interpolation
-
 				// Finish the current string literal
 				{
 					TextRange range;
@@ -809,9 +771,6 @@ LexerResult __Lexer_tokenizeString(Lexer *lexer) {
 		String_free(firstLine);
 	}
 
-	// TODO: Fetch whitespace before end quotes
-	// TODO: replace '\n' + fetched whitespace with a '\n'
-
 	// Create a TextRange view
 	TextRange range;
 	TextRange_constructor(&range, start, lexer->currentChar + 1, lexer->line, lexer->column);
@@ -867,21 +826,6 @@ LexerResult __Lexer_tokenizeIdentifier(Lexer *lexer) {
 	else if(TextRange_compare(&range, "break")) kind = TOKEN_BREAK;
 	else if(TextRange_compare(&range, "continue")) kind = TOKEN_CONTINUE;
 
-
-	// else if(TextRange_compare(&range, "class")) kind = TOKEN_CLASS;
-	// else if(TextRange_compare(&range, "else")) kind = TOKEN_ELSE;
-	// else if(TextRange_compare(&range, "false")) kind = TOKEN_FALSE;
-	// else if(TextRange_compare(&range, "for")) kind = TOKEN_FOR;
-	// else if(TextRange_compare(&range, "fun")) kind = TOKEN_FUN;
-	// else if(TextRange_compare(&range, "if")) kind = TOKEN_IF;
-	// else if(TextRange_compare(&range, "null")) kind = TOKEN_NULL;
-	// else if(TextRange_compare(&range, "return")) kind = TOKEN_RETURN;
-	// else if(TextRange_compare(&range, "super")) kind = TOKEN_SUPER;
-	// else if(TextRange_compare(&range, "this")) kind = TOKEN_THIS;
-	// else if(TextRange_compare(&range, "true")) kind = TOKEN_TRUE;
-	// else if(TextRange_compare(&range, "var")) kind = TOKEN_VAR;
-	// else if(TextRange_compare(&range, "while")) kind = TOKEN_WHILE;
-
 	// If just a regular keyword (without value) or an identifier encountered, set its value to the identifier string
 	if(type == TOKEN_INVALID) {
 		// Copy the identifier
@@ -922,8 +866,6 @@ LexerResult __Lexer_tokenizeDecimalLiteral(Lexer *lexer) {
 	bool hasDot = false;
 	bool hasExponent = false;
 
-	// TODO: Test "10.test()"
-	// TODO: Add handling for leading dot
 	// 10 				=> [10]
 	// 10.5 			=> [10.5]
 	// 10.field 		=> [10, ., "field"]
@@ -1007,30 +949,15 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	#define match_as(str, _type, _kind) if(Lexer_match(lexer, str)) type = _type, kind = _kind
 
 	// Swift operators (sorted by length)
-	// match_as("<<=", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT_ASSIGN);
-	// else match_as(">>=", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT_ASSIGN);
-	/*else*/ match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
+	match_as("...", TOKEN_OPERATOR, TOKEN_RANGE);
 	else match_as("..<", TOKEN_OPERATOR, TOKEN_HALF_OPEN_RANGE);
-	// else match_as("===", TOKEN_OPERATOR, TOKEN_IDENTITY);
-	// else match_as("!==", TOKEN_OPERATOR, TOKEN_NOT_IDENTITY);
-	// else match_as("<<", TOKEN_OPERATOR, TOKEN_LEFT_SHIFT);
-	// else match_as(">>", TOKEN_OPERATOR, TOKEN_RIGHT_SHIFT);
 	else match_as("&&", TOKEN_OPERATOR, TOKEN_LOG_AND);
 	else match_as("||", TOKEN_OPERATOR, TOKEN_LOG_OR);
 	else match_as("??", TOKEN_OPERATOR, TOKEN_NULL_COALESCING);
-	// else match_as("?.", TOKEN_OPERATOR, TOKEN_OPTIONAL_CHAINING);
 	else match_as("==", TOKEN_OPERATOR, TOKEN_EQUALITY);
 	else match_as("!=", TOKEN_OPERATOR, TOKEN_NOT_EQUALITY);
 	else match_as(">=", TOKEN_OPERATOR, TOKEN_GREATER_EQUAL);
 	else match_as("<=", TOKEN_OPERATOR, TOKEN_LESS_EQUAL);
-	// else match_as("+=", TOKEN_OPERATOR, TOKEN_PLUS_ASSIGN);
-	// else match_as("-=", TOKEN_OPERATOR, TOKEN_MINUS_ASSIGN);
-	// else match_as("*=", TOKEN_OPERATOR, TOKEN_MULT_ASSIGN);
-	// else match_as("/=", TOKEN_OPERATOR, TOKEN_DIV_ASSIGN);
-	// else match_as("%%=", TOKEN_OPERATOR, TOKEN_MOD_ASSIGN);
-	// else match_as("&=", TOKEN_OPERATOR, TOKEN_BIT_AND_ASSIGN);
-	// else match_as("|=", TOKEN_OPERATOR, TOKEN_BIT_OR_ASSIGN);
-	// else match_as("^=", TOKEN_OPERATOR, TOKEN_BIT_XOR_ASSIGN);
 	else match_as("->", TOKEN_PUNCTUATOR, TOKEN_ARROW);
 	else match_as("=", TOKEN_OPERATOR, TOKEN_EQUAL);
 	else match_as(">", TOKEN_OPERATOR, TOKEN_GREATER);
@@ -1039,26 +966,14 @@ LexerResult __Lexer_tokenizePunctuatorsAndOperators(Lexer *lexer) {
 	else match_as("-", TOKEN_OPERATOR, TOKEN_MINUS);
 	else match_as("*", TOKEN_OPERATOR, TOKEN_STAR);
 	else match_as("/", TOKEN_OPERATOR, TOKEN_SLASH);
-	// else match_as("%%", TOKEN_OPERATOR, TOKEN_PERCENT);
-	// else match_as("&", TOKEN_OPERATOR, TOKEN_AMPERSAND);
-	// else match_as("|", TOKEN_OPERATOR, TOKEN_PIPE);
-	// else match_as("^", TOKEN_OPERATOR, TOKEN_CARET);
-	// else match_as("~", TOKEN_OPERATOR, TOKEN_TILDE);
-
 	else match_as("(", TOKEN_PUNCTUATOR, TOKEN_LEFT_PAREN);
 	else match_as(")", TOKEN_PUNCTUATOR, TOKEN_RIGHT_PAREN);
 	else match_as("{", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACE);
 	else match_as("}", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACE);
-	// else match_as("[", TOKEN_PUNCTUATOR, TOKEN_LEFT_BRACKET);
-	// else match_as("]", TOKEN_PUNCTUATOR, TOKEN_RIGHT_BRACKET);
-	// else match_as(".", TOKEN_PUNCTUATOR, TOKEN_DOT);
 	else match_as(",", TOKEN_PUNCTUATOR, TOKEN_COMMA);
 	else match_as(":", TOKEN_PUNCTUATOR, TOKEN_COLON);
 	// else match_as(";", TOKEN_PUNCTUATOR, TOKEN_SEMICOLON);
 	else match_as("=", TOKEN_PUNCTUATOR, TOKEN_EQUAL);
-	// else match_as("@", TOKEN_PUNCTUATOR, TOKEN_AT);
-	// else match_as("#", TOKEN_PUNCTUATOR, TOKEN_HASH);
-	// else match_as("`", TOKEN_PUNCTUATOR, TOKEN_BACKTICK);
 	else match_as("?", TOKEN_PUNCTUATOR, TOKEN_QUESTION);
 	else match_as("!", TOKEN_PUNCTUATOR, TOKEN_EXCLAMATION);
 	else return LexerNoMatch();

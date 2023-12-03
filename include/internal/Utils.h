@@ -7,6 +7,12 @@
 
 #include <stdlib.h>
 
+/**
+ * Returns the minimum of two numbers.
+ * @param a
+ * @param b
+ * @return size_t
+ */
 size_t max(size_t a, size_t b);
 
 /** End of file include/internal/Utils.h **/

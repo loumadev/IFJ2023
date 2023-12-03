@@ -17,9 +17,8 @@
 #define ASSERTF_H
 
 #define log_error(M, ...) errno \
-	? fprintf(stderr, RED "[ASSERT] " M ": %s\n    at%s:%d\n" RESET, ## __VA_ARGS__, strerror(errno), __FILE__, __LINE__) \
-	: fprintf(stderr, RED "[ASSERT] " M "\n    at %s:%d\n" RESET, ## __VA_ARGS__, __FILE__, __LINE__)
-// #define assertf(A, M, ...) (!(A) && (log_error(M, ## __VA_ARGS__), abort(), 0))
+	? fprintf(stderr, BOLD RED "[ASSERT]" RST RED " " M ": %s\n    at%s:%d\n" RST, ## __VA_ARGS__, strerror(errno), __FILE__, __LINE__) \
+	: fprintf(stderr, BOLD RED "[ASSERT]" RST RED " " M "\n    at %s:%d\n" RST, ## __VA_ARGS__, __FILE__, __LINE__)
 
 #define assertf(...) overload(__assertf, __VA_ARGS__)
 #define __assertf1(A) __assertf3(A, "Assertion '" #A "' failed")
@@ -43,8 +42,8 @@
 #define __fassertf8(M, ...) __fassertf2(M, ## __VA_ARGS__)
 
 #define warnf(M, ...) errno \
-	? fprintf(stderr, YELLOW "[WARN] " M ": %s\n    at%s:%d\n" RESET, ## __VA_ARGS__, strerror(errno), __FILE__, __LINE__) \
-	: fprintf(stderr, YELLOW "[WARN] " M "\n    at %s:%d\n" RESET, ## __VA_ARGS__, __FILE__, __LINE__)
+	? fprintf(stderr, BOLD YELLOW "[WARN]" RST YELLOW " " M ": %s\n    at%s:%d\n" RESET, ## __VA_ARGS__, strerror(errno), __FILE__, __LINE__) \
+	: fprintf(stderr, BOLD YELLOW "[WARN]" RST YELLOW " " M "\n    at %s:%d\n" RESET, ## __VA_ARGS__, __FILE__, __LINE__)
 
 #endif
 

@@ -68,12 +68,12 @@ void _print_Token(Token *var);
 		         double : _print_double, \
 		         bool : _print_boolean, \
 		         void* : _print_pointer, \
-		         /* Internal type */ \
+		         /* Internal types */ \
 		         String * : _print_String, \
 		         Array * : _print_Array, \
 		         HashMap * : _print_HashMap, \
 		         TextRange * : _print_TextRange, \
-		         /* Project type */ \
+		         /* Project types */ \
 		         Token * : _print_Token, \
 			 default: _print_pointer \
 		)(var); \

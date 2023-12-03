@@ -69,7 +69,7 @@ typedef enum OperatorType {
 	OPERATOR_HALF_OPEN_RANGE
 } OperatorType;
 
-enum BuiltInTypes {
+enum BuiltInType {
 	TYPE_NIL = -2,
 	TYPE_UNKNOWN = -1,
 	TYPE_INVALID = 0,
@@ -100,7 +100,7 @@ enum BuiltInFunction {
 #define is_type_equal(type1, type2) ((type1).type == (type2).type && (type1).isNullable == (type2).isNullable)
 
 typedef struct ValueType {
-	enum BuiltInTypes type;
+	enum BuiltInType type;
 	bool isNullable;
 } ValueType;
 
