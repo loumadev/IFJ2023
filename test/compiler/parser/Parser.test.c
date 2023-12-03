@@ -1456,6 +1456,16 @@ DESCRIBE(statement_separation, "Validity of statement separation") {
 
 		EXPECT_FALSE(result.success);
 	} TEST_END();
+
+	TEST_BEGIN("Multiple statements on same line") {
+		Lexer_setSource(
+			&lexer,
+			"if true {let a = 5 let b = 3}" LF
+		);
+		result = Parser_parse(&parser);
+
+		EXPECT_FALSE(result.success);
+	} TEST_END();
 }
 
 DESCRIBE(function_calls, "Function call parsing") {
@@ -2879,17 +2889,17 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_TRUE(String_equals(id->name, "a"));
 
 		// else
-	    EXPECT_NOT_NULL(if_statement->alternate);
+		EXPECT_NOT_NULL(if_statement->alternate);
 		EXPECT_TRUE(if_statement->alternate->_type == NODE_BLOCK);
 
 
-	    BlockASTNode* body = (BlockASTNode*)if_statement->alternate;
+		BlockASTNode *body = (BlockASTNode*)if_statement->alternate;
 		EXPECT_NOT_NULL(body->statements);
 		arr = body->statements;
 		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
-	    // write("Chyba pri nacitani celeho cisla!\n")
+		// write("Chyba pri nacitani celeho cisla!\n")
 		statement = (StatementASTNode*)Array_get(body->statements, 0);
 		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
 
@@ -2926,26 +2936,26 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
-	    // if (a < 0) {write("Faktorial nelze spocitat\n")}
+		// if (a < 0) {write("Faktorial nelze spocitat\n")}
 		statement = (StatementASTNode*)Array_get(body->statements, 0);
 
-	    EXPECT_TRUE(statement->_type == NODE_IF_STATEMENT);
+		EXPECT_TRUE(statement->_type == NODE_IF_STATEMENT);
 
 		if_statement = (IfStatementASTNode*)statement;
 
 		EXPECT_NOT_NULL(if_statement->test);
 		EXPECT_TRUE(if_statement->test->_type == NODE_BINARY_EXPRESSION);
 
-	    BinaryExpressionASTNode *binary_test = (BinaryExpressionASTNode*)if_statement->test;
+		BinaryExpressionASTNode *binary_test = (BinaryExpressionASTNode*)if_statement->test;
 		EXPECT_BINARY_NODE(binary_test, OPERATOR_LESS, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, test_binary)
 
-		IdentifierASTNode* id_left = (IdentifierASTNode*)test_binary->left;
+		IdentifierASTNode *id_left = (IdentifierASTNode*)test_binary->left;
 		EXPECT_NOT_NULL(id_left);
 		EXPECT_TRUE(String_equals(id_left->name, "a"));
 
-		LiteralExpressionASTNode* literal_right = (LiteralExpressionASTNode*)test_binary->right;
+		LiteralExpressionASTNode *literal_right = (LiteralExpressionASTNode*)test_binary->right;
 		EXPECT_TRUE(literal_right->type.type == TYPE_INT);
-        EXPECT_EQUAL_INT(literal_right->value.integer, 0)
+		EXPECT_EQUAL_INT(literal_right->value.integer, 0)
 
 		body = if_statement->body;
 		EXPECT_NOT_NULL(body->statements);
@@ -2953,7 +2963,7 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 1);
 
-        // write("Faktorial nelze spocitat\n")
+		// write("Faktorial nelze spocitat\n")
 		statement = (StatementASTNode*)Array_get(arr, 0);
 		EXPECT_TRUE(statement->_type == NODE_EXPRESSION_STATEMENT);
 
@@ -2983,16 +2993,16 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_TRUE(argument_expression->type.type == TYPE_STRING);
 		EXPECT_TRUE(String_equals(argument_expression->value.string, "Faktorial nelze spocitat\n"));
 
-	    EXPECT_NOT_NULL(if_statement->alternate);
+		EXPECT_NOT_NULL(if_statement->alternate);
 		EXPECT_TRUE(if_statement->alternate->_type == NODE_BLOCK);
 
-	    body = (BlockASTNode*)if_statement->alternate;
+		body = (BlockASTNode*)if_statement->alternate;
 		EXPECT_NOT_NULL(body->statements);
 		arr = body->statements;
 		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 4);
 
-        // var a = Int2Double(a)
+		// var a = Int2Double(a)
 		statement = (StatementASTNode*)Array_get(arr, 0);
 
 		EXPECT_TRUE(statement->_type == NODE_VARIABLE_DECLARATION);
@@ -3004,7 +3014,7 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		list = declaration->declaratorList;
 		EXPECT_NOT_NULL(list->declarators);
 
-		Array* arr_declarators = list->declarators;
+		Array *arr_declarators = list->declarators;
 		EXPECT_EQUAL_INT(arr_declarators->size, 1);
 
 		declarator = Array_get(arr_declarators, 0);
@@ -3041,7 +3051,7 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(id);
 		EXPECT_TRUE(String_equals(id->name, "a"));
 
-        // var vysl : Double = 1
+		// var vysl : Double = 1
 		statement = (StatementASTNode*)Array_get(arr, 1);
 
 		declaration = (VariableDeclarationASTNode*)statement;
@@ -3122,17 +3132,17 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_TRUE(String_equals(argument_expression->value.string, "\n"));
 
 
-        // while (a > 0) {
+		// while (a > 0) {
 		statement = (StatementASTNode*)Array_get(arr, 2);
 
-	    EXPECT_TRUE(statement->_type == NODE_WHILE_STATEMENT);
+		EXPECT_TRUE(statement->_type == NODE_WHILE_STATEMENT);
 
-		WhileStatementASTNode* while_statement = (WhileStatementASTNode*)statement;
+		WhileStatementASTNode *while_statement = (WhileStatementASTNode*)statement;
 
 		EXPECT_NOT_NULL(if_statement->test);
 		EXPECT_TRUE(if_statement->test->_type == NODE_BINARY_EXPRESSION);
 
-	    binary_test = (BinaryExpressionASTNode*)while_statement->test;
+		binary_test = (BinaryExpressionASTNode*)while_statement->test;
 		EXPECT_BINARY_NODE(binary_test, OPERATOR_GREATER, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, binary)
 
 		id_left = (IdentifierASTNode*)binary->left;
@@ -3141,7 +3151,7 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 
 		literal_right = (LiteralExpressionASTNode*)binary->right;
 		EXPECT_TRUE(literal_right->type.type == TYPE_INT);
-        EXPECT_EQUAL_INT(literal_right->value.integer, 0)
+		EXPECT_EQUAL_INT(literal_right->value.integer, 0)
 
 		body = while_statement->body;
 		EXPECT_NOT_NULL(body->statements);
@@ -3149,10 +3159,10 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 		EXPECT_NOT_NULL(arr->data);
 		EXPECT_EQUAL_INT(arr->size, 2);
 
-        // vysl = vysl * a
+		// vysl = vysl * a
 		statement = (StatementASTNode*)Array_get(arr, 0);
 
-	    EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
+		EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
 		AssignmentStatementASTNode *assign_statement = (AssignmentStatementASTNode*)statement;
 
 		id = assign_statement->id;
@@ -3161,22 +3171,22 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 
 		EXPECT_TRUE(assign_statement->expression->_type ==NODE_BINARY_EXPRESSION);
 
-        binary_test = (BinaryExpressionASTNode*)assign_statement->expression;
+		binary_test = (BinaryExpressionASTNode*)assign_statement->expression;
 		EXPECT_BINARY_NODE(binary_test, OPERATOR_MUL, NODE_IDENTIFIER, NODE_IDENTIFIER, binary_vysl)
 
 		id_left = (IdentifierASTNode*)binary_vysl->left;
 		EXPECT_NOT_NULL(id_left);
 		EXPECT_TRUE(String_equals(id_left->name, "vysl"));
 
-	    IdentifierASTNode* id_right = (IdentifierASTNode*)binary_vysl->right;
+		IdentifierASTNode *id_right = (IdentifierASTNode*)binary_vysl->right;
 		EXPECT_NOT_NULL(id_right);
 		EXPECT_TRUE(String_equals(id_right->name, "a"));
 
-		
-        // a = a - 1
+
+		// a = a - 1
 		statement = (StatementASTNode*)Array_get(arr, 1);
 
-	    EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
+		EXPECT_TRUE(statement->_type == NODE_ASSIGNMENT_STATEMENT);
 		assign_statement = (AssignmentStatementASTNode*)statement;
 
 		id = assign_statement->id;
@@ -3186,7 +3196,7 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 
 		EXPECT_TRUE(assign_statement->expression->_type ==NODE_BINARY_EXPRESSION);
 
-        binary_test = (BinaryExpressionASTNode*)assign_statement->expression;
+		binary_test = (BinaryExpressionASTNode*)assign_statement->expression;
 		EXPECT_BINARY_NODE(binary_test, OPERATOR_MINUS, NODE_IDENTIFIER, NODE_LITERAL_EXPRESSION, binary_a)
 
 		id_left = (IdentifierASTNode*)binary_a->left;
@@ -3195,7 +3205,7 @@ DESCRIBE(simple_programs, "Simple program parsing") {
 
 		literal_right = (LiteralExpressionASTNode*)binary_a->right;
 		EXPECT_TRUE(literal_right->type.type == TYPE_INT);
-        EXPECT_EQUAL_INT(literal_right->value.integer, 1)
+		EXPECT_EQUAL_INT(literal_right->value.integer, 1)
 
 	} TEST_END();
 

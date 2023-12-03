@@ -967,6 +967,42 @@ DESCRIBE(if_statement_analysis, "Analysis of the if statements") {
 	TEST_BEGIN("Invalid type of test condition in if statement") {
 		Lexer_setSource(
 			&lexer,
+			"var a: Int? = 20" LF
+			"if(a) { }" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Bool? = false" LF
+			"if(a) { }" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 10" LF
+			"if(a == nil) { }" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
 			"var a: Int" LF
 			"a = 20" LF
 			"" LF
