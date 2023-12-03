@@ -64,21 +64,23 @@ typedef struct Analyser {
 	size_t idCounter; // Do NOT directly modify this!
 } Analyser;
 
-ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind);
 
 void Analyser_constructor(Analyser *analyser);
 void Analyser_destructor(Analyser *analyser);
+
 AnalyserResult Analyser_analyse(Analyser *analyser, ProgramASTNode *ast);
+
 bool Analyser_isDeclarationGlobal(Analyser *analyser, size_t id);
 Declaration /*<VariableDeclaration | FunctionDeclaration> | null*/* Analyser_getDeclarationById(Analyser *analyser, size_t id);
 FunctionDeclaration /* | null*/* Analyser_getFunctionById(Analyser *analyser, size_t id);
 VariableDeclaration /* | null*/* Analyser_getVariableById(Analyser *analyser, size_t id);
 VariableDeclaration /* | null*/* Analyser_getVariableByName(Analyser *analyser, char *name, BlockScope *scope);
 Array /*<FunctionDeclaration> | null*/* Analyser_getFunctionDeclarationsByName(Analyser *analyser, char *name);
+
 enum BuiltInFunction Analyser_getBuiltInFunctionById(Analyser *analyser, size_t id);
 
+ValueType Analyser_getTypeFromToken(enum TokenKind tokenKind);
 enum BuiltInTypes Analyser_resolveBuiltInType(String *name);
-AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType);
 
 size_t Analyser_nextId(Analyser *analyser);
 VariableDeclaration* new_VariableDeclaration(Analyser *analyser, struct VariableDeclaratorASTNode *node, bool isConstant, ValueType type, String *name, bool isUserDefined, bool isInitialized);

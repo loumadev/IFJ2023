@@ -22,6 +22,7 @@ void __Analyser_registerBuiltInFunctions(Analyser *analyser);
 BlockScope* __Analyser_createBlockScopeChaining(Analyser *analyser, BlockASTNode *block, BlockScope *parent);
 void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode *node, BlockScope *parent);
 AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block);
+AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType);
 AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser);
 bool __Analyser_isReturnReachable_processNode(Analyser *analyser, StatementASTNode *node);
 bool __Analyser_isReturnReachable(Analyser *analyser, BlockASTNode *block);
@@ -346,7 +347,7 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 				break;
 			}
 
-			AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, parameterType, &argumentType);
+			AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, parameterType, &argumentType);
 			if(!result.success) {
 				Array_free(candidates);
 				return result;
@@ -597,7 +598,7 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 	} else {
 		// Get the type of the test expression
 		ValueType type;
-		AnalyserResult result = Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, (ValueType){.type = TYPE_UNKNOWN /* TYPE_BOOL */, .isNullable = false}, &type);
+		AnalyserResult result = __Analyser_resolveExpressionType(analyser, conditionalStatemnt->test, scope, (ValueType){.type = TYPE_UNKNOWN /* TYPE_BOOL */, .isNullable = false}, &type);
 		if(!result.success) return result;
 
 		// Validate the type of the test expression
@@ -658,7 +659,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					// Validate/infer the type based on the initializer
 					if(declaratorNode->initializer) {
 						ValueType type;
-						AnalyserResult result = Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, declaration->type, &type);
+						AnalyserResult result = __Analyser_resolveExpressionType(analyser, declaratorNode->initializer, block->scope, declaration->type, &type);
 						if(!result.success) return result;
 
 						// This was requested by the assignment
@@ -776,7 +777,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				}
 
 				ValueType type;
-				AnalyserResult result = Analyser_resolveExpressionType(analyser, assignment->expression, block->scope, variable->type, &type);
+				AnalyserResult result = __Analyser_resolveExpressionType(analyser, assignment->expression, block->scope, variable->type, &type);
 				if(!result.success) return result;
 
 				if(!is_value_assignable(variable->type, type)) {
@@ -849,11 +850,11 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 				// Resolve types for the range
 				ValueType startType;
-				AnalyserResult result = Analyser_resolveExpressionType(analyser, range->start, block->scope, (ValueType){.type = TYPE_INT, .isNullable = false}, &startType);
+				AnalyserResult result = __Analyser_resolveExpressionType(analyser, range->start, block->scope, (ValueType){.type = TYPE_INT, .isNullable = false}, &startType);
 				if(!result.success) return result;
 
 				ValueType endType;
-				result = Analyser_resolveExpressionType(analyser, range->end, block->scope, (ValueType){.type = TYPE_INT, .isNullable = false}, &endType);
+				result = __Analyser_resolveExpressionType(analyser, range->end, block->scope, (ValueType){.type = TYPE_INT, .isNullable = false}, &endType);
 				if(!result.success) return result;
 
 				// Check if the types are assignable
@@ -962,7 +963,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				if(/*function->returnType.type != TYPE_VOID && */ returnStatement->expression) {
 					// Get the type of the return expression
 					ValueType type;
-					AnalyserResult result = Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, function->returnType, &type);
+					AnalyserResult result = __Analyser_resolveExpressionType(analyser, returnStatement->expression, block->scope, function->returnType, &type);
 					if(!result.success) return result;
 
 					// This was requested by the assignment
@@ -1029,7 +1030,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 				ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statement;
 
 				ValueType type;
-				AnalyserResult result = Analyser_resolveExpressionType(
+				AnalyserResult result = __Analyser_resolveExpressionType(
 					analyser,
 					expressionStatement->expression,
 					block->scope,
@@ -1050,7 +1051,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 	return AnalyserSuccess();
 }
 
-AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType) {
+AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType) {
 	switch(node->_type) {
 		case NODE_LITERAL_EXPRESSION: {
 			// Literals are handled by parser, we just might need to retype them if requested
@@ -1200,7 +1201,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 						ArgumentASTNode *argument = Array_get(arguments, i);
 
 						ValueType type;
-						AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, (ValueType){.type = TYPE_UNKNOWN, .isNullable = false}, &type);
+						AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, (ValueType){.type = TYPE_UNKNOWN, .isNullable = false}, &type);
 						if(!result.success) return result;
 
 						if(!is_type_valid(type.type) || type.type == TYPE_VOID) {
@@ -1310,7 +1311,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 				// TODO: Might need to retype all the parameters to match the overload
 				ValueType type;
-				AnalyserResult result = Analyser_resolveExpressionType(analyser, argument->expression, scope, parameter->type->type, &type);
+				AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, parameter->type->type, &type);
 				if(!result.success) return result;
 
 				// Is this really needed? Not sure so keeping it here
@@ -1340,7 +1341,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			switch(unary->operator) {
 				case OPERATOR_UNWRAP: {
 					ValueType type;
-					AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, (ValueType){.type = prefferedType.type, .isNullable = true}, &type);
+					AnalyserResult result = __Analyser_resolveExpressionType(analyser, unary->argument, scope, (ValueType){.type = prefferedType.type, .isNullable = true}, &type);
 					if(!result.success) return result;
 
 					if(!type.isNullable) {
@@ -1356,7 +1357,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 
 				case OPERATOR_NOT: {
 					ValueType type;
-					AnalyserResult result = Analyser_resolveExpressionType(analyser, unary->argument, scope, prefferedType, &type);
+					AnalyserResult result = __Analyser_resolveExpressionType(analyser, unary->argument, scope, prefferedType, &type);
 					if(!result.success) return result;
 
 					if(type.type != TYPE_BOOL) {
@@ -1405,15 +1406,15 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 			ValueType rightType;
 
 			if(prefferedType.type != TYPE_UNKNOWN) {
-				result = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+				result = __Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
 				if(!result.success) return result;
 
-				result = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
+				result = __Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
 				if(!result.success) return result;
 			} else {
 				// Resolve both types independently
-				AnalyserResult resultLeft = Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
-				AnalyserResult resultRight = Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
+				AnalyserResult resultLeft = __Analyser_resolveExpressionType(analyser, binary->left, scope, prefferedType, &leftType);
+				AnalyserResult resultRight = __Analyser_resolveExpressionType(analyser, binary->right, scope, prefferedType, &rightType);
 
 				// Both sides failed, return the error from the left side
 				if(!resultLeft.success && !resultRight.success) return resultLeft;
@@ -1423,13 +1424,13 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 					// Left is int, right is double
 					if(leftType.type == TYPE_INT && rightType.type == TYPE_DOUBLE) {
 						// Try to convert the left side to double
-						result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+						result = __Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
 						if(!result.success) return result;
 					}
 					// Left is double, right is int
 					else if(leftType.type == TYPE_DOUBLE && rightType.type == TYPE_INT) {
 						// Try to convert the right side to double
-						result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+						result = __Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
 						if(!result.success) return result;
 					}
 					// Both types are same, we are done
@@ -1439,15 +1440,15 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				}
 				// Right side failed, try to resolve it with left side type
 				else if(resultLeft.success) {
-					result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+					result = __Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
 
 					// Try to convert the right side to double
 					if(!result.success && leftType.type == TYPE_INT) {
 						// Try to resolve the left side with double
-						result = Analyser_resolveExpressionType(analyser, binary->left, scope, (ValueType){.type = TYPE_DOUBLE, .isNullable = leftType.isNullable}, &leftType);
+						result = __Analyser_resolveExpressionType(analyser, binary->left, scope, (ValueType){.type = TYPE_DOUBLE, .isNullable = leftType.isNullable}, &leftType);
 						if(result.success && leftType.type == TYPE_DOUBLE) {
 							// Try to resolve the right side with the left side type
-							result = Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
+							result = __Analyser_resolveExpressionType(analyser, binary->right, scope, leftType, &rightType);
 							if(!result.success) return result;         // If this fails, there is nothing we can do
 						} else {
 							return resultRight;         // If this fails, there is nothing we can do
@@ -1460,15 +1461,15 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				}
 				// Left side failed, try to resolve it with right side type
 				else if(resultRight.success) {
-					result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+					result = __Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
 
 					// Try to convert the left side to double
 					if(!result.success && rightType.type == TYPE_INT) {
 						// Try to resolve the right side with double
-						result = Analyser_resolveExpressionType(analyser, binary->right, scope, (ValueType){.type = TYPE_DOUBLE, .isNullable = rightType.isNullable}, &rightType);
+						result = __Analyser_resolveExpressionType(analyser, binary->right, scope, (ValueType){.type = TYPE_DOUBLE, .isNullable = rightType.isNullable}, &rightType);
 						if(result.success && rightType.type == TYPE_DOUBLE) {
 							// Try to resolve the left side with the right side type
-							result = Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
+							result = __Analyser_resolveExpressionType(analyser, binary->left, scope, rightType, &leftType);
 							if(!result.success) return result;         // If this fails, there is nothing we can do
 						} else {
 							return resultLeft;         // If this fails, there is nothing we can do
@@ -1714,7 +1715,7 @@ AnalyserResult Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTN
 				ExpressionASTNode *expression = Array_get(interpolation->expressions, i);
 
 				ValueType type;
-				AnalyserResult result = Analyser_resolveExpressionType(analyser, expression, scope, prefferedType, &type);
+				AnalyserResult result = __Analyser_resolveExpressionType(analyser, expression, scope, prefferedType, &type);
 				if(!result.success) return result;
 
 				// NOTE: Not specified in the assignment, but Swift is okay with this (just prints some warnings)
