@@ -604,6 +604,17 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 				NULL
 			);
 		}
+
+		if(type.isNullable) {
+			return AnalyserError(
+				RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+				String_fromFormat(
+					"value of optional type '%s' must be unwrapped to a value of type 'Bool'",
+					__Analyser_stringifyType(type)->value
+				),
+				NULL
+			);
+		}
 	}
 
 	return AnalyserSuccess();
@@ -1577,7 +1588,7 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 						);
 					}
 
-					binary->type.isNullable = leftType.isNullable || rightType.isNullable;
+					binary->type.isNullable = false;
 					*outType = binary->type;
 				} break;
 
