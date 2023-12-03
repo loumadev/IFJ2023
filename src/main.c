@@ -1,3 +1,10 @@
+/**
+ * @file src/main.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +55,7 @@ int main(int argc, const char *argv[]) {
 	ParserResult result = Parser_parse(&parser);
 	if(!result.success) {
 		// TODO: Add error utils here
-		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n", result.message->value);
+		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n" RST, result.message->value);
 
 		Allocator_cleanup();
 		return result.type;
@@ -58,16 +65,17 @@ int main(int argc, const char *argv[]) {
 	AnalyserResult analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)result.node);
 	if(!analyserResult.success) {
 		// TODO: Add error utils here
-		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n", analyserResult.message->value);
+		fprintf(stderr, RED BOLD "error: " RST WHITE "%s\n" RST, analyserResult.message->value);
 
 		Allocator_cleanup();
 		return analyserResult.type;
 	}
 
 	// Generate the assembly
-	// TODO: Hook up the assembly generator here
 	Codegen_generate(&codegen);
 
 	Allocator_cleanup();
 	return 0;
 }
+
+/** End of file src/main.c **/

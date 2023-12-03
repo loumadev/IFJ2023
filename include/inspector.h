@@ -1,3 +1,10 @@
+/**
+ * @file include/inspector.h
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 
 #include "colors.h"
@@ -10,6 +17,8 @@
 #include "internal/Array.h"
 #include "internal/HashMap.h"
 #include "internal/TextRange.h"
+
+#include "compiler/lexer/Token.h"
 
 #define TYPE YELLOW
 #define FIELD BLUE
@@ -39,6 +48,7 @@ void _print_String(String *var);
 void _print_Array(Array *var);
 void _print_HashMap(HashMap *var);
 void _print_TextRange(TextRange *var);
+void _print_Token(Token *var);
 
 #define dumpvar(...) do { \
 		printf("\n" DARK_GREY "from %s:%d:" ENDL, __FILE__, __LINE__); \
@@ -58,11 +68,13 @@ void _print_TextRange(TextRange *var);
 		         double : _print_double, \
 		         bool : _print_boolean, \
 		         void* : _print_pointer, \
-		         /* Internal type */ \
+		         /* Internal types */ \
 		         String * : _print_String, \
 		         Array * : _print_Array, \
 		         HashMap * : _print_HashMap, \
 		         TextRange * : _print_TextRange, \
+		         /* Project types */ \
+		         Token * : _print_Token, \
 			 default: _print_pointer \
 		)(var); \
 } while(0);
@@ -117,3 +129,5 @@ char* format_char(char ch);
 void print_string(char *str, char *end);
 
 #endif
+
+/** End of file include/inspector.h **/

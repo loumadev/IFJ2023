@@ -967,6 +967,42 @@ DESCRIBE(if_statement_analysis, "Analysis of the if statements") {
 	TEST_BEGIN("Invalid type of test condition in if statement") {
 		Lexer_setSource(
 			&lexer,
+			"var a: Int? = 20" LF
+			"if(a) { }" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Bool? = false" LF
+			"if(a) { }" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 10" LF
+			"if(a == nil) { }" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
 			"var a: Int" LF
 			"a = 20" LF
 			"" LF
@@ -1739,7 +1775,7 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 			EXPECT_TRUE(parserResult.success);
 
 			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-			EXPECT_TRUE(analyserResult.success);
+			EXPECT_FALSE(analyserResult.success);
 		}
 		{
 			Lexer_setSource(
@@ -3467,7 +3503,7 @@ DESCRIBE(return_statement, "Analysis of a return statement") {
 		EXPECT_TRUE(parserResult.success);
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-		EXPECT_TRUE(analyserResult.success);
+		EXPECT_FALSE(analyserResult.success); // Required by the assignment
 	} TEST_END();
 
 	TEST_BEGIN("Valid assignment of the void expression to the void variable") {
@@ -3496,7 +3532,7 @@ DESCRIBE(return_statement, "Analysis of a return statement") {
 		EXPECT_TRUE(parserResult.success);
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
-		EXPECT_TRUE(analyserResult.success);
+		EXPECT_FALSE(analyserResult.success);
 	} TEST_END();
 
 	TEST_BEGIN("Invalid return statement with nullable expression") {
@@ -4027,6 +4063,23 @@ DESCRIBE(type_conversion, "Implicit type conversion") {
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Conversion of literals inside EQ/NEQ expressions") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Double? = 2.0" LF
+			"var b = a ?? 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+		VariableDeclaration *var = Analyser_getVariableByName(&analyser, "b", analyser.globalScope);
+		EXPECT_NOT_NULL(var);
+		EXPECT_TRUE(var->type.type == TYPE_DOUBLE);
 	} TEST_END();
 
 	TEST_BEGIN("Invalid conversion of literals inside EQ/NEQ expressions") {
@@ -5236,5 +5289,298 @@ DESCRIBE(havel_tests, "Havel's tests") {
 
 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
 		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+}
+
+DESCRIBE(bin_qe_null, "EQ/NEQ analysis with nullable arguments") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Non-nullable arguments") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"var b = 3" LF
+			"" LF
+			"var c = a == b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Left argument nullable") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var b = 3" LF
+			"" LF
+			"var c = a == b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Right argument nullable") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"var b: Int? = 3" LF
+			"" LF
+			"var c = a == b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Both arguments nullable") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var b: Int? = 3" LF
+			"" LF
+			"var c = a == b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Left argument direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"" LF
+			"var c = nil == a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Right argument direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"" LF
+			"var c = a == nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Both arguments direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var c = nil == nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Left argument nullable with right direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var c = a == nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Right argument nullable with left direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var c = nil == a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+}
+
+DESCRIBE(bin_gt_null, "GT/LT analysis with nullable arguments") {
+	Lexer lexer;
+	Lexer_constructor(&lexer);
+
+	Parser parser;
+	Parser_constructor(&parser, &lexer);
+
+	Analyser analyser;
+	Analyser_constructor(&analyser);
+
+	ParserResult parserResult;
+	AnalyserResult analyserResult;
+
+	TEST_BEGIN("Non-nullable arguments") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"var b = 3" LF
+			"" LF
+			"var c = a > b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Left argument nullable") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var b = 3" LF
+			"" LF
+			"var c = a > b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Right argument nullable") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"var b: Int? = 3" LF
+			"" LF
+			"var c = a > b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Both arguments nullable") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var b: Int? = 3" LF
+			"" LF
+			"var c = a > b" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Left argument direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"" LF
+			"var c = nil > a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Right argument direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a = 5" LF
+			"" LF
+			"var c = a > nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Both arguments direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var c = nil > nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Left argument nullable with right direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var c = a > nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("Right argument nullable with left direct null") {
+		Lexer_setSource(
+			&lexer,
+			"var a: Int? = 5" LF
+			"var c = nil > a" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+	} TEST_END();
+
+	TEST_BEGIN("IDK") {
+		Lexer_setSource(
+			&lexer,
+			"func f() {}" LF
+			"var c = f()" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
 	} TEST_END();
 }

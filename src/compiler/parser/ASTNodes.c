@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/parser/ASTNodes.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/parser/ASTNodes.h"
 
 #include "assertf.h"
@@ -304,3 +311,5 @@ void ASTNode_print(ASTNode *node) {
 	// TODO: Implement this
 	// assertf(0, "ASTNode_print not implemented");
 }
+
+/** End of file src/compiler/parser/ASTNodes.c **/

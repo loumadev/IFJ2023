@@ -1,3 +1,10 @@
+/**
+ * @file src/internal/TextRange.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <string.h>
 #include "inspector.h"
 #include "internal/String.h"
@@ -111,3 +118,5 @@ void TextRange_print(TextRange *range, unsigned int depth, int isProperty) {
 
 	print_type_end();
 }
+
+/** End of file src/internal/TextRange.c **/

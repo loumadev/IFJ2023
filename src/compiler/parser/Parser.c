@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/parser/Parser.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/parser/Parser.h"
 
 #include <stdbool.h>
@@ -150,26 +157,23 @@ ParserResult __Parser_parseBlock(Parser *parser, bool requireBraces) {
 
 		Array_push(statements, result.node);
 
-		if(requireBraces) {
-			peek = Lexer_peekToken(parser->lexer, 1);
-			if(!peek.success) return LexerToParserError(peek);
-		}
-
 		// Check for delimiter after statement
-		LexerResult spacePeek = Lexer_peekToken(parser->lexer, 0);
-		if(!peek.success) return LexerToParserError(spacePeek);
+		peek = Lexer_peekToken(parser->lexer, 1);
+		if(!peek.success) return LexerToParserError(peek);
 
 		// They don't want us to have semicolons :(
-		if(spacePeek.token->kind == TOKEN_SEMICOLON) {
+		if(peek.token->kind == TOKEN_SEMICOLON) {
 			return ParserError(
 				String_fromFormat("';' is not supported after statement, use new line instead"),
-				Array_fromArgs(1, spacePeek.token)
+				Array_fromArgs(1, peek.token)
 			);
-		} else if(!(spacePeek.token->whitespace & WHITESPACE_RIGHT_NEWLINE) && !Parser_isAtEnd(parser) && !requireBraces && spacePeek.token->kind != TOKEN_RIGHT_BRACE) {
-			return ParserError(
-				String_fromFormat("expected new line after statement"),
-				Array_fromArgs(1, spacePeek.token)
-			);
+		} else if(!(peek.token->whitespace & WHITESPACE_LEFT_NEWLINE) && !Parser_isAtEnd(parser)) {
+			if((requireBraces && peek.token->kind != TOKEN_RIGHT_BRACE) || !requireBraces) {
+				return ParserError(
+					String_fromFormat("expected new line after statement"),
+					Array_fromArgs(1, peek.token)
+				);
+			}
 		}
 	}
 
@@ -1038,12 +1042,11 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
-	// parse argument-list
+	// Parse argument-list
 	Array *arguments = Array_alloc(0);
 
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
-
 
 	while(peek.token->kind != TOKEN_RIGHT_PAREN) {
 		ParserResult argumentResult = __Parser_parseArgument(parser);
@@ -1055,18 +1058,26 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 		if(!peek.success) return LexerToParserError(peek);
 
 		if(peek.token->kind == TOKEN_COMMA) {
+			// Skip ','
 			result = Lexer_nextToken(parser->lexer);
 			if(!result.success) return LexerToParserError(result);
 
+			// Peek to the next argument
 			peek = Lexer_peekToken(parser->lexer, 1);
 			if(!peek.success) return LexerToParserError(peek);
+
+			// No argument after ','
+			if(peek.token->kind == TOKEN_RIGHT_PAREN) {
+				return ParserError(
+					String_fromFormat("expected expression in argument list"),
+					Array_fromArgs(1, peek.token));
+			}
 		}
 	}
 
-	// skip ')'
+	// Skip ')'
 	result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
-
 
 	ArgumentListASTNode *argumentList = new_ArgumentListASTNode(arguments);
 
@@ -1216,3 +1227,5 @@ ParserResult __Parser_parseStringInterpolation(Parser *parser) {
 //		...
 // 	}
 // }
+
+/** End of file src/compiler/parser/Parser.c **/

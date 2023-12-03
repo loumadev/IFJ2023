@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/Result.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdarg.h>
 #include "compiler/Result.h"
 #include "compiler/lexer/Token.h"
@@ -26,3 +33,5 @@ void Result_destructor(Result *result) {
 	result->message = NULL;
 	result->markers = NULL;
 }
+
+/** End of file src/compiler/Result.c **/

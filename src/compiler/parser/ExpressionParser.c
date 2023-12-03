@@ -1,11 +1,8 @@
 /**
- * @file ExpressionParser.c
- *
+ * @file src/compiler/parser/ExpressionParser.c
  * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz>
  * @brief Implementation of parsing of expressions.
- * 
  * @copyright Copyright (c) 2023
- * 
  */
 
 #include "compiler/parser/ExpressionParser.h"
@@ -383,10 +380,10 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	bottom->isPrefix = P_UNRESOLVED;
 	Array_push(stack, bottom);
 
-	bool reductionSuccess;
+	bool reductionSuccess = false;
 	bool isIdentifier = false;
 	int offset = 1;
-	enum PrecTableRelation operation;
+	enum PrecTableRelation operation = R;
 
 	LexerResult current = Lexer_peekToken(parser->lexer, offset);
 
@@ -537,3 +534,5 @@ ParserResult __Parser_parseExpression(Parser *parser) {
 	}
 	return ParserNoMatch();
 }
+
+/** End of file src/compiler/parser/ExpressionParser.c **/

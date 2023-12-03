@@ -1,3 +1,10 @@
+/**
+ * @file src/internal/Array.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "internal/Array.h"
 
 #include <stdarg.h>
@@ -328,3 +335,5 @@ void Array_print(Array *array, unsigned int depth, int isProperty) {
 
 	print_type_end();
 }
+
+/** End of file src/internal/Array.c **/

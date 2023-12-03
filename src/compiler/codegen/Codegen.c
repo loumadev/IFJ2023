@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/codegen/Codegen.c
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdio.h>
 
 #include "compiler/parser/ASTNodes.h"
@@ -109,7 +116,6 @@ void __Codegen_generateHelperVariables() {
 	Instruction_defvar_where("CONCAT_ARG1", FRAME_GLOBAL);
 	Instruction_defvar_where("CONCAT_ARG2", FRAME_GLOBAL);
 	Instruction_defvar_where("CONCAT_OUTPUT", FRAME_GLOBAL);
-
 	NEWLINE
 }
 
@@ -877,3 +883,5 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 		Instruction_pushs_func_result(functionCall->id->id);
 	}
 }
+
+/** End of file src/compiler/codegen/Codegen.c **/

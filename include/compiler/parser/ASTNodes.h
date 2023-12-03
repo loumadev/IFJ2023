@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/parser/ASTNodes.h
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdbool.h>
 
 #include "internal/Array.h"
@@ -62,7 +69,7 @@ typedef enum OperatorType {
 	OPERATOR_HALF_OPEN_RANGE
 } OperatorType;
 
-enum BuiltInTypes {
+enum BuiltInType {
 	TYPE_NIL = -2,
 	TYPE_UNKNOWN = -1,
 	TYPE_INVALID = 0,
@@ -93,7 +100,7 @@ enum BuiltInFunction {
 #define is_type_equal(type1, type2) ((type1).type == (type2).type && (type1).isNullable == (type2).isNullable)
 
 typedef struct ValueType {
-	enum BuiltInTypes type;
+	enum BuiltInType type;
 	bool isNullable;
 } ValueType;
 
@@ -342,3 +349,5 @@ void ASTNode_print(ASTNode *node);
 #define prepare_node_of(dataType, nodeType) dataType *node = (dataType*)ASTNode_alloc(sizeof(dataType), nodeType);
 
 #endif
+
+/** End of file include/compiler/parser/ASTNodes.h **/

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 testNum=1
+testsFailed=0
 compilerPath="../../bin/main"
 
 # arguments:
@@ -23,14 +24,27 @@ execTest() {
 		if [ $returnCode -ne 0 ]; then
 			cat <tmp_output.txt
 		fi
+		testsFailed=$((testsFailed + 1))
 	elif [ -z "$(diff --ignore-trailing-space --ignore-blank-lines tmp_output2.txt $3)" ]; then
 		printf "\e[1m\e[32mPassed\e[0m Test %02d: $1\n" $testNum
 	else
 		printf "\e[1m\e[31mFailed\e[0m Test %02d: $1\n" $testNum
 		diff tmp_output2.txt $3 | colordiff
+		testsFailed=$((testsFailed + 1))
 	fi
 	testNum=$((testNum + 1))
 	rm -f tmp_output.txt tmp_output2.txt
+}
+
+printResults() {
+	printf "\n\e[33m================================\e[0m\n"
+	printf "\e[1m\e[37m Run $((testNum - 1)) tests in total\e[0m\n\n"
+	if [ $testsFailed -eq 0 ]; then
+		printf "\e[1m\e[32m $(($testNum - 1)) tests passed\e[0m\n"
+	else
+		printf "\e[1m\e[31m $testsFailed tests failed\e[0m\n"
+	fi
+	printf "\e[33m================================\e[0m\n"
 }
 
 execTest "Empty program" "input/empty.swift" "output/empty.txt" 0
@@ -136,3 +150,5 @@ execTest "Implicit conversions in variable declarations" "input/var_init_implici
 execTest "Illegal implicit conversions in variable declarations" "input/var_init_implicit_convert_bad.swift" "output/empty.txt" 7
 execTest "Implicit conversions in variable assignment" "input/assignment_implicit_convert.swift" "output/empty.txt" 0
 execTest "Illegal implicit conversions in variable assignment" "input/assignment_implicit_convert_wrong.swift" "output/empty.txt" 7
+
+printResults

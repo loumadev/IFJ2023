@@ -1,3 +1,10 @@
+/**
+ * @file include/internal/Array.h
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include <stdlib.h>
 
 #ifndef ARRAY_H
@@ -9,12 +16,6 @@ typedef struct Array {
 	size_t capacity;
 } Array;
 
-/**
- * Initializes an array.
- *
- * @param array The array to initialize.
- * @param capacity Initial capacity of the array. (must be > 0)
- */
 void Array_constructor(Array *array, size_t capacity);
 
 /**
@@ -184,3 +185,5 @@ Array* Array_alloc(size_t size);
 void Array_free(Array *array);
 
 #endif
+
+/** End of file include/internal/Array.h **/

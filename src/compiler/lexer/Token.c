@@ -1,3 +1,10 @@
+/**
+ * @file src/compiler/lexer/Token.c
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/lexer/Token.h"
 #include "allocator/MemoryAllocator.h"
 #include "inspector.h"
@@ -82,3 +89,5 @@ char* Token_toString(Token *token) {
 
 	return "unknown";
 }
+
+/** End of file src/compiler/lexer/Token.c **/

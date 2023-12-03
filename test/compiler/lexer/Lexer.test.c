@@ -1378,6 +1378,36 @@ DESCRIBE(string_tokenization, "String literals tokenization") {
 		EXPECT_TRUE(String_equals(token->value.string, "abc"));
 		EXPECT_EQUAL_INT(token->value.string->length, 3);
 	})
+
+	TEST_BEGIN("Single hexadecimal escape sequence") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\\u{0041}\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "A"));
+		EXPECT_EQUAL_INT(token->value.string->length, 1);
+	} TEST_END();
+
+	TEST_BEGIN("Multiple hexadecimal escape sequences") {
+		result = Lexer_tokenize(
+			&lexer,
+			"\"\\u{1}\\u{37}\\u{71}\\u{7e}\\u{7f}\"" LF
+		);
+		EXPECT_TRUE(result.success);
+		EXPECT_EQUAL_INT(lexer.tokens->size, 2);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "\x1\x37\x71\x7e\x7f"));
+		EXPECT_EQUAL_INT(token->value.string->length, 5);
+	} TEST_END();
 }
 
 DESCRIBE(ml_string_token_single, "Multiline string literals tokenization on a single line") {

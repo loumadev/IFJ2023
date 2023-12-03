@@ -1,0 +1,170 @@
+digraph finite_state_machine {
+	rankdir=LR;
+	size="8,5"
+
+	node [shape = diamond]; "Start";
+	node [shape = doublecircle];
+	node [shape = circle];
+
+	// Whitespace
+	{
+		node [shape = circle]; "SLCMT"; "MLCMT";
+		node [shape = doublecircle]; "SP"; "LF"; "SLCMT_e"; "MLCMT_e";
+
+		// Space-like white space
+		"Start" -> "SP" [ label = "SP" ];
+		"Start" -> "SP" [ label = "FF" ];
+		"Start" -> "SP" [ label = "TAB" ];
+
+		// Line-break white space
+		"Start" -> "LF" [ label = "LF" ];
+		"Start" -> "LF" [ label = "CRLF" ];
+
+		// Single-line comment white space
+		"Start" -> "SLCMT" [ label = "'//'" ];
+
+		// Multi-line comment white space
+		"Start" -> "MLCMT" [ label = "'/*' / dpt = 1" ];
+
+		subgraph cluster_whitespace {
+			// style=filled;
+			// color=lightgrey;
+			// node [style=filled,color=white];
+			label = "Whitespace";
+
+			// Space-like white space
+			"SP" -> "SP" [ label = "SP" ];
+			"SP" -> "SP" [ label = "FF" ];
+			"SP" -> "SP" [ label = "TAB" ];
+
+			// Line-break white space
+			"LF" -> "LF" [ label = "LF" ];
+			"LF" -> "LF" [ label = "CRLF" ];
+
+			// Single-line comment white space
+			"SLCMT" -> "SLCMT" [ label = "any" ];
+			"SLCMT" -> "SLCMT_e" [ label = "LF" ];
+			"SLCMT" -> "SLCMT_e" [ label = "CR" ];
+			"SLCMT" -> "SLCMT_e" [ label = "EOF" ];
+
+			// Multi-line comment white space
+			"MLCMT" -> "MLCMT" [ label = "any" ];
+			"MLCMT" -> "MLCMT" [ label = "'/*' / dpt++" ];
+			// "MLCMT" -> "MLCMT" [ label = "'*/' / dpt--" ];
+			"MLCMT" -> "MLCMT_e" [ label = "'*/' / dpt--" ];
+			"MLCMT_e" -> "MLCMT" [ label = "ε / dpt != 0" ];
+		}
+	}
+
+	//Identifiers
+	{
+		node [shape = circle];
+		node [shape = doublecircle]; "ID";
+
+		"Start" -> "ID" [ label = "/[a-zA-Z_]/" ];
+
+		subgraph cluster_identifier {
+			// style=filled;
+			// color=lightgrey;
+			// node [style=filled,color=white];
+			label = "Identifier";
+
+			"ID" -> "ID" [ label = "/[a-zA-Z0-9_]/" ];
+		}
+	}
+
+	// Numbers
+	{
+		node [shape = circle]; "NUM_dot"; "NUM_e"; "NUM_e_s";
+		node [shape = circle]; "BIN"; "OCT"; "HEX";
+		node [shape = doublecircle]; "NUM_dec";
+
+		"Start" -> "NUM_dec" [ label = "/[0-9]/" ];
+		"Start" -> "BIN" [ label = "0b" ];
+		"Start" -> "OCT" [ label = "0o" ];
+		"Start" -> "HEX" [ label = "0x" ];
+
+		subgraph cluster_number {
+			// style=filled;
+			// color=lightgrey;
+			// node [style=filled,color=white];
+			label = "Number";
+
+			// Base 10
+			"NUM_dec" -> "NUM_dec" [ label = "/[0-9_]/" ];
+			"NUM_dec" -> "NUM_dot" [ label = "'.'" ];
+			"NUM_dot" -> "NUM_flt" [ label = "/[0-9]/" ];
+			"NUM_flt" -> "NUM_flt" [ label = "/[0-9_]/" ];
+			"NUM_flt" -> "NUM_e" [ label = "/[eE]/" ];
+			"NUM_dec" -> "NUM_e" [ label = "/[eE]/" ];
+			"NUM_e" -> "NUM_e_s" [ label = "/[+-]/" ];
+			"NUM_e_s" -> "NUM_exp" [ label = "/[0-9]/" ];
+			"NUM_e" -> "NUM_exp" [ label = "/[0-9]/" ];
+			"NUM_exp" -> "NUM_exp" [ label = "/[0-9_]/" ];
+
+
+			// Other bases
+			"BIN" -> "BIN_d" [ label = "/[01]/" ];
+			"BIN_d" -> "BIN_d" [ label = "/[01_]/" ];
+
+			"OCT" -> "OCT_d" [ label = "/[0-7]/" ];
+			"OCT_d" -> "OCT_d" [ label = "/[0-7_]/" ];
+
+			"HEX" -> "HEX_d" [ label = "/[0-9a-fA-F]/" ];
+			"HEX_d" -> "HEX_d" [ label = "/[0-9a-fA-F_]/" ];
+		}
+	}
+
+	// Strings
+	{
+		node [shape = circle]; "STR"; "MLSTR"; "STR_esc"; "STR_u"; "MLSTR_esc"; "MLSTR_u"; "MLSTR_i";
+		node [shape = doublecircle]; "STR_e"; "MLSTR_e";
+
+		"Start" -> "STR" [ label = "'\"'" ];
+		"Start" -> "MLSTR" [ label = "'\"\"\"'+LF" ];
+
+		subgraph cluster_string {
+			// style=filled;
+			// color=lightgrey;
+			// node [style=filled,color=white];
+			label = "String";
+
+			// Single-line string
+			"STR" -> "STR" [ label = "any" ];
+
+			"STR" -> "STR_esc" [ label = "'\\'" ];
+			// "STR_esc" -> "STR" [ label = "'0'" ];
+			// "STR_esc" -> "STR" [ label = "'\\'" ];
+			// "STR_esc" -> "STR" [ label = "'t'" ];
+			// "STR_esc" -> "STR" [ label = "'n'" ];
+			// "STR_esc" -> "STR" [ label = "'r'" ];
+			// "STR_esc" -> "STR" [ label = "'\"'" ];
+			// "STR_esc" -> "STR" [ label = "\"'\"" ];
+			"STR_esc" -> "STR" [ label = "/[\\\\0tnr\"']/" ];
+			"STR_esc" -> "STR" [ label = "any" ];
+			"STR_esc" -> "STR_u" [ label = "'u{'" ];
+
+			"STR_u" -> "STR_u" [ label = "/[0-9a-fA-F]/" ];
+			"STR_u" -> "STR" [ label = "'}'" ];
+
+			"STR" -> "STR_e" [ label = "'\"'" ];
+
+
+			// Multi-line string
+			"MLSTR" -> "MLSTR" [ label = "any" ];
+			
+			"MLSTR" -> "MLSTR_esc" [ label = "'\\'" ];
+			"MLSTR_esc" -> "MLSTR" [ label = "/[\\\\0tnr\"']/" ];
+			"MLSTR_esc" -> "MLSTR" [ label = "any" ];
+			"MLSTR_esc" -> "MLSTR_u" [ label = "'u{'" ];
+			"MLSTR_esc" -> "MLSTR_i" [ label = "'('" ];
+
+			"MLSTR_u" -> "MLSTR_u" [ label = "/[0-9a-fA-F]/" ];
+			"MLSTR_u" -> "MLSTR" [ label = "'}'" ];
+
+			"MLSTR_i" -> "Start";
+
+			"MLSTR" -> "MLSTR_e" [ label = "LF+'\"\"\"'" ];
+		}
+	}
+}

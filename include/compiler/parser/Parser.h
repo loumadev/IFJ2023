@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/parser/Parser.h
+ * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #include "compiler/parser/ASTNodes.h"
 #include "compiler/parser/ParserResult.h"
 
@@ -24,3 +31,5 @@ LexerResult Parser_flushLastLexerError(Parser *parser);
 #define FLUSH_ERROR_BUFFER(parser) if(Parser_hasLexerError(parser)) return LexerToParserError(Parser_flushLastLexerError(parser))
 
 #endif
+
+/** End of file include/compiler/parser/Parser.h **/
