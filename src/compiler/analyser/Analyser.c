@@ -1333,6 +1333,17 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 					AnalyserResult result = __Analyser_resolveExpressionType(analyser, unary->argument, scope, (ValueType){.type = prefferedType.type, .isNullable = true}, &type);
 					if(!result.success) return result;
 
+					if(type.type == TYPE_NIL) {
+						return AnalyserError(
+							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
+							String_fromFormat(
+								"'nil' literal cannot be force unwrapped",
+								__Analyser_stringifyType(type)->value
+							),
+							NULL
+						);
+					}
+
 					if(!type.isNullable) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_INVALID_TYPE, // TODO ?
