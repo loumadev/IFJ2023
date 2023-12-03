@@ -29,7 +29,7 @@ void __Codegen_generateLength();
 void __Codegen_generateSubstring();
 
 // User functions
-void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration);
+void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration *functionDeclaration);
 
 // Walking AST functions
 void __Codegen_generateMain(Codegen *codegen);
@@ -349,25 +349,30 @@ void __Codegen_generateUserFunctions(Codegen *codegen) {
 
 	for(size_t i = 0; i < functions->size; i++) {
 		FunctionDeclaration *function = (FunctionDeclaration*)Array_get(functions, i);
-		__Codegen_generateFunctionDeclaration(codegen, function->node);
+		__Codegen_generateFunctionDeclaration(codegen, function);
 	}
 }
 
-void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclarationASTNode *functionDeclaration) {
-	if(functionDeclaration->builtin != FUNCTION_NONE) {
+void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration *functionDeclaration) {
+	if(functionDeclaration->node->builtin != FUNCTION_NONE) {
 		return;
 	}
 
-	COMMENT_FUNC(functionDeclaration)
-
+	COMMENT_FUNC(functionDeclaration->node)
 	codegen->frame = FRAME_LOCAL;
-	Instruction_label_func(functionDeclaration->id->id);
+	Instruction_label_func(functionDeclaration->id);
 
-	// Overhead
+    // Overhead
 	Instruction_pushframe();
 
+    Array * variables = HashMap_values(functionDeclaration->variables);
+    for(size_t i = 0; i < variables->size; i++) {
+        VariableDeclaration *declaration = (VariableDeclaration*)Array_get(variables, i);
+        __Codegen_generateVariableDeclaration(codegen, declaration);
+    }
+
 	// Process body
-	__Codegen_evaluateBlock(codegen, functionDeclaration->body);
+	__Codegen_evaluateBlock(codegen, functionDeclaration->node->body);
 
 	// Implicit return
 	Instruction_return();
@@ -483,7 +488,7 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 }
 
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement) {
-	COMMENT_WHILE(whileStatement->id)
+    COMMENT_WHILE(whileStatement->id)
 	// Start label
 	Instruction_label_while_start(whileStatement->id);
 
@@ -625,7 +630,7 @@ void __Codegen_evaluateVariableDeclarator(Codegen *codegen, VariableDeclaratorAS
 	if(Analyser_isDeclarationGlobal(codegen->analyser, variableDeclarator->pattern->id->id)) {
 		Instruction_pops(variableDeclarator->pattern->id->id, FRAME_GLOBAL);
 	} else {
-		Instruction_defvar(variableDeclarator->pattern->id->id, codegen->frame);
+//		Instruction_defvar(variableDeclarator->pattern->id->id, codegen->frame);
 		Instruction_pops(variableDeclarator->pattern->id->id, codegen->frame);
 	}
 	NEWLINE
