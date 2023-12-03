@@ -1622,7 +1622,7 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 				} break;
 
 				case OPERATOR_NULL_COALESCING: {
-					if(leftType.type != rightType.type) {
+					if(leftType.type != rightType.type && leftType.type != TYPE_NIL) {
 						return AnalyserError(
 							RESULT_ERROR_SEMANTIC_INVALID_TYPE,
 							String_fromFormat(
