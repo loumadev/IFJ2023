@@ -1194,7 +1194,7 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 						AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, (ValueType){.type = TYPE_UNKNOWN, .isNullable = false}, &type);
 						if(!result.success) return result;
 
-						if(!is_type_valid(type.type) || type.type == TYPE_VOID) {
+						if((!is_type_valid(type.type) || type.type == TYPE_VOID) && type.type != TYPE_NIL) {
 							return AnalyserError(
 								RESULT_ERROR_SEMANTIC_INVALID_FUNCTION_CALL_TYPE,
 								String_fromFormat(
