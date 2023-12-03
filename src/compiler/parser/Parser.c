@@ -1042,12 +1042,11 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 	LexerResult result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
 
-	// parse argument-list
+	// Parse argument-list
 	Array *arguments = Array_alloc(0);
 
 	LexerResult peek = Lexer_peekToken(parser->lexer, 1);
 	if(!peek.success) return LexerToParserError(peek);
-
 
 	while(peek.token->kind != TOKEN_RIGHT_PAREN) {
 		ParserResult argumentResult = __Parser_parseArgument(parser);
@@ -1059,18 +1058,26 @@ ParserResult __Parser_parseArgumentList(Parser *parser) {
 		if(!peek.success) return LexerToParserError(peek);
 
 		if(peek.token->kind == TOKEN_COMMA) {
+			// Skip ','
 			result = Lexer_nextToken(parser->lexer);
 			if(!result.success) return LexerToParserError(result);
 
+			// Peek to the next argument
 			peek = Lexer_peekToken(parser->lexer, 1);
 			if(!peek.success) return LexerToParserError(peek);
+
+			// No argument after ','
+			if(peek.token->kind == TOKEN_RIGHT_PAREN) {
+				return ParserError(
+					String_fromFormat("expected expression in argument list"),
+					Array_fromArgs(1, peek.token));
+			}
 		}
 	}
 
-	// skip ')'
+	// Skip ')'
 	result = Lexer_nextToken(parser->lexer);
 	if(!result.success) return LexerToParserError(result);
-
 
 	ArgumentListASTNode *argumentList = new_ArgumentListASTNode(arguments);
 
