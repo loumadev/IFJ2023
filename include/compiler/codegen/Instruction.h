@@ -1,7 +1,7 @@
 /**
  * @file include/compiler/codegen/Instruction.h
- * @author Author Name <xlogin00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Jaroslav Novotny <xnovot2r@stud.fit.vutbr.cz>
+ * @brief Header containing function definitions for instruction set.
  * @copyright Copyright (c) 2023
  */
 
@@ -191,6 +191,8 @@ void Instruction_move_float_id(enum Frame destinationScope, size_t id, double va
 void Instruction_move_bool_id(enum Frame destinationScope, size_t id, bool value);
 
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value);
+
+void Instruction_add_int_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source, int value);
 
 #endif // INSTRUCTION_H
 

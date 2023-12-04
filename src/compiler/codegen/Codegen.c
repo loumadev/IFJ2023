@@ -1,7 +1,7 @@
 /**
  * @file src/compiler/codegen/Codegen.c
- * @author Author Name <xlogin00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Jaroslav Novotny <xnovot2r@stud.fit.vutbr.cz>
+ * @brief Implementation of code generation.
  * @copyright Copyright (c) 2023
  */
 
@@ -48,7 +48,8 @@ void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block);
 void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *functionCall);
 void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAstNode);
 void __Codegen_evaluateReturnStatement(Codegen *codegen, ReturnStatementASTNode *returnStatement);
-void __Codegen_evaluateBindingCondition(Codegen *codegen, const OptionalBindingConditionASTNode *optionalBindingCondition);
+void __Codegen_evaluateBindingCondition(Codegen *codegen, OptionalBindingConditionASTNode *optionalBindingCondition);
+//void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forStatement);
 
 // Optimalizations
 void __Codegen_generateCoalescing();
@@ -433,6 +434,21 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 			ExpressionStatementASTNode *expressionStatement = (ExpressionStatementASTNode*)statementAstNode;
 			__Codegen_evaluateExpressionStatement(codegen, expressionStatement);
 		} break;
+		case NODE_FOR_STATEMENT: {
+//			ForStatementASTNode *forStatement = (ForStatementASTNode*)statementAstNode;
+//			__Codegen_evaluateForStatement(codegen, forStatement);
+            fassertf("[Codegen] For statement not implemented.");
+		} break;
+		case NODE_BREAK_STATEMENT: {
+			fassertf("[Codegen] Break statement outside of loop.");
+//            BreakStatementASTNode *breakStatement = (BreakStatementASTNode*)statementAstNode;
+//            __Codegen_evaluateBreakStatement(codegen, breakStatement);
+		} break;
+		case NODE_CONTINUE_STATEMENT: {
+			fassertf("[Codegen] Continue statement outside of loop.");
+//            ContinueStatementASTNode *continueStatement = (ContinueStatementASTNode*)statementAstNode;
+//            __Codegen_evaluateContinueStatement(codegen, continueStatement);
+		} break;
 		case NODE_FUNCTION_DECLARATION: {
 			// Declarations are generated at the beginning of the file
 		} break;
@@ -441,7 +457,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 	}
 }
 
-void __Codegen_evaluateBindingCondition(Codegen *codegen, const OptionalBindingConditionASTNode *optionalBindingCondition) {
+void __Codegen_evaluateBindingCondition(Codegen *codegen, OptionalBindingConditionASTNode *optionalBindingCondition) {
 	Instruction_defvar(optionalBindingCondition->id->id, codegen->frame);
 	Instruction_move_id(codegen->frame, optionalBindingCondition->id->id, FRAME_GLOBAL, optionalBindingCondition->fromId);
 	Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
@@ -873,8 +889,6 @@ void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *fun
 void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *functionCall) {
 	Array *arguments = functionCall->argumentList->arguments;
 
-	Instruction_createframe();
-
 	FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, functionCall->id->id);
 	assertf(functionDeclaration != NULL, "Could not find function declaration with id %ld", functionCall->id->id);
 
@@ -882,15 +896,20 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 
 	for(size_t i = 0; i < arguments->size; ++i) {
 		ArgumentASTNode *argument = Array_get(arguments, i);
-		ParameterASTNode *parameter = Array_get(parameters, i);
-		size_t parameterId = parameter->internalId->id;
-
-		Instruction_defvar(parameterId, FRAME_TEMPORARY);
 
 		__Codegen_evaluateExpression(codegen, argument->expression);
-
-		Instruction_pops(parameterId, FRAME_TEMPORARY);
 	}
+
+    Instruction_createframe();
+
+    for(int i = arguments->size - 1; i > -1 ; --i) {
+        ParameterASTNode *parameter = Array_get(parameters, i);
+        size_t parameterId = parameter->internalId->id;
+
+        Instruction_defvar(parameterId, FRAME_TEMPORARY);
+        Instruction_pops(parameterId, FRAME_TEMPORARY);
+    }
+
 
 	if(functionDeclaration->returnType.type != TYPE_VOID) {
 		Instruction_defretvar(functionCall->id->id, FRAME_TEMPORARY);
@@ -901,6 +920,45 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 	if(functionDeclaration->returnType.type != TYPE_VOID) {
 		Instruction_pushs_func_result(functionCall->id->id);
 	}
+}
+
+void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forStatement) {
+    Instruction_label("for_cycle");
+
+    __Codegen_evaluateExpression(codegen, forStatement->range->start);
+    Instruction_defvar(forStatement->iterator->id, codegen->frame);
+    Instruction_pops(forStatement->iterator->id, codegen->frame);
+
+    Instruction_defvar_where("for_end", codegen->frame);
+    __Codegen_evaluateExpression(codegen, forStatement->range->end);
+    Instruction_pops_where("for_end", codegen->frame);
+
+    Instruction_jump("for_cycle_test");
+
+    Instruction_label("for_cycle_iterate");
+    // Increment iterator
+    Instruction_add_int_id(codegen->frame, forStatement->iterator->id, codegen->frame, forStatement->iterator->id, 1);
+
+    Instruction_label("for_cycle_test");
+    if(forStatement->range->operator == OPERATOR_LESS) {
+        Instruction_pushs_var(forStatement->iterator->id, codegen->frame);
+        Instruction_pushs_var_named("for_end", codegen->frame);
+        Instruction_lts();
+    } else {
+        Instruction_pushs_var(forStatement->iterator->id, codegen->frame);
+        Instruction_pushs_var_named("for_end", codegen->frame);
+        Instruction_gts();
+        Instruction_nots();
+    }
+
+    Instruction_pushs_bool(true);
+    Instruction_jump_ifeqs("for_cycle_end");
+
+    Instruction_label("for_cycle_start");
+    __Codegen_evaluateBlock(codegen, forStatement->body);
+    Instruction_jump("for_cycle_iterate");
+
+    Instruction_label("for_cycle_end");
 }
 
 /** End of file src/compiler/codegen/Codegen.c **/

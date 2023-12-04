@@ -1,7 +1,7 @@
 /**
  * @file include/compiler/codegen/Codegen.h
- * @author Author Name <xlogin00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Jaroslav Novotny <xnovot2r@stud.fit.vutbr.cz>
+ * @brief Header containing function definitions for code generator.
  * @copyright Copyright (c) 2023
  */
 
@@ -21,8 +21,6 @@ enum Frame {
 typedef struct Codegen {
 	Analyser *analyser;
 	enum Frame frame;
-    enum BuiltInType lastPushedType;
-    bool containsReturns;
 } Codegen;
 
 void Codegen_constructor(Codegen *codegen, Analyser *analyser);
