@@ -1929,8 +1929,11 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					);
 				}
 
-				// Both name and label are the same
-				if(parameter->externalId && String_equals(name, parameter->externalId->name->value)) {
+				bool areNamesEqual = parameter->externalId && String_equals(name, parameter->externalId->name->value);
+				bool isUnderscoreDeclaration = parameter->isLabeless && areNamesEqual;
+
+				// Both name and label are the same (only if the parameter has an external name)
+				if(!isUnderscoreDeclaration && areNamesEqual) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("parameter name same as external label '%s'", name->value),
@@ -1964,19 +1967,21 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				parameter->type->type = variable->type;
 				parameter->internalId->id = variable->id;
 
-				// If the parameter is not in the hashmap yet
-				if(!HashMap_has(variables, name->value)) {
-					// Add the parameter to the hashmap
-					HashMap_set(variables, name->value, variable);
-					continue;
-				}
+				if(!isUnderscoreDeclaration) {
+					// If the parameter is not in the hashmap yet
+					if(!HashMap_has(variables, name->value)) {
+						// Add the parameter to the hashmap
+						HashMap_set(variables, name->value, variable);
+						continue;
+					}
 
-				// There is already a parameter with the same name
-				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed?
-					String_fromFormat("invalid redeclaration of '%s'", name->value),
-					NULL
-				);
+					// There is already a parameter with the same name
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed?
+						String_fromFormat("invalid redeclaration of '%s'", name->value),
+						NULL
+					);
+				}
 			}
 		}
 
