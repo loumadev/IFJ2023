@@ -1,7 +1,8 @@
 /**
  * @file src/compiler/parser/Parser.c
  * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Radim Mifka <xmifka00@stud.fit.vutbr.cz>
+ * @brief Implemetation of recusive descent parser.
  * @copyright Copyright (c) 2023
  */
 

@@ -1,6 +1,7 @@
 ##
 # File: Makefile
 # Author: Jaroslav Louma (xlouma00@stud.fit.vutbr.cz)
+# Author: Radim Mifka (xmifka00@stud.fit.vutbr.cz)
 # Date: 2023-09-01
 # Brief: This file is part of the IFJ23 project.
 ##
