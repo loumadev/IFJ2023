@@ -286,6 +286,7 @@ InterpolationExpressionASTNode* new_InterpolationExpressionASTNode(
 	prepare_node_of(InterpolationExpressionASTNode, NODE_INTERPOLATION_EXPRESSION)
 	node->strings = strings;
 	node->expressions = expressions;
+	node->concatenated = NULL;
 	return node;
 }
 

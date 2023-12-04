@@ -92,8 +92,19 @@ enum BuiltInFunction {
 	FUNCTION_SUBSTRING,
 	FUNCTION_ORD,
 	FUNCTION_CHR,
+	FUNCTION_INTERNAL_STRINGIFY_DOUBLE,
+	FUNCTION_INTERNAL_STRINGIFY_INT,
+	FUNCTION_INTERNAL_STRINGIFY_BOOL,
+	FUNCTION_INTERNAL_STRINGIFY_STRING,
+	FUNCTION_INTERNAL_MODULO,
 	FUNCTIONS_COUNT
 };
+
+#define is_func_valid(func) ((func) < FUNCTIONS_COUNT)
+#define is_func_user_defined(func) ((func) == FUNCTION_NONE)
+#define is_func_builtin(func) ((func) > FUNCTION_NONE && (func) < FUNCTION_INTERNAL_STRINGIFY_DOUBLE)
+#define is_func_internal(func) ((func) >= FUNCTION_INTERNAL_STRINGIFY_DOUBLE && (func) < FUNCTIONS_COUNT)
+#define is_func_generable(func) (is_func_user_defined(func) || is_func_internal(func))
 
 #define is_type_valid(type) ((type) > TYPE_INVALID)
 #define is_value_assignable(dst, src) (((dst).type == (src).type || (src).type == TYPE_NIL) && ((dst).isNullable || !(src).isNullable))
@@ -252,6 +263,7 @@ typedef struct InterpolationExpressionASTNode {
 	enum ASTNodeType _type;
 	Array /*<String>*/ *strings;
 	Array /*<ExpressionASTNode>*/ *expressions; // Always has one less element than strings
+	BinaryExpressionASTNode *concatenated;
 } InterpolationExpressionASTNode;
 
 typedef struct PatternASTNode {

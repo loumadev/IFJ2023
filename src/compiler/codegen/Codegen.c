@@ -354,7 +354,7 @@ void __Codegen_generateUserFunctions(Codegen *codegen) {
 }
 
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration *functionDeclaration) {
-	if(functionDeclaration->node->builtin != FUNCTION_NONE) {
+	if(!is_func_generable(functionDeclaration->node->builtin)) {
 		return;
 	}
 
@@ -362,14 +362,14 @@ void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 	codegen->frame = FRAME_LOCAL;
 	Instruction_label_func(functionDeclaration->id);
 
-    // Overhead
+	// Overhead
 	Instruction_pushframe();
 
-    Array * variables = HashMap_values(functionDeclaration->variables);
-    for(size_t i = 0; i < variables->size; i++) {
-        VariableDeclaration *declaration = (VariableDeclaration*)Array_get(variables, i);
-        __Codegen_generateVariableDeclaration(codegen, declaration);
-    }
+	Array *variables = HashMap_values(functionDeclaration->variables);
+	for(size_t i = 0; i < variables->size; i++) {
+		VariableDeclaration *declaration = (VariableDeclaration*)Array_get(variables, i);
+		__Codegen_generateVariableDeclaration(codegen, declaration);
+	}
 
 	// Process body
 	__Codegen_evaluateBlock(codegen, functionDeclaration->node->body);
@@ -488,7 +488,7 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 }
 
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement) {
-    COMMENT_WHILE(whileStatement->id)
+	COMMENT_WHILE(whileStatement->id)
 	// Start label
 	Instruction_label_while_start(whileStatement->id);
 
@@ -522,6 +522,8 @@ void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNod
 
 // TODO: Careful, there are some exceptions when working with nils
 void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
+	assertf(expression != NULL);
+
 	switch(expression->operator) {
 		case OPERATOR_PLUS: {
 			if(expression->type.type == TYPE_STRING) {
@@ -691,6 +693,9 @@ void __Codegen_evaluateExpressionStatement(Codegen *codegen, ExpressionStatement
 }
 
 void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expression) {
+	assertf(codegen != NULL);
+	assertf(expression != NULL);
+
 	switch(expression->_type) {
 		case NODE_LITERAL_EXPRESSION: {
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)expression;
@@ -707,7 +712,7 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 		case NODE_FUNCTION_CALL: {
 			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression;
 			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
-			if(builtin != FUNCTION_NONE) {
+			if(is_func_builtin(builtin)) {
 				__Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
 			} else {
 				__Codegen_evaluateFunctionCall(codegen, functionCall);
@@ -722,8 +727,11 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 			__Codegen_evaluateBinaryExpression(codegen, binaryExpression);
 		} break;
 		case NODE_INTERPOLATION_EXPRESSION: {
-			fassertf("Interpolation not implemented yet.");
-		}
+			InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)expression;
+			assertf(interpolation);
+			assertf(interpolation->concatenated);
+			__Codegen_evaluateBinaryExpression(codegen, interpolation->concatenated);
+		} break;
 		default:
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 	}
@@ -847,6 +855,15 @@ void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *fun
 			// Handle return value
 			Instruction_pushs_var_named("RETVAL_CHR", FRAME_TEMPORARY);
 		} break;
+		case FUNCTION_INTERNAL_STRINGIFY_DOUBLE:
+		case FUNCTION_INTERNAL_STRINGIFY_INT:
+		case FUNCTION_INTERNAL_STRINGIFY_BOOL:
+		case FUNCTION_INTERNAL_STRINGIFY_STRING:
+		case FUNCTION_INTERNAL_MODULO: {
+			fassertf("Hot here");
+			// Internal functions are handled as user defined functions
+			__Codegen_evaluateFunctionCall(codegen, functionCall);
+		} break;
 		case FUNCTIONS_COUNT:
 		case FUNCTION_NONE:
 			fassertf("Expected builtin function, got user defined.");
@@ -859,6 +876,8 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 	Instruction_createframe();
 
 	FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, functionCall->id->id);
+	assertf(functionDeclaration != NULL, "Could not find function declaration with id %ld", functionCall->id->id);
+
 	Array *parameters = functionDeclaration->node->parameterList->parameters;
 
 	for(size_t i = 0; i < arguments->size; ++i) {
