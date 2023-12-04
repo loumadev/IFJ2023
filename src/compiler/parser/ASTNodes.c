@@ -1,6 +1,7 @@
 /**
  * @file src/compiler/parser/ASTNodes.c
  * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
+ * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz> 
  * @brief This file is part of the IFJ23 project.
  * @copyright Copyright (c) 2023
  */
