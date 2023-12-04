@@ -1,8 +1,9 @@
 /**
  * @file src/compiler/parser/ASTNodes.c
  * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
- * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz> 
- * @brief This file is part of the IFJ23 project.
+ * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz>
+ * @author Radim Mifka <xmifka00@stud.fit.vut.cz>
+ * @brief Implementation of nodes for abstract syntax tree.
  * @copyright Copyright (c) 2023
  */
 
