@@ -192,6 +192,8 @@ void Instruction_move_bool_id(enum Frame destinationScope, size_t id, bool value
 
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value);
 
+void Instruction_add_int_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source, int value);
+
 #endif // INSTRUCTION_H
 
 /** End of file include/compiler/codegen/Instruction.h **/

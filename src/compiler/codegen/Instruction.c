@@ -355,4 +355,8 @@ void Instruction_add_int(enum Frame destinationScope, char *destination, enum Fr
 	fprintf(stdout, "ADD %s@$%s %s@$%s int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
 }
 
+void Instruction_add_int_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source, int value) {
+    fprintf(stdout, "ADD %s@$%lu %s@$%lu int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
+}
+
 /** End of file src/compiler/codegen/Instruction.c **/
