@@ -10,7 +10,7 @@
 "func ord(_ c: String) -> Int {return 0}" LF
 "func chr(_ i: Int) -> String {return \"\"}" LF
 "" LF
-"func __stringify__(_ n: Double?) -> String {" LF
+"func __stringify__(_ n: Double?, _ isInt: Bool) -> String {" LF
 "	if(n == nil) { return \"nil\" }" LF
 "	if(n == 0) { return \"0\" }" LF
 "" LF
@@ -69,6 +69,8 @@
 "	// Add fractional part if it exists" LF
 "	if(hasFractionalPart) {" LF
 "		integerResult = integerResult + \".\" + fractionalResult" LF
+"	} else if(isInt == false) {" LF
+"		integerResult = integerResult + \".0\"" LF
 "	}" LF
 "" LF
 "	// Remove trailing zeros" LF
@@ -84,10 +86,15 @@
 "	return integerResult" LF
 "}" LF
 "" LF
+"func __stringify__(_ n: Double?) -> String {" LF
+"	if(n == nil) { return \"nil\" }" LF
+"" LF
+"	return __stringify__(n, false)" LF
+"}" LF
 "func __stringify__(_ n: Int?) -> String {" LF
 "	if(n == nil) { return \"nil\" }" LF
 "" LF
-"	return __stringify__(Int2Double(n!))" LF
+"	return __stringify__(Int2Double(n!), true)" LF
 "}" LF
 "" LF
 "func __stringify__(_ b: Bool?) -> String {" LF

@@ -1,4 +1,4 @@
-// func __stringify__(_ n: Double?) -> String {
+// func __stringify__(_ n: Double?, _ isInt: Bool) -> String {
 // 	if(n == nil) { return "nil" }
 // 	if(n == 0) { return "0" }
 
@@ -57,6 +57,8 @@
 // 	// Add fractional part if it exists
 // 	if(hasFractionalPart) {
 // 		integerResult = integerResult + "." + fractionalResult
+// 	} else if(isInt == false) {
+// 		integerResult = integerResult + ".0"
 // 	}
 
 // 	// Remove trailing zeros
@@ -72,10 +74,14 @@
 // 	return integerResult
 // }
 
+// func __stringify__(_ n: Double?) -> String {
+// 	return stringify(n, false)
+// }
+
 // func __stringify__(_ n: Int?) -> String {
 // 	if(n == nil) { return "nil" }
 
-// 	return __stringify__(Int2Double(n!))
+// 	return __stringify__(Int2Double(n!), true)
 // }
 
 // func __stringify__(_ b: Bool?) -> String {
@@ -128,4 +134,5 @@ var expr = "Expression = \((2 + f()) * (f() - 3.5) * 5)"
 var nested = "Nested = \("Nested = \("Nested = \(1 + 1)")")"
 
 write("\n", result, "\n", expr, "\n", nested, "\n")
+write("\(1) \(1.0) \(1 / 3.0)\n")
 

@@ -93,6 +93,7 @@ enum BuiltInFunction {
 	FUNCTION_SUBSTRING,
 	FUNCTION_ORD,
 	FUNCTION_CHR,
+	FUNCTION_INTERNAL_STRINGIFY_NUMBER,
 	FUNCTION_INTERNAL_STRINGIFY_DOUBLE,
 	FUNCTION_INTERNAL_STRINGIFY_INT,
 	FUNCTION_INTERNAL_STRINGIFY_BOOL,
@@ -103,8 +104,8 @@ enum BuiltInFunction {
 
 #define is_func_valid(func) ((func) < FUNCTIONS_COUNT)
 #define is_func_user_defined(func) ((func) == FUNCTION_NONE)
-#define is_func_builtin(func) ((func) > FUNCTION_NONE && (func) < FUNCTION_INTERNAL_STRINGIFY_DOUBLE)
-#define is_func_internal(func) ((func) >= FUNCTION_INTERNAL_STRINGIFY_DOUBLE && (func) < FUNCTIONS_COUNT)
+#define is_func_builtin(func) ((func) > FUNCTION_NONE && (func) < FUNCTION_INTERNAL_STRINGIFY_NUMBER)
+#define is_func_internal(func) ((func) >= FUNCTION_INTERNAL_STRINGIFY_NUMBER && (func) < FUNCTIONS_COUNT)
 #define is_func_generable(func) (is_func_user_defined(func) || is_func_internal(func))
 
 #define is_type_valid(type) ((type) > TYPE_INVALID)
