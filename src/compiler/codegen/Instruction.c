@@ -51,50 +51,13 @@ void __Instruction_escape_string(String *string) {
 	String_set(string, buffer.value);
 }
 
-/// --- UTILS ---
-void Instruction_label_while_start(size_t id) {
-	fprintf(stdout, "LABEL $while_start_%lu\n", id);
-}
-
-void Instruction_label_while_end(size_t id) {
-	fprintf(stdout, "LABEL $while_end_%lu\n", id);
-}
-
-void Instruction_jumpifneqs_while_end(size_t id) {
-	fprintf(stdout, "JUMPIFNEQS $while_end_%lu\n", id);
-}
-
-void Instruction_jump_while_start(size_t id) {
-	fprintf(stdout, "JUMP $while_start_%lu\n", id);
-}
-
-void Instruction_jumpifneqs_if_else(size_t id) {
-	fprintf(stdout, "JUMPIFNEQS $if_else_%lu\n", id);
-}
-
-void Instruction_jump_if_end(size_t id) {
-	fprintf(stdout, "JUMP $if_end_%lu\n", id);
-}
-
-void Instruction_label_if_else(size_t id) {
-	fprintf(stdout, "LABEL $if_else_%lu\n", id);
-}
-
-void Instruction_jump_if_else(size_t id) {
-	fprintf(stdout, "JUMP $if_else_%lu\n", id);
-}
-
-void Instruction_label_if_end(size_t id) {
-	fprintf(stdout, "LABEL $if_end_%lu\n", id);
-}
-
 // --- INSTUCTIONS ---
 
 void Instruction_pushframe() {
 	INSTRUCTION_NULLARY("PUSHFRAME")
 }
 
-void Instruction_defvar(size_t id, enum Frame frame) {
+void Instruction_defvar_id(size_t id, enum Frame frame) {
 	fprintf(stdout, "DEFVAR %s@$%lu\n", __Instruction_getFrame(frame), id);
 }
 
@@ -137,11 +100,11 @@ void Instruction_write(char *id, enum Frame frame) {
 }
 
 // TODO: This is very bad shortcut, should be fixed
-void Instruction_pops_where(char *where, enum Frame frame) {
+void Instruction_pops(char *where, enum Frame frame) {
 	fprintf(stdout, "POPS %s@$%s\n", __Instruction_getFrame(frame), where);
 }
 
-void Instruction_defvar_where(char *where, enum Frame frame) {
+void Instruction_defvar(char *where, enum Frame frame) {
 	fprintf(stdout, "DEFVAR %s@$%s\n", __Instruction_getFrame(frame), where);
 }
 
@@ -159,17 +122,21 @@ void Instruction_pushs_string(String *string) {
 	fprintf(stdout, "PUSHS string@%s\n", string->value);
 }
 
-void Instruction_pushs_var(size_t id, enum Frame frame) {
+void Instruction_pushs_id(size_t id, enum Frame frame) {
 	fprintf(stdout, "PUSHS %s@$%lu\n", __Instruction_getFrame(frame), id);
 }
 
-void Instruction_pushs_var_named(char *var, enum Frame frame) {
+void Instruction_pushs(char *var, enum Frame frame) {
 	fprintf(stdout, "PUSHS %s@$%s\n", __Instruction_getFrame(frame), var);
 }
 
 
-void Instruction_pops(size_t id, enum Frame frame) {
+void Instruction_pops_id(size_t id, enum Frame frame) {
 	fprintf(stdout, "POPS %s@$%lu\n", __Instruction_getFrame(frame), id);
+}
+
+void Instruction_pops_named_id(char * name, size_t id, enum Frame frame) {
+    fprintf(stdout, "POPS %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
 }
 
 void Instruction_clears() {
@@ -218,15 +185,6 @@ void Instruction_ors() {
 
 void Instruction_nots() {
 	INSTRUCTION_NULLARY("NOTS")
-}
-
-void Instruction_jump_func_end(size_t id) {
-	fprintf(stdout, "JUMP $%lu_end\n", id);
-}
-
-
-void Instruction_label_func_start(size_t id) {
-	fprintf(stdout, "LABEL $%lu_start\n", id);
 }
 
 void Instruction_int2floats() {
@@ -297,10 +255,6 @@ void Instruction_label_func(size_t id) {
 	fprintf(stdout, "LABEL $func_%lu\n", id);
 }
 
-void Instruction_move_arg(size_t id) {
-	fprintf(stdout, "MOVE LF@$%lu TF@%%0\n", id);
-}
-
 void Instruction_pushs_func_result(size_t id) {
 	fprintf(stdout, "PUSHS TF@$ret_%lu\n", id);
 }
@@ -320,14 +274,6 @@ void Instruction_move_string(enum Frame destinationScope, char *destination, Str
 
 void Instruction_move_nil(enum Frame destinationScope, char *destination) {
 	fprintf(stdout, "MOVE %s@$%s nil@nil\n", __Instruction_getFrame(destinationScope), destination);
-}
-
-void Instruction_move_float(enum Frame destinationScope, char *destination, double value) {
-	fprintf(stdout, "MOVE %s@$%s float@%a\n", __Instruction_getFrame(destinationScope), destination, value);
-}
-
-void Instruction_move_bool(enum Frame destinationScope, char *destination, bool value) {
-	fprintf(stdout, "MOVE %s@$%s bool@%s\n", __Instruction_getFrame(destinationScope), destination, value ? "true" : "false");
 }
 
 void Instruction_move_int_id(enum Frame destinationScope, size_t destination, long int value) {
@@ -365,18 +311,6 @@ void Instruction_label_id(char *label, size_t id) {
 
 void Instruction_jump_id(char *label, size_t id) {
     fprintf(stdout, "JUMP $%s_%lu\n", label, id);
-}
-
-void Instruction_defvar_id(char *name ,size_t id, enum Frame frame){
-    fprintf(stdout, "DEFVAR %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
-}
-
-void Instruction_pushs_id(char *name, size_t id, enum Frame frame){
-    fprintf(stdout, "PUSHS %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
-}
-
-void Instruction_pops_id(char *name, size_t id, enum Frame frame){
-    fprintf(stdout, "POPS %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
 }
 
 void Instruction_jump_ifeqs_id(char *label, size_t id) {
