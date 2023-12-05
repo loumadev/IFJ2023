@@ -47,7 +47,7 @@ void __Instruction_escape_string(String *string) {
             String *replacement = String_fromFormat("\\%d", c);
             String_append(&buffer, replacement->value);
             String_free(replacement);
-          else {
+        } else {
 			String_appendChar(&buffer, c);
 		}
 	}
