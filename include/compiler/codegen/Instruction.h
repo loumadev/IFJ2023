@@ -27,7 +27,10 @@
     fprintf(stdout, "# Variable %s (%lu)\n", declaration->name->value, declaration->id);
 
 #define COMMENT_WHILE(id) \
-    fprintf(stdout, "# While statement %lu\n", id);
+    fprintf(stdout, "# While loop %lu\n", id);
+
+#define COMMENT_FOR(id) \
+    fprintf(stdout, "# For loop %lu\n", id);
 
 #define COMMENT_IF(id) \
     fprintf(stdout, "# If statement %lu\n", id);
@@ -193,6 +196,20 @@ void Instruction_move_bool_id(enum Frame destinationScope, size_t id, bool value
 void Instruction_add_int(enum Frame destinationScope, char *destination, enum Frame sourceScope, char *source, int value);
 
 void Instruction_add_int_id(enum Frame destinationScope, size_t destination, enum Frame sourceScope, size_t source, int value);
+
+void Instruction_label_id(char *label, size_t id);
+
+void Instruction_jump_id(char *label, size_t id);
+
+void Instruction_defvar_id(char *name ,size_t id, enum Frame frame);
+
+void Instruction_pushs_id(char *name, size_t id, enum Frame frame);
+
+void Instruction_pops_id(char *name, size_t id, enum Frame frame);
+
+void Instruction_jump_ifeqs_id(char *label, size_t id);
+
+void Instruction_jump_ifneqs_id(char *label, size_t id);
 
 #endif // INSTRUCTION_H
 
