@@ -359,4 +359,32 @@ void Instruction_add_int_id(enum Frame destinationScope, size_t destination, enu
     fprintf(stdout, "ADD %s@$%lu %s@$%lu int@%d\n", __Instruction_getFrame(destinationScope), destination, __Instruction_getFrame(sourceScope), source, value);
 }
 
+void Instruction_label_id(char *label, size_t id) {
+    fprintf(stdout, "LABEL $%s_%lu\n", label, id);
+}
+
+void Instruction_jump_id(char *label, size_t id) {
+    fprintf(stdout, "JUMP $%s_%lu\n", label, id);
+}
+
+void Instruction_defvar_id(char *name ,size_t id, enum Frame frame){
+    fprintf(stdout, "DEFVAR %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
+}
+
+void Instruction_pushs_id(char *name, size_t id, enum Frame frame){
+    fprintf(stdout, "PUSHS %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
+}
+
+void Instruction_pops_id(char *name, size_t id, enum Frame frame){
+    fprintf(stdout, "POPS %s@$%s_%lu\n", __Instruction_getFrame(frame), name, id);
+}
+
+void Instruction_jump_ifeqs_id(char *label, size_t id) {
+    fprintf(stdout, "JUMPIFEQS $%s_%lu\n", label, id);
+}
+
+void Instruction_jump_ifneqs_id(char *label, size_t id) {
+    fprintf(stdout, "JUMPIFNEQS $%s_%lu\n", label, id);
+}
+
 /** End of file src/compiler/codegen/Instruction.c **/
