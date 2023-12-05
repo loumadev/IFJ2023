@@ -44,34 +44,17 @@
 #define HEADER \
     fprintf(stdout, ".IFJcode23\n");
 
-// TODO: Fix
-void Instruction_pops_where(char * where, enum Frame frame);
+void Instruction_pops(char * where, enum Frame frame);
 
-void Instruction_defvar_where(char * where, enum Frame frame);
+void Instruction_defvar(char * where, enum Frame frame);
 
 // --- UTILS ---
 
-void Instruction_label_while_start(size_t id);
-
-void Instruction_label_while_end(size_t id);
-
-void Instruction_jumpifneqs_while_end(size_t id);
-
-void Instruction_jump_while_start(size_t id);
-
-void Instruction_jumpifneqs_if_else(size_t id);
-
-void Instruction_label_if_else(size_t id);
-
-void Instruction_jump_if_else(size_t id);
-
-void Instruction_jump_if_end(size_t id);
-
-void Instruction_label_if_end(size_t id);
-
 void Instruction_popretvar(size_t id, enum Frame frame);
 
-void Instruction_pushs_var_named(char * var, enum Frame frame);
+void Instruction_pushs(char * var, enum Frame frame);
+
+void Instruction_pops_named_id(char * name, size_t id, enum Frame frame);
 
 // --- INSTUCTIONS ---
 
@@ -87,7 +70,7 @@ void Instruction_readFloat(char *var, enum Frame frame);
 
 void Instruction_write(char * id, enum Frame frame);
 
-void Instruction_defvar(size_t id, enum Frame frame);
+void Instruction_defvar_id(size_t id, enum Frame frame);
 
 void Instruction_defretvar(size_t id, enum Frame frame);
 
@@ -101,9 +84,9 @@ void Instruction_pushs_float(double value);
 
 void Instruction_pushs_string(String * string);
 
-void Instruction_pushs_var(size_t id, enum Frame frame);
+void Instruction_pushs_id(size_t id, enum Frame frame);
 
-void Instruction_pops(size_t id, enum Frame frame);
+void Instruction_pops_id(size_t id, enum Frame frame);
 
 void Instruction_clears();
 
@@ -129,10 +112,6 @@ void Instruction_ors();
 
 void Instruction_nots();
 
-void Instruction_jump_func_end(size_t id);
-
-void Instruction_label_func_start(size_t id);
-
 void Instruction_int2floats();
 
 void Instruction_float2ints();
@@ -144,8 +123,6 @@ void Instruction_int2char(enum Frame resultScope, char *result, enum Frame input
 void Instruction_stri2int(enum Frame resultScope, char *result, enum Frame inputScope, char *input, int index);
 
 void Instruction_label(char *label);
-
-void Instruction_jump_ifeqs_chr_end();
 
 void Instruction_jump(char *label);
 
@@ -179,10 +156,6 @@ void Instruction_move_string(enum Frame destinationScope, char *destination, Str
 
 void Instruction_move_nil(enum Frame destinationScope, char *destination);
 
-void Instruction_move_float(enum Frame destinationScope, char *destination, double value);
-
-void Instruction_move_bool(enum Frame destinationScope, char *destination, bool value);
-
 void Instruction_move_int_id(enum Frame destinationScope, size_t id, long int value);
 
 void Instruction_move_string_id(enum Frame destinationScope, size_t id, String *value);
@@ -200,12 +173,6 @@ void Instruction_add_int_id(enum Frame destinationScope, size_t destination, enu
 void Instruction_label_id(char *label, size_t id);
 
 void Instruction_jump_id(char *label, size_t id);
-
-void Instruction_defvar_id(char *name ,size_t id, enum Frame frame);
-
-void Instruction_pushs_id(char *name, size_t id, enum Frame frame);
-
-void Instruction_pops_id(char *name, size_t id, enum Frame frame);
 
 void Instruction_jump_ifeqs_id(char *label, size_t id);
 

@@ -22,11 +22,23 @@ void __Codegen_generateUserFunctions(Codegen *codegen);
 void __Codegen_generateGlobalVariablesDeclarations(Codegen *codegen);
 void __Codegen_generateHelperVariables();
 
-// Built-in functions
+// Built-in functions generation
 void __Codegen_generateOrd();
 void __Codegen_generateChr();
 void __Codegen_generateLength();
 void __Codegen_generateSubstring();
+
+// Builtin function calls
+void __Codegen_callOrd(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callChr(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callLength(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callSubstring(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callDoubleToInt(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callIntToDouble(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callWrite(Codegen *codegen, FunctionCallASTNode *functionCall);
+void __Codegen_callReadDouble();
+void __Codegen_callReadInt();
+void __Codegen_callReadString();
 
 // User functions
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration *functionDeclaration);
@@ -50,6 +62,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 void __Codegen_evaluateReturnStatement(Codegen *codegen, ReturnStatementASTNode *returnStatement);
 void __Codegen_evaluateBindingCondition(Codegen *codegen, OptionalBindingConditionASTNode *optionalBindingCondition);
 void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forStatement);
+void __Codegen_evaluateRangeOperator(enum OperatorType rangeOperator);
 void __Codegen_evaluateBreakStatement(BreakStatementASTNode *breakStatement);
 void __Codegen_evaluateContinueStatement(ContinueStatementASTNode *continueStatement);
 
@@ -112,13 +125,14 @@ void __Codegen_generatePreamble() {
 void __Codegen_generateHelperVariables() {
 	COMMENT("--- [Helper variables] ---")
 
-	Instruction_defvar_where("WRITE_TMP", FRAME_GLOBAL);
-	Instruction_defvar_where("READINT_TMP", FRAME_GLOBAL);
-	Instruction_defvar_where("READSTRING_TMP", FRAME_GLOBAL);
-	Instruction_defvar_where("READDOUBLE_TMP", FRAME_GLOBAL);
-	Instruction_defvar_where("CONCAT_ARG1", FRAME_GLOBAL);
-	Instruction_defvar_where("CONCAT_ARG2", FRAME_GLOBAL);
-	Instruction_defvar_where("CONCAT_OUTPUT", FRAME_GLOBAL);
+    Instruction_defvar("WRITE_TMP", FRAME_GLOBAL);
+    Instruction_defvar("READINT_TMP", FRAME_GLOBAL);
+    Instruction_defvar("READSTRING_TMP", FRAME_GLOBAL);
+    Instruction_defvar("READDOUBLE_TMP", FRAME_GLOBAL);
+    Instruction_defvar("CONCAT_ARG1", FRAME_GLOBAL);
+    Instruction_defvar("CONCAT_ARG2", FRAME_GLOBAL);
+    Instruction_defvar("CONCAT_OUTPUT", FRAME_GLOBAL);
+
 	NEWLINE
 }
 
@@ -138,25 +152,25 @@ void __Codegen_generateOrd() {
 
 	// Overhead
 	Instruction_pushframe();
-	Instruction_defvar_where("RETVAL_ORD", FRAME_LOCAL);
+    Instruction_defvar("RETVAL_ORD", FRAME_LOCAL);
 
 	// Overhead for calling length
 	Instruction_createframe();
-	Instruction_defvar_where("ARG1_LEN", FRAME_TEMPORARY);
+    Instruction_defvar("ARG1_LEN", FRAME_TEMPORARY);
 	Instruction_move_vars(FRAME_TEMPORARY, "ARG1_LEN", FRAME_LOCAL, "ARG1_ORD");
 
 	// Call length
 	Instruction_call("length");
 
 	// Handle length(...) return value
-	Instruction_defvar_where("STRLEN_OUTPUT", FRAME_LOCAL);
+    Instruction_defvar("STRLEN_OUTPUT", FRAME_LOCAL);
 	Instruction_move_vars(FRAME_LOCAL, "STRLEN_OUTPUT", FRAME_TEMPORARY, "RETVAL_LEN");
 
 	// Return value can be implicitly zero
 	Instruction_move_int(FRAME_LOCAL, "RETVAL_ORD", 0);
 
 	// Check if length is 0
-	Instruction_pushs_var_named("STRLEN_OUTPUT", FRAME_LOCAL);
+    Instruction_pushs("STRLEN_OUTPUT", FRAME_LOCAL);
 	Instruction_pushs_int(0);
 	Instruction_jump_ifeqs("ord_check_length");
 
@@ -180,7 +194,7 @@ void __Codegen_generateLength() {
 	Instruction_pushframe();
 
 	// Handle return value
-	Instruction_defvar_where("RETVAL_LEN", FRAME_LOCAL);
+    Instruction_defvar("RETVAL_LEN", FRAME_LOCAL);
 
 	// Length implementation
 	Instruction_strlen(FRAME_LOCAL, "RETVAL_LEN", "ARG1_LEN", FRAME_LOCAL);
@@ -199,7 +213,7 @@ void __Codegen_generateChr() {
 	Instruction_pushframe();
 
 	// Handle return value
-	Instruction_defvar_where("RETVAL_CHR", FRAME_LOCAL);
+    Instruction_defvar("RETVAL_CHR", FRAME_LOCAL);
 
 	// chr implementation
 	Instruction_int2char(FRAME_LOCAL, "RETVAL_CHR", FRAME_LOCAL, "ARG1_CHR");
@@ -217,7 +231,7 @@ void __Codegen_generateSubstring() {
 
 	// Overhead
 	Instruction_pushframe();
-	Instruction_defvar_where("RETVAL_SUBSTR", FRAME_LOCAL);
+    Instruction_defvar("RETVAL_SUBSTR", FRAME_LOCAL);
 
 	// Substr is implicitly nil
 	Instruction_move_nil(FRAME_LOCAL, "RETVAL_SUBSTR");
@@ -225,22 +239,22 @@ void __Codegen_generateSubstring() {
 	// Substr checks
 
 	// i < 0
-	Instruction_pushs_var_named("ARG2_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("ARG2_SUBSTR", FRAME_LOCAL);
 	Instruction_pushs_int(0);
 	Instruction_lts();
 	Instruction_pushs_bool(true);
 	Instruction_jump_ifeqs("substr_end");
 
 	// j < 0
-	Instruction_pushs_var_named("ARG3_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("ARG3_SUBSTR", FRAME_LOCAL);
 	Instruction_pushs_int(0);
 	Instruction_lts();
 	Instruction_pushs_bool(true);
 	Instruction_jump_ifeqs("substr_end");
 
 	// i > j
-	Instruction_pushs_var_named("ARG2_SUBSTR", FRAME_LOCAL);
-	Instruction_pushs_var_named("ARG3_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("ARG2_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("ARG3_SUBSTR", FRAME_LOCAL);
 	Instruction_gts();
 	Instruction_pushs_bool(true);
 	Instruction_jump_ifeqs("substr_end");
@@ -249,46 +263,46 @@ void __Codegen_generateSubstring() {
 
 	// Overhead for calling length
 	Instruction_createframe();
-	Instruction_defvar_where("ARG1_LEN", FRAME_TEMPORARY);
+    Instruction_defvar("ARG1_LEN", FRAME_TEMPORARY);
 	Instruction_move_vars(FRAME_TEMPORARY, "ARG1_LEN", FRAME_LOCAL, "ARG1_SUBSTR");
 
 	// Call length
 	Instruction_call("length");
 
 	// Handle return value
-	Instruction_defvar_where("STRLEN_OUTPUT", FRAME_LOCAL);
+    Instruction_defvar("STRLEN_OUTPUT", FRAME_LOCAL);
 	Instruction_move_vars(FRAME_LOCAL, "STRLEN_OUTPUT", FRAME_TEMPORARY, "RETVAL_LEN");
 
 	// Check if i >= length(string)
-	Instruction_pushs_var_named("ARG2_SUBSTR", FRAME_LOCAL);
-	Instruction_pushs_var_named("STRLEN_OUTPUT", FRAME_LOCAL);
+    Instruction_pushs("ARG2_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("STRLEN_OUTPUT", FRAME_LOCAL);
 	Instruction_lts();
 	Instruction_nots();
 	Instruction_pushs_bool(true);
 	Instruction_jump_ifeqs("substr_end");
 
 	// Check if j > length(string)
-	Instruction_pushs_var_named("ARG3_SUBSTR", FRAME_LOCAL);
-	Instruction_pushs_var_named("STRLEN_OUTPUT", FRAME_LOCAL);
+    Instruction_pushs("ARG3_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("STRLEN_OUTPUT", FRAME_LOCAL);
 	Instruction_gts();
 	Instruction_pushs_bool(true);
 	Instruction_jump_ifeqs("substr_end");
 
 	// All checks passed, get substr
-	Instruction_defvar_where("SUBSTR_BUFFER", FRAME_LOCAL);
+    Instruction_defvar("SUBSTR_BUFFER", FRAME_LOCAL);
 
 	String string;
 	String_constructor(&string, "");
 	Instruction_move_string(FRAME_LOCAL, "SUBSTR_BUFFER", &string);
 	Instruction_move_vars(FRAME_LOCAL, "RETVAL_SUBSTR", FRAME_LOCAL, "SUBSTR_BUFFER");
 
-	Instruction_defvar_where("SUBSTR_GETCHAR", FRAME_LOCAL);
+    Instruction_defvar("SUBSTR_GETCHAR", FRAME_LOCAL);
 
 	Instruction_label("substr_loop");
 
 	// Check if i < j
-	Instruction_pushs_var_named("ARG2_SUBSTR", FRAME_LOCAL);
-	Instruction_pushs_var_named("ARG3_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("ARG2_SUBSTR", FRAME_LOCAL);
+    Instruction_pushs("ARG3_SUBSTR", FRAME_LOCAL);
 	Instruction_lts();
 	Instruction_pushs_bool(false);
 	Instruction_jump_ifeqs("substr_end");
@@ -316,13 +330,13 @@ void __Codegen_generateCoalescing() {
 
 	// Overhead
 	Instruction_pushframe();
-	Instruction_defvar_where("RETVAL_COA", FRAME_LOCAL);
+    Instruction_defvar("RETVAL_COA", FRAME_LOCAL);
 
 	// Return value is implicitly right (test is nil)
 	Instruction_move_vars(FRAME_LOCAL, "RETVAL_COA", FRAME_LOCAL, "ARG_RIGHT_COA");
 
 	// Do test
-	Instruction_pushs_var_named("ARG_LEFT_COA", FRAME_LOCAL);
+    Instruction_pushs("ARG_LEFT_COA", FRAME_LOCAL);
 	Instruction_pushs_nil();
 	Instruction_jump_ifeqs("coalescing_return");
 
@@ -357,7 +371,7 @@ void __Codegen_generateUserFunctions(Codegen *codegen) {
 }
 
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration *functionDeclaration) {
-	if(functionDeclaration->node->builtin != FUNCTION_NONE) {
+	if(!is_func_generable(functionDeclaration->node->builtin)) {
 		return;
 	}
 
@@ -385,7 +399,7 @@ void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration
 
 void __Codegen_generateVariableDeclaration(Codegen *codegen, VariableDeclaration *variable) {
 	COMMENT_VAR(variable)
-	Instruction_defvar(variable->id, codegen->frame);
+    Instruction_defvar_id(variable->id, codegen->frame);
 	NEWLINE
 }
 
@@ -442,11 +456,11 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		} break;
 		case NODE_BREAK_STATEMENT: {
 			BreakStatementASTNode *breakStatement = (BreakStatementASTNode*)statementAstNode;
-            __Codegen_evaluateBreakStatement(breakStatement);
+			__Codegen_evaluateBreakStatement(breakStatement);
 		} break;
 		case NODE_CONTINUE_STATEMENT: {
 			ContinueStatementASTNode *continueStatement = (ContinueStatementASTNode*)statementAstNode;
-            __Codegen_evaluateContinueStatement(continueStatement);
+			__Codegen_evaluateContinueStatement(continueStatement);
 		} break;
 		case NODE_FUNCTION_DECLARATION: {
 			// Declarations are generated at the beginning of the file
@@ -457,9 +471,9 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 }
 
 void __Codegen_evaluateBindingCondition(Codegen *codegen, OptionalBindingConditionASTNode *optionalBindingCondition) {
-	Instruction_defvar(optionalBindingCondition->id->id, codegen->frame);
+    Instruction_defvar_id(optionalBindingCondition->id->id, codegen->frame);
 	Instruction_move_id(codegen->frame, optionalBindingCondition->id->id, FRAME_GLOBAL, optionalBindingCondition->fromId);
-	Instruction_pushs_var(optionalBindingCondition->fromId, codegen->frame);
+    Instruction_pushs_id(optionalBindingCondition->fromId, codegen->frame);
 	Instruction_pushs_nil();
 	Instruction_eqs();
 	Instruction_nots();
@@ -475,15 +489,15 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 	}
 
 	Instruction_pushs_bool(true);
-	Instruction_jumpifneqs_if_else(ifStatement->id);
+    Instruction_jump_ifneqs_id("if_else", ifStatement->id);
 
 	// Process body
 	COMMENT_IF_BLOCK(ifStatement->id)
 	__Codegen_evaluateBlock(codegen, ifStatement->body);
-	Instruction_jump_if_end(ifStatement->id);
+    Instruction_jump_id("if_end", ifStatement->id);
 
 	// Process else
-	Instruction_label_if_else(ifStatement->id);
+    Instruction_label_id("if_else", ifStatement->id);
 	if(ifStatement->alternate != NULL) {
 		COMMENT_ELSE_BLOCK(ifStatement->id)
 		switch(ifStatement->alternate->_type) {
@@ -499,7 +513,7 @@ void __Codegen_evaluateIfStatement(Codegen *codegen, IfStatementASTNode *ifState
 
 	}
 
-	Instruction_label_if_end(ifStatement->id);
+    Instruction_label_id("if_end", ifStatement->id);
 }
 
 void __Codegen_evaluateWhileStatement(Codegen *codegen, WhileStatementASTNode *whileStatement) {
@@ -539,10 +553,10 @@ void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
 	switch(expression->operator) {
 		case OPERATOR_PLUS: {
 			if(expression->type.type == TYPE_STRING) {
-				Instruction_pops_where("CONCAT_ARG2", FRAME_GLOBAL);
-				Instruction_pops_where("CONCAT_ARG1", FRAME_GLOBAL);
+                Instruction_pops("CONCAT_ARG2", FRAME_GLOBAL);
+                Instruction_pops("CONCAT_ARG1", FRAME_GLOBAL);
 				Instruction_concat(FRAME_GLOBAL, "CONCAT_OUTPUT", FRAME_GLOBAL, "CONCAT_ARG1", FRAME_GLOBAL, "CONCAT_ARG2");
-				Instruction_pushs_var_named("CONCAT_OUTPUT", FRAME_GLOBAL);
+                Instruction_pushs("CONCAT_OUTPUT", FRAME_GLOBAL);
 				return;
 			}
 			return Instruction_adds();
@@ -585,14 +599,14 @@ void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
 			return Instruction_ands();
 		case OPERATOR_NULL_COALESCING: {
 			Instruction_createframe();
-			Instruction_defvar_where("ARG_RIGHT_COA", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG_RIGHT_COA", FRAME_TEMPORARY);
+            Instruction_defvar("ARG_RIGHT_COA", FRAME_TEMPORARY);
+            Instruction_pops("ARG_RIGHT_COA", FRAME_TEMPORARY);
 
-			Instruction_defvar_where("ARG_LEFT_COA", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG_LEFT_COA", FRAME_TEMPORARY);
+            Instruction_defvar("ARG_LEFT_COA", FRAME_TEMPORARY);
+            Instruction_pops("ARG_LEFT_COA", FRAME_TEMPORARY);
 
 			Instruction_call("coalescing");
-			Instruction_pushs_var_named("RETVAL_COA", FRAME_TEMPORARY);
+            Instruction_pushs("RETVAL_COA", FRAME_TEMPORARY);
 			return;
 		}
 		case OPERATOR_UNWRAP:
@@ -629,7 +643,8 @@ void __Codegen_evaluateVariableDeclaration(Codegen *codegen, VariableDeclaration
 
 void __Codegen_evaluateVariableDeclarationList(Codegen *codegen, VariableDeclarationListASTNode *declarationList) {
 	Array *declarators = declarationList->declarators;
-	for(size_t i = 0; i < declarators->size; ++i) {
+
+    for(size_t i = 0; i < declarators->size; ++i) {
 		VariableDeclaratorASTNode *declaratorNode = Array_get(declarators, i); \
 		__Codegen_evaluateVariableDeclarator(codegen, declaratorNode);
 	}
@@ -641,42 +656,39 @@ void __Codegen_evaluateVariableDeclarator(Codegen *codegen, VariableDeclaratorAS
 	}
 	__Codegen_evaluateExpression(codegen, variableDeclarator->initializer);
 	if(Analyser_isDeclarationGlobal(codegen->analyser, variableDeclarator->pattern->id->id)) {
-		Instruction_pops(variableDeclarator->pattern->id->id, FRAME_GLOBAL);
+        Instruction_pops_id(variableDeclarator->pattern->id->id, FRAME_GLOBAL);
 	} else {
-		Instruction_pops(variableDeclarator->pattern->id->id, codegen->frame);
+        Instruction_pops_id(variableDeclarator->pattern->id->id, codegen->frame);
 	}
 	NEWLINE
 }
 
 void __Codegen_stackAssignment(Codegen *codegen, AssignmentStatementASTNode *assignmentStatement, bool isGlobalVariable) {
 	__Codegen_evaluateExpression(codegen, assignmentStatement->expression);
-	if(isGlobalVariable) {
-		Instruction_pops(assignmentStatement->id->id, FRAME_GLOBAL);
+
+    if(isGlobalVariable) {
+        Instruction_pops_id(assignmentStatement->id->id, FRAME_GLOBAL);
 	} else {
-		Instruction_pops(assignmentStatement->id->id, codegen->frame);
+        Instruction_pops_id(assignmentStatement->id->id, codegen->frame);
 	}
 }
 
 void __Codegen_directAssignment(const Codegen *codegen, const AssignmentStatementASTNode *assignmentStatement, bool isGlobalVariable) {
 	LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)assignmentStatement->expression;
+    size_t assignmentId = assignmentStatement->id->id;
 	enum Frame currentFrame = isGlobalVariable ? FRAME_GLOBAL : codegen->frame;
 
 	switch(literal->type.type) {
 		case TYPE_INT:
-			Instruction_move_int_id(currentFrame, assignmentStatement->id->id, literal->value.integer);
-			break;
+			return Instruction_move_int_id(currentFrame, assignmentId, literal->value.integer);
 		case TYPE_DOUBLE:
-			Instruction_move_float_id(currentFrame, assignmentStatement->id->id, literal->value.floating);
-			break;
+			return Instruction_move_float_id(currentFrame, assignmentId, literal->value.floating);
 		case TYPE_BOOL:
-			Instruction_move_bool_id(currentFrame, assignmentStatement->id->id, literal->value.boolean);
-			break;
+			return Instruction_move_bool_id(currentFrame, assignmentId, literal->value.boolean);
 		case TYPE_STRING:
-			Instruction_move_string_id(currentFrame, assignmentStatement->id->id, literal->value.string);
-			break;
+			return Instruction_move_string_id(currentFrame, assignmentId, literal->value.string);
 		case TYPE_NIL:
-			Instruction_move_nil_id(currentFrame, assignmentStatement->id->id);
-			break;
+			return Instruction_move_nil_id(currentFrame, assignmentId);
 		case TYPE_VOID:
 		case TYPE_UNKNOWN:
 		case TYPE_INVALID:
@@ -711,15 +723,15 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 		case NODE_IDENTIFIER: {
 			IdentifierASTNode *identifier = (IdentifierASTNode*)expression;
 			if(Analyser_isDeclarationGlobal(codegen->analyser, identifier->id)) {
-				Instruction_pushs_var(identifier->id, FRAME_GLOBAL);
+                Instruction_pushs_id(identifier->id, FRAME_GLOBAL);
 			} else {
-				Instruction_pushs_var(identifier->id, codegen->frame);
+                Instruction_pushs_id(identifier->id, codegen->frame);
 			}
 		} break;
 		case NODE_FUNCTION_CALL: {
 			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression;
 			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
-			if(builtin != FUNCTION_NONE) {
+			if(is_func_builtin(builtin)) {
 				__Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
 			} else {
 				__Codegen_evaluateFunctionCall(codegen, functionCall);
@@ -738,8 +750,17 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 			__Codegen_evaluateBinaryExpression(codegen, binaryExpression);
 		} break;
 		case NODE_INTERPOLATION_EXPRESSION: {
-			break;
-		}
+            InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)expression;
+            __Codegen_evaluateBinaryExpression(codegen, interpolation->concatenated);
+		} break;
+        case FUNCTION_INTERNAL_STRINGIFY_NUMBER:
+        case FUNCTION_INTERNAL_STRINGIFY_DOUBLE:
+        case FUNCTION_INTERNAL_STRINGIFY_INT:
+        case FUNCTION_INTERNAL_STRINGIFY_BOOL:
+        case FUNCTION_INTERNAL_STRINGIFY_STRING:
+        case FUNCTION_INTERNAL_MODULO:
+            // Internal functions are handled as user defined functions
+            break;
 		default:
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 	}
@@ -756,124 +777,160 @@ void __Codegen_evaluateBlock(Codegen *codegen, BlockASTNode *block) {
 
 void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *functionCall, enum BuiltInFunction function) {
 	switch(function) {
-		case FUNCTION_READ_STRING: {
-			Instruction_readString("READSTRING_TMP", FRAME_GLOBAL);
-			Instruction_pushs_var_named("READSTRING_TMP", FRAME_GLOBAL);
-		} break;
-		case FUNCTION_READ_INT: {
-			Instruction_readInt("READINT_TMP", FRAME_GLOBAL);
-			Instruction_pushs_var_named("READINT_TMP", FRAME_GLOBAL);
-		} break;
-		case FUNCTION_READ_DOUBLE: {
-			Instruction_readFloat("READDOUBLE_TMP", FRAME_GLOBAL);
-			Instruction_pushs_var_named("READDOUBLE_TMP", FRAME_GLOBAL);
-		} break;
-		case FUNCTION_WRITE: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			for(size_t i = 0; i < argumentList->arguments->size; ++i) {
-				ArgumentASTNode *argument = Array_get(argumentList->arguments, i);
-				__Codegen_evaluateExpression(codegen, argument->expression);
-				Instruction_pops_where("WRITE_TMP", FRAME_GLOBAL);
-				Instruction_write("WRITE_TMP", FRAME_GLOBAL);
-			}
-		} break;
-		case FUNCTION_INT_TO_DOUBLE: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
-			__Codegen_evaluateExpression(codegen, argument->expression);
-			Instruction_int2floats();
-		} break;
-		case FUNCTION_DOUBLE_TO_INT: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
-			__Codegen_evaluateExpression(codegen, argument->expression);
-			Instruction_float2ints();
-		} break;
-		case FUNCTION_LENGTH: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
-			__Codegen_evaluateExpression(codegen, argument->expression);
-
-			// Overhead to call strlen
-			Instruction_createframe();
-			Instruction_defvar_where("ARG1_LEN", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG1_LEN", FRAME_TEMPORARY);
-
-			// Call function
-			Instruction_call("length");
-
-			// Handle return value
-			Instruction_pushs_var_named("RETVAL_LEN", FRAME_TEMPORARY);
-		} break;
-		case FUNCTION_SUBSTRING: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			ArgumentASTNode *string = Array_get(argumentList->arguments, 0);
-			ArgumentASTNode *index_i = Array_get(argumentList->arguments, 1);
-			ArgumentASTNode *index_j = Array_get(argumentList->arguments, 2);
-
-			__Codegen_evaluateExpression(codegen, string->expression);
-			__Codegen_evaluateExpression(codegen, index_i->expression);
-			__Codegen_evaluateExpression(codegen, index_j->expression);
-
-			// Overhead to call substr
-			Instruction_createframe();
-			Instruction_defvar_where("ARG1_SUBSTR", FRAME_TEMPORARY);
-			Instruction_defvar_where("ARG2_SUBSTR", FRAME_TEMPORARY);
-			Instruction_defvar_where("ARG3_SUBSTR", FRAME_TEMPORARY);
-
-			Instruction_pops_where("ARG3_SUBSTR", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG2_SUBSTR", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG1_SUBSTR", FRAME_TEMPORARY);
-
-			// Call function
-			Instruction_call("substr");
-
-			// Handle return value
-			Instruction_pushs_var_named("RETVAL_SUBSTR", FRAME_TEMPORARY);
-		} break;
-		case FUNCTION_ORD: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
-			__Codegen_evaluateExpression(codegen, argument->expression);
-
-			// Overhead to call ord
-			Instruction_createframe();
-			Instruction_defvar_where("ARG1_ORD", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG1_ORD", FRAME_TEMPORARY);
-
-			// Call function
-			Instruction_call("ord");
-
-			// Handle return value
-			Instruction_pushs_var_named("RETVAL_ORD", FRAME_TEMPORARY);
-		} break;
-		case FUNCTION_CHR: {
-			ArgumentListASTNode *argumentList = functionCall->argumentList;
-			ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
-			__Codegen_evaluateExpression(codegen, argument->expression);
-
-			// Overhead to call chr
-			Instruction_createframe();
-			Instruction_defvar_where("ARG1_CHR", FRAME_TEMPORARY);
-			Instruction_pops_where("ARG1_CHR", FRAME_TEMPORARY);
-
-			// Call function
-			Instruction_call("chr");
-
-			// Handle return value
-			Instruction_pushs_var_named("RETVAL_CHR", FRAME_TEMPORARY);
-		} break;
-		default: {
+		case FUNCTION_READ_STRING:
+			return __Codegen_callReadString();
+		case FUNCTION_READ_INT:
+			return __Codegen_callReadInt();
+		case FUNCTION_READ_DOUBLE:
+			return __Codegen_callReadDouble();
+		case FUNCTION_WRITE:
+			return __Codegen_callWrite(codegen, functionCall);
+		case FUNCTION_INT_TO_DOUBLE:
+			return __Codegen_callIntToDouble(codegen, functionCall);
+		case FUNCTION_DOUBLE_TO_INT:
+			return __Codegen_callDoubleToInt(codegen, functionCall);
+		case FUNCTION_LENGTH:
+			return __Codegen_callLength(codegen, functionCall);
+		case FUNCTION_SUBSTRING:
+			return __Codegen_callSubstring(codegen, functionCall);
+		case FUNCTION_ORD:
+			return __Codegen_callOrd(codegen, functionCall);
+		case FUNCTION_CHR:
+			return __Codegen_callChr(codegen, functionCall);
+		default:
 			fassertf("Unknown builtin function.");
-		}
 	}
+}
+
+void __Codegen_callReadString() {
+	Instruction_readString("READSTRING_TMP", FRAME_GLOBAL);
+    Instruction_pushs("READSTRING_TMP", FRAME_GLOBAL);
+}
+
+void __Codegen_callReadInt() {
+	Instruction_readInt("READINT_TMP", FRAME_GLOBAL);
+    Instruction_pushs("READINT_TMP", FRAME_GLOBAL);
+}
+
+void __Codegen_callReadDouble() {
+	Instruction_readFloat("READDOUBLE_TMP", FRAME_GLOBAL);
+    Instruction_pushs("READDOUBLE_TMP", FRAME_GLOBAL);
+}
+
+void __Codegen_callWrite(Codegen *codegen, FunctionCallASTNode *functionCall) {
+	Array *arguments = functionCall->argumentList->arguments;
+
+    for(size_t i = 0; i < arguments->size; ++i) {
+		ArgumentASTNode *argument = Array_get(arguments, i);
+		__Codegen_evaluateExpression(codegen, argument->expression);
+
+        Instruction_pops("WRITE_TMP", FRAME_GLOBAL);
+		Instruction_write("WRITE_TMP", FRAME_GLOBAL);
+	}
+}
+
+void __Codegen_callIntToDouble(Codegen *codegen, FunctionCallASTNode *functionCall) {
+	Array *arguments = functionCall->argumentList->arguments;
+	ArgumentASTNode *argument = Array_get(arguments, 0);
+
+	__Codegen_evaluateExpression(codegen, argument->expression);
+	Instruction_int2floats();
+}
+
+void __Codegen_callDoubleToInt(Codegen *codegen, FunctionCallASTNode *functionCall) {
+    Array *arguments = functionCall->argumentList->arguments;
+    ArgumentASTNode *argument = Array_get(arguments, 0);
+
+    __Codegen_evaluateExpression(codegen, argument->expression);
+	Instruction_float2ints();
+}
+
+void __Codegen_callLength(Codegen *codegen, FunctionCallASTNode *functionCall) {
+    Array *arguments = functionCall->argumentList->arguments;
+    ArgumentASTNode *argument = Array_get(arguments, 0);
+
+    __Codegen_evaluateExpression(codegen, argument->expression);
+
+	// Overhead to call strlen
+	Instruction_createframe();
+    Instruction_defvar("ARG1_LEN", FRAME_TEMPORARY);
+    Instruction_pops("ARG1_LEN", FRAME_TEMPORARY);
+
+	// Call function
+	Instruction_call("length");
+
+	// Handle return value
+    Instruction_pushs("RETVAL_LEN", FRAME_TEMPORARY);
+}
+
+void __Codegen_callSubstring(Codegen *codegen, FunctionCallASTNode *functionCall) {
+	Array *arguments = functionCall->argumentList->arguments;
+	ArgumentASTNode *string = Array_get(arguments, 0);
+	ArgumentASTNode *index_i = Array_get(arguments, 1);
+	ArgumentASTNode *index_j = Array_get(arguments, 2);
+
+	__Codegen_evaluateExpression(codegen, string->expression);
+	__Codegen_evaluateExpression(codegen, index_i->expression);
+	__Codegen_evaluateExpression(codegen, index_j->expression);
+
+	// Overhead to call substr
+	Instruction_createframe();
+    Instruction_defvar("ARG1_SUBSTR", FRAME_TEMPORARY);
+    Instruction_defvar("ARG2_SUBSTR", FRAME_TEMPORARY);
+    Instruction_defvar("ARG3_SUBSTR", FRAME_TEMPORARY);
+
+    Instruction_pops("ARG3_SUBSTR", FRAME_TEMPORARY);
+    Instruction_pops("ARG2_SUBSTR", FRAME_TEMPORARY);
+    Instruction_pops("ARG1_SUBSTR", FRAME_TEMPORARY);
+
+	// Call function
+	Instruction_call("substr");
+
+	// Handle return value
+    Instruction_pushs("RETVAL_SUBSTR", FRAME_TEMPORARY);
+}
+
+void __Codegen_callOrd(Codegen *codegen, FunctionCallASTNode *functionCall) {
+	ArgumentListASTNode *argumentList = functionCall->argumentList;
+	ArgumentASTNode *argument = Array_get(argumentList->arguments, 0);
+	__Codegen_evaluateExpression(codegen, argument->expression);
+
+	// Overhead to call ord
+	Instruction_createframe();
+    Instruction_defvar("ARG1_ORD", FRAME_TEMPORARY);
+    Instruction_pops("ARG1_ORD", FRAME_TEMPORARY);
+
+	// Call function
+	Instruction_call("ord");
+
+	// Handle return value
+    Instruction_pushs("RETVAL_ORD", FRAME_TEMPORARY);
+}
+
+void __Codegen_callChr(Codegen *codegen, FunctionCallASTNode *functionCall) {
+    Array *arguments = functionCall->argumentList->arguments;
+    ArgumentASTNode *argument = Array_get(arguments, 0);
+
+    __Codegen_evaluateExpression(codegen, argument->expression);
+
+	// Overhead to call chr
+	Instruction_createframe();
+    Instruction_defvar("ARG1_CHR", FRAME_TEMPORARY);
+    Instruction_pops("ARG1_CHR", FRAME_TEMPORARY);
+
+	// Call function
+	Instruction_call("chr");
+
+	// Handle return value
+    Instruction_pushs("RETVAL_CHR", FRAME_TEMPORARY);
 }
 
 void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *functionCall) {
 	Array *arguments = functionCall->argumentList->arguments;
 
 	FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, functionCall->id->id);
-	Array *parameters = functionDeclaration->node->parameterList->parameters;
+    assertf(functionDeclaration != NULL, "Could not find function declaration with id %ld", functionCall->id->id);
+    Array *parameters = functionDeclaration->node->parameterList->parameters;
 
 	for(size_t i = 0; i < arguments->size; ++i) {
 		ArgumentASTNode *argument = Array_get(arguments, i);
@@ -887,8 +944,8 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 		ParameterASTNode *parameter = Array_get(parameters, i);
 		size_t parameterId = parameter->internalId->id;
 
-		Instruction_defvar(parameterId, FRAME_TEMPORARY);
-		Instruction_pops(parameterId, FRAME_TEMPORARY);
+        Instruction_defvar_id(parameterId, FRAME_TEMPORARY);
+        Instruction_pops_id(parameterId, FRAME_TEMPORARY);
 	}
 
 	if(functionDeclaration->returnType.type != TYPE_VOID) {
@@ -912,31 +969,22 @@ void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forSt
 
 	// Initialize iterator
 	__Codegen_evaluateExpression(codegen, range->start);
-	Instruction_pops(iteratorId, currentFrame);
+    Instruction_pops_id(iteratorId, currentFrame);
 
 	// Initialize end
 	__Codegen_evaluateExpression(codegen, range->end);
-	Instruction_pops(range->endId, currentFrame);
+    Instruction_pops_id(range->endId, currentFrame);
 
-    Instruction_add_int_id(currentFrame, iteratorId, currentFrame, iteratorId, -1);
+	// Star with value - 1 because we increment at the beginning of the loop
+	Instruction_add_int_id(currentFrame, iteratorId, currentFrame, iteratorId, -1);
 
+	Instruction_label_id("loop_start", loopId);
 
-    Instruction_label_id("loop_start", loopId);
-    Instruction_add_int_id(currentFrame, iteratorId, currentFrame, iteratorId, 1);
-    Instruction_pushs_var(range->endId, currentFrame);
-	Instruction_pushs_var(iteratorId, currentFrame);
+	Instruction_add_int_id(currentFrame, iteratorId, currentFrame, iteratorId, 1);
+    Instruction_pushs_id(range->endId, currentFrame);
+    Instruction_pushs_id(iteratorId, currentFrame);
 
-	switch(range->operator) {
-		case OPERATOR_RANGE:
-			Instruction_lts();
-			break;
-		case OPERATOR_HALF_OPEN_RANGE:
-			Instruction_gts();
-			Instruction_nots();
-			break;
-		default:
-			fassertf("Unknown range operator.");
-	}
+	__Codegen_evaluateRangeOperator(range->operator);
 
 	Instruction_pushs_bool(true);
 	Instruction_jump_ifeqs_id("loop_end", loopId);
@@ -947,12 +995,26 @@ void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forSt
 	Instruction_label_id("loop_end", loopId);
 }
 
+void __Codegen_evaluateRangeOperator(enum OperatorType rangeOperator) {
+	switch(rangeOperator) {
+		case OPERATOR_RANGE:
+			Instruction_lts();
+			break;
+		case OPERATOR_HALF_OPEN_RANGE:
+			Instruction_gts();
+			Instruction_nots();
+			break;
+		default:
+			fassertf("Unknown range operator.");
+	}
+}
+
 void __Codegen_evaluateBreakStatement(BreakStatementASTNode *breakStatement) {
-    Instruction_jump_id("loop_end", breakStatement->id);
+	Instruction_jump_id("loop_end", breakStatement->id);
 }
 
 void __Codegen_evaluateContinueStatement(ContinueStatementASTNode *continueStatement) {
-    Instruction_jump_id("loop_start", continueStatement->id);
+	Instruction_jump_id("loop_start", continueStatement->id);
 }
 
 /** End of file src/compiler/codegen/Codegen.c **/
