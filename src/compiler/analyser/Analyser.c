@@ -2048,13 +2048,16 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 			if(!is_type_equal(overload->returnType, declaration->returnType)) continue;
 
 			// Check for parameters
-			bool isMatching = false;
+			bool isMatching = true;
 			for(size_t j = 0; j < parameters->size; j++) {
 				ParameterASTNode *parameter = Array_get(parameters, j);
 				ParameterASTNode *otherParameter = Array_get(parameterList, j);
 
 				// Different parameter types, skip
-				if(!is_type_equal(parameter->type->type, otherParameter->type->type)) continue;
+				if(!is_type_equal(parameter->type->type, otherParameter->type->type)) {
+					isMatching = false;
+					break;
+				}
 
 				// Different external parameter name, skip
 				String *externalName = parameter->externalId ? parameter->externalId->name : parameter->internalId->name;
@@ -2062,15 +2065,17 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				assertf(externalName, "Parameter has no external or internal name");
 				assertf(otherExternalName, "Parameter has no external or internal name");
 
-				if(!String_equals(externalName, otherExternalName->value)) continue;
+				if(!String_equals(externalName, otherExternalName->value)) {
+					isMatching = false;
+					break;
+				}
 
 				// Found a matching overload
 				isMatching = true;
-				break;
 			}
 
 			// Found a matching overload
-			if(isMatching || parameters->size == 0) {
+			if(isMatching) {
 				return AnalyserError(
 					RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed
 					String_fromFormat("invalid redeclaration of '%s'", name->value),
