@@ -816,6 +816,8 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					} else {
 						HashMap_set(analyser->variables, id->value, declaration);
 					}
+
+					String_free(id);
 				}
 			} break;
 
@@ -949,14 +951,44 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					true
 				);
 
-				// Add the new declaration to the scope of the for statement body
-				HashMap_set(forStatement->body->scope->variables, declaration->name->value, declaration);
-
 				// Assign the id of the iterator to the for statement for the codegen
 				forStatement->iterator->id = declaration->id;
 
-				// Assign the id to the for statement for the codegen
-				forStatement->id = Analyser_nextId(analyser);
+				// Add the new declaration to the scope of the for statement body
+				HashMap_set(forStatement->body->scope->variables, declaration->name->value, declaration);
+
+				// Additional stuff for the codegen
+				{
+					// Assign the id to the for statement
+					forStatement->id = Analyser_nextId(analyser);
+
+					// Create a new variable declaration for the end of the range
+					VariableDeclaration *endDeclaration = new_VariableDeclaration(
+						analyser,
+						NULL,
+						true,
+						(ValueType){.type = TYPE_INT, .isNullable = false},
+						String_alloc("__range_end__"),
+						false,
+						true
+					);
+
+					// Register the variable declarations to the global/function scope
+					FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, block->scope);
+					String *iteratorId = String_fromLong(declaration->id);
+					String *endId = String_fromLong(endDeclaration->id);
+
+					if(function) {
+						HashMap_set(function->variables, iteratorId->value, declaration);
+						HashMap_set(function->variables, endId->value, endDeclaration);
+					} else {
+						HashMap_set(analyser->variables, iteratorId->value, declaration);
+						HashMap_set(analyser->variables, endId->value, endDeclaration);
+					}
+
+					String_free(iteratorId);
+					String_free(endId);
+				}
 
 				// Analyse the body of the for statement
 				result = __Analyser_analyseBlock(analyser, forStatement->body);
