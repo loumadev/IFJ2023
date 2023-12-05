@@ -208,7 +208,36 @@ Pokud parser úspěšně zpracuje všechny vytvořené tokeny, vrátí syntaktic
 // TODO: symtable.c
 
 ### Generátor kódu
+Generátor na vstupe dostáva abstraktný syntaktický strom (AST) a postupným rekurzívnym prechádzaním stromu generuje na 
+výstupe kód v jazyka IFJcode23. Generátor je implementovaný v súbore `Codegen.c`. Inštrukčná sada IFJcode23 je 
+implementovaná v súbore `Instructions.c`. Generátor využíva zásobníkovú architektúru s drobnými optimalizáciami.
 
+#### Generovanie programu
+Generovanie programu začiná vygenerovaním hlavičky IFJcode23. Následne sa generujú pomocné globálne premenné. Tie slúžia 
+pre vybrané špecifické vstavané funkcie (napr. `write(...)`) na uchovávanie a manipuláciu s argumentami alebo návratovými 
+hodnotami. Ako ďalšia časť nasleduje vygenerovanie inštrukcie `JUMP $main`, ktorá preskočí ostatné pomocné deklarácie 
+(viz. nižšie). Následne sa generujú vstavané funkcie, po nich nasledujú uživateľom definované funkcie. 
+
+Po vygenerovaní týchto pomocných štruktúr sa vygeneruje návestia `$main` (`LABEL $main`) a začne sa generovanie hlavnej 
+časti programu.
+
+##### Vstavané funkcie
+
+Niektoré builtin funkcie sú implementované priamo v generátore kódu. Tieto funkcie sa vygenerujú len v momente, keď 
+analýzator nájde ich výskyt. Medzi tieto funkcie patrí `ord`, `length`, `chr`, `substr`. V momente keď generátor 
+narazí na volanie týchto funkcií, vygeneruje sa obsluha volania inštrukcie a inštrukcia `CALL` na danú funkciu.
+
+##### Vnútorné funkcie
+
+Generátor kódu prekladá aj niekoľko vnútorných funkcií, ktoré slúžia na prevod dát a manipuláciu s nimi pri 
+reťazcovej interpolácii. Tieto funkcie sú implementované v jazyku Swift a ich kód je podhodený generátoru kódu ktorý 
+ich preloží do jazyka IFJcode23.
+
+##### Generovanie hlavnej časti programu
+
+Ako prvé nastáva generovanie premenných. Okrem globálnych premenných sa avšak generujú aj premenné, ktoré síce nie sú 
+globálne, ale sú z globálného rozsahu viditeľné - teda generujú sa všetky premenné okrem tých, ktoré sú definované vo 
+funkciách. Následne sa generuje telo programu. Cele generovanie prebieha 
 
 <div class="pagebreak"></div>
 
