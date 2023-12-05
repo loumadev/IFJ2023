@@ -469,17 +469,14 @@ LexerResult __Lexer_tokenizeUntilStringInterpolationTerminator(Lexer *lexer) {
 	// 1 - the initial string interpolation parenthesis to match with the closing one
 	size_t depth = 1;
 
+	// When the string interpolation expression starts with the opening parenthesis,
+	// we need to take that into account
+	if(*lexer->currentChar == '(') {
+		depth++;
+	}
+
 	// While there are tokens to process
 	LexerResult result = LexerSuccess();
-	// while((result = Lexer_tokenizeNextToken(lexer)).token && result.token->type != TOKEN_EOF) {
-	// 	if(result.token->kind == TOKEN_LEFT_PAREN) {
-	// 		depth++;
-	// 	} else if(result.token->kind == TOKEN_RIGHT_PAREN) {
-	// 		depth--;
-
-	// 		if(depth == 0) break;
-	// 	}
-	// }
 
 	do {
 		result = Lexer_tokenizeNextToken(lexer);

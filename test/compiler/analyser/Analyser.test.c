@@ -25,6 +25,75 @@ DESCRIBE(variable_declaraion, "Analysis of variable declaration") {
 	AnalyserResult analyserResult;
 
 	TEST_BEGIN("Simple variable declaration") {
+		Lexer_setSource(
+			&lexer,
+			"func f() -> Int {return 1}" LF
+			"func f() -> Double {return 2.0}" LF
+			"var x = 3.0 * (2 + f())" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func f(_ a: Int) -> Int {return 1}" LF
+			"func f(_ a: Double) -> Int {return 1}" LF
+			"var a = 5" LF
+			"var c = f(1 - a)" LF
+			// "var c = \"pre \\(1 - a) post\"" LF
+			// "var c = \"pre \\(1 - (a + b) * f()) post\"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"let c = \"\\(10)\"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func f(_ a: Int) -> Int {return 1}" LF
+			"func f(_ a: Double) -> Int {return 1}" LF
+			"var a = 5" LF
+			"var c = \"pre \\(1 - a) post\"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"func f(_ a: Int) -> Int {return 1}" LF
+			"func f(_ a: Double) -> Int {return 1}" LF
+			"var a = 5" LF
+			"var b = 8" LF
+			"var c = \"pre \\(1 - (a + b) * f(5)) post\"" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
 		Lexer_setSource(&lexer, "let a = 7");
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
@@ -493,6 +562,18 @@ DESCRIBE(type_compatibility_var, "Compatibility of types in variable declaration
 		Lexer_setSource(
 			&lexer,
 			"let a: Int? = nil" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_TRUE(analyserResult.success);
+
+
+		Lexer_setSource(
+			&lexer,
+			"let a: Int? = nil" LF
+			"let c = \"\\(10)\"" LF
 		);
 		parserResult = Parser_parse(&parser);
 		EXPECT_TRUE(parserResult.success);
@@ -1858,6 +1939,19 @@ DESCRIBE(function_dec_analysis, "Function declaration analysis") {
 		{
 			Lexer_setSource(
 				&lexer,
+				"if(true) {" LF
+				TAB "func a() { }" LF
+				"}" LF
+			);
+			parserResult = Parser_parse(&parser);
+			EXPECT_TRUE(parserResult.success);
+
+			analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+			EXPECT_FALSE(analyserResult.success);
+		}
+		{
+			Lexer_setSource(
+				&lexer,
 				"func a() -> Int {}" LF
 				"" LF
 				"a()" LF
@@ -2105,6 +2199,79 @@ DESCRIBE(function_overloading, "Function overload resolution") {
 
 		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
 	} TEST_END();
+
+	TEST_BEGIN("Too many parameters in function call") {
+		Lexer_setSource(
+			&lexer,
+			"func a(_ a: Int) -> Int {return 1}" LF
+			"" LF
+			"let v1 = a(1, 2) + 5" LF
+		);
+		parserResult = Parser_parse(&parser);
+		EXPECT_TRUE(parserResult.success);
+
+		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+		EXPECT_FALSE(analyserResult.success);
+
+		EXPECT_STATEMENTS(parserResult.node, 2 + FUNCTIONS_COUNT);
+	} TEST_END();
+
+	// TEST_BEGIN("Resolution of overloaded function with nullable+non-nullable parameters") {
+	// 	{
+	// 		Lexer_setSource(
+	// 			&lexer,
+	// 			"func a(a x: Int) -> Int {return 1}" LF
+	// 			"func a(a x: Int?) -> Int {return 1}" LF
+	// 			"" LF
+	// 			"let v1: Int = 5" LF
+	// 			"a(a: v1)" LF
+	// 		);
+	// 		parserResult = Parser_parse(&parser);
+	// 		EXPECT_TRUE(parserResult.success);
+
+	// 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+	// 		EXPECT_TRUE(analyserResult.success);
+
+	// 		EXPECT_STATEMENTS(parserResult.node, 4 + FUNCTIONS_COUNT);
+
+	// 		FunctionCallASTNode *functionCall = (FunctionCallASTNode*)((ExpressionStatementASTNode*)Array_get(statements, 3 + FUNCTIONS_COUNT))->expression;
+	// 		EXPECT_NOT_NULL(functionCall);
+	// 		EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+	// 		FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+	// 		EXPECT_NOT_NULL(function);
+
+	// 		FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 0 + FUNCTIONS_COUNT);
+	// 		EXPECT_EQUAL_PTR(function->node, declaration);
+	// 	}
+	// 	{
+	// 		Lexer_setSource(
+	// 			&lexer,
+	// 			"func a(a x: Int) -> Int {return 1}" LF
+	// 			"func a(a x: Int?) -> Int {return 1}" LF
+	// 			"" LF
+	// 			"let v1: Int? = 5" LF
+	// 			"a(a: v1)" LF
+	// 		);
+	// 		parserResult = Parser_parse(&parser);
+	// 		EXPECT_TRUE(parserResult.success);
+
+	// 		analyserResult = Analyser_analyse(&analyser, (ProgramASTNode*)parserResult.node);
+	// 		EXPECT_TRUE(analyserResult.success);
+
+	// 		EXPECT_STATEMENTS(parserResult.node, 4 + FUNCTIONS_COUNT);
+
+	// 		FunctionCallASTNode *functionCall = (FunctionCallASTNode*)((ExpressionStatementASTNode*)Array_get(statements, 3 + FUNCTIONS_COUNT))->expression;
+	// 		EXPECT_NOT_NULL(functionCall);
+	// 		EXPECT_TRUE(functionCall->_type == NODE_FUNCTION_CALL);
+
+	// 		FunctionDeclaration *function = Analyser_getFunctionById(&analyser, functionCall->id->id);
+	// 		EXPECT_NOT_NULL(function);
+
+	// 		FunctionDeclarationASTNode *declaration = (FunctionDeclarationASTNode*)Array_get(statements, 1 + FUNCTIONS_COUNT);
+	// 		EXPECT_EQUAL_PTR(function->node, declaration);
+	// 	}
+	// } TEST_END();
 
 	TEST_BEGIN("Resolution of overloaded function inside an expression with multiple parameters") {
 		{

@@ -1,7 +1,8 @@
 /**
  * @file src/internal/Array.c
  * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Radim Mifka <xmifka00@stud.fit.vutbr.cz>
+ * @brief Implementation of String data structure.
  * @copyright Copyright (c) 2023
  */
 

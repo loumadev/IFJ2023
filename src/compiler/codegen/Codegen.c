@@ -49,7 +49,7 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAstNode);
 void __Codegen_evaluateReturnStatement(Codegen *codegen, ReturnStatementASTNode *returnStatement);
 void __Codegen_evaluateBindingCondition(Codegen *codegen, OptionalBindingConditionASTNode *optionalBindingCondition);
-//void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forStatement);
+// void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forStatement);
 
 // Optimalizations
 void __Codegen_generateCoalescing();
@@ -355,7 +355,7 @@ void __Codegen_generateUserFunctions(Codegen *codegen) {
 }
 
 void __Codegen_generateFunctionDeclaration(Codegen *codegen, FunctionDeclaration *functionDeclaration) {
-	if(functionDeclaration->node->builtin != FUNCTION_NONE) {
+	if(!is_func_generable(functionDeclaration->node->builtin)) {
 		return;
 	}
 
@@ -437,7 +437,7 @@ void __Codegen_evaluateStatement(Codegen *codegen, StatementASTNode *statementAs
 		case NODE_FOR_STATEMENT: {
 //			ForStatementASTNode *forStatement = (ForStatementASTNode*)statementAstNode;
 //			__Codegen_evaluateForStatement(codegen, forStatement);
-            fassertf("[Codegen] For statement not implemented.");
+			fassertf("[Codegen] For statement not implemented.");
 		} break;
 		case NODE_BREAK_STATEMENT: {
 			fassertf("[Codegen] Break statement outside of loop.");
@@ -538,6 +538,8 @@ void __Codegen_evaluateBinaryExpression(Codegen *codegen, BinaryExpressionASTNod
 
 // TODO: Careful, there are some exceptions when working with nils
 void __Codegen_evaluateBinaryOperator(BinaryExpressionASTNode *expression) {
+	assertf(expression != NULL);
+
 	switch(expression->operator) {
 		case OPERATOR_PLUS: {
 			if(expression->type.type == TYPE_STRING) {
@@ -707,6 +709,9 @@ void __Codegen_evaluateExpressionStatement(Codegen *codegen, ExpressionStatement
 }
 
 void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expression) {
+	assertf(codegen != NULL);
+	assertf(expression != NULL);
+
 	switch(expression->_type) {
 		case NODE_LITERAL_EXPRESSION: {
 			LiteralExpressionASTNode *literal = (LiteralExpressionASTNode*)expression;
@@ -723,7 +728,7 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 		case NODE_FUNCTION_CALL: {
 			FunctionCallASTNode *functionCall = (FunctionCallASTNode*)expression;
 			enum BuiltInFunction builtin = Analyser_getBuiltInFunctionById(codegen->analyser, functionCall->id->id);
-			if(builtin != FUNCTION_NONE) {
+			if(is_func_builtin(builtin)) {
 				__Codegen_resolveBuiltInFunction(codegen, functionCall, builtin);
 			} else {
 				__Codegen_evaluateFunctionCall(codegen, functionCall);
@@ -741,8 +746,11 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 			__Codegen_evaluateBinaryExpression(codegen, binaryExpression);
 		} break;
 		case NODE_INTERPOLATION_EXPRESSION: {
-			fassertf("Interpolation not implemented yet.");
-		}
+			InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)expression;
+			assertf(interpolation);
+			assertf(interpolation->concatenated);
+			__Codegen_evaluateBinaryExpression(codegen, interpolation->concatenated);
+		} break;
 		default:
 			fassertf("Unexpected ASTNode type. Analyser probably failed.");
 	}
@@ -866,6 +874,15 @@ void __Codegen_resolveBuiltInFunction(Codegen *codegen, FunctionCallASTNode *fun
 			// Handle return value
 			Instruction_pushs_var_named("RETVAL_CHR", FRAME_TEMPORARY);
 		} break;
+		case FUNCTION_INTERNAL_STRINGIFY_NUMBER:
+		case FUNCTION_INTERNAL_STRINGIFY_DOUBLE:
+		case FUNCTION_INTERNAL_STRINGIFY_INT:
+		case FUNCTION_INTERNAL_STRINGIFY_BOOL:
+		case FUNCTION_INTERNAL_STRINGIFY_STRING:
+		case FUNCTION_INTERNAL_MODULO: {
+			// Internal functions are handled as user defined functions
+			__Codegen_evaluateFunctionCall(codegen, functionCall);
+		} break;
 		case FUNCTIONS_COUNT:
 		case FUNCTION_NONE:
 			fassertf("Expected builtin function, got user defined.");
@@ -876,6 +893,8 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 	Array *arguments = functionCall->argumentList->arguments;
 
 	FunctionDeclaration *functionDeclaration = Analyser_getFunctionById(codegen->analyser, functionCall->id->id);
+	assertf(functionDeclaration != NULL, "Could not find function declaration with id %ld", functionCall->id->id);
+
 	Array *parameters = functionDeclaration->node->parameterList->parameters;
 
 	for(size_t i = 0; i < arguments->size; ++i) {
@@ -884,15 +903,15 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 		__Codegen_evaluateExpression(codegen, argument->expression);
 	}
 
-    Instruction_createframe();
+	Instruction_createframe();
 
-    for(int i = arguments->size - 1; i > -1 ; --i) {
-        ParameterASTNode *parameter = Array_get(parameters, i);
-        size_t parameterId = parameter->internalId->id;
+	for(int i = arguments->size - 1; i > -1; --i) {
+		ParameterASTNode *parameter = Array_get(parameters, i);
+		size_t parameterId = parameter->internalId->id;
 
-        Instruction_defvar(parameterId, FRAME_TEMPORARY);
-        Instruction_pops(parameterId, FRAME_TEMPORARY);
-    }
+		Instruction_defvar(parameterId, FRAME_TEMPORARY);
+		Instruction_pops(parameterId, FRAME_TEMPORARY);
+	}
 
 
 	if(functionDeclaration->returnType.type != TYPE_VOID) {
@@ -907,42 +926,42 @@ void __Codegen_evaluateFunctionCall(Codegen *codegen, FunctionCallASTNode *funct
 }
 
 void __Codegen_evaluateForStatement(Codegen *codegen, ForStatementASTNode *forStatement) {
-    Instruction_label("for_cycle");
+	Instruction_label("for_cycle");
 
-    __Codegen_evaluateExpression(codegen, forStatement->range->start);
-    Instruction_defvar(forStatement->iterator->id, codegen->frame);
-    Instruction_pops(forStatement->iterator->id, codegen->frame);
+	__Codegen_evaluateExpression(codegen, forStatement->range->start);
+	Instruction_defvar(forStatement->iterator->id, codegen->frame);
+	Instruction_pops(forStatement->iterator->id, codegen->frame);
 
-    Instruction_defvar_where("for_end", codegen->frame);
-    __Codegen_evaluateExpression(codegen, forStatement->range->end);
-    Instruction_pops_where("for_end", codegen->frame);
+	Instruction_defvar_where("for_end", codegen->frame);
+	__Codegen_evaluateExpression(codegen, forStatement->range->end);
+	Instruction_pops_where("for_end", codegen->frame);
 
-    Instruction_jump("for_cycle_test");
+	Instruction_jump("for_cycle_test");
 
-    Instruction_label("for_cycle_iterate");
-    // Increment iterator
-    Instruction_add_int_id(codegen->frame, forStatement->iterator->id, codegen->frame, forStatement->iterator->id, 1);
+	Instruction_label("for_cycle_iterate");
+	// Increment iterator
+	Instruction_add_int_id(codegen->frame, forStatement->iterator->id, codegen->frame, forStatement->iterator->id, 1);
 
-    Instruction_label("for_cycle_test");
-    if(forStatement->range->operator == OPERATOR_LESS) {
-        Instruction_pushs_var(forStatement->iterator->id, codegen->frame);
-        Instruction_pushs_var_named("for_end", codegen->frame);
-        Instruction_lts();
-    } else {
-        Instruction_pushs_var(forStatement->iterator->id, codegen->frame);
-        Instruction_pushs_var_named("for_end", codegen->frame);
-        Instruction_gts();
-        Instruction_nots();
-    }
+	Instruction_label("for_cycle_test");
+	if(forStatement->range->operator == OPERATOR_LESS) {
+		Instruction_pushs_var(forStatement->iterator->id, codegen->frame);
+		Instruction_pushs_var_named("for_end", codegen->frame);
+		Instruction_lts();
+	} else {
+		Instruction_pushs_var(forStatement->iterator->id, codegen->frame);
+		Instruction_pushs_var_named("for_end", codegen->frame);
+		Instruction_gts();
+		Instruction_nots();
+	}
 
-    Instruction_pushs_bool(true);
-    Instruction_jump_ifeqs("for_cycle_end");
+	Instruction_pushs_bool(true);
+	Instruction_jump_ifeqs("for_cycle_end");
 
-    Instruction_label("for_cycle_start");
-    __Codegen_evaluateBlock(codegen, forStatement->body);
-    Instruction_jump("for_cycle_iterate");
+	Instruction_label("for_cycle_start");
+	__Codegen_evaluateBlock(codegen, forStatement->body);
+	Instruction_jump("for_cycle_iterate");
 
-    Instruction_label("for_cycle_end");
+	Instruction_label("for_cycle_end");
 }
 
 /** End of file src/compiler/codegen/Codegen.c **/

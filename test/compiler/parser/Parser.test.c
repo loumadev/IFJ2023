@@ -2552,6 +2552,16 @@ DESCRIBE(str_interp_parsing, "String interpolation parsing") {
 		EXPECT_TRUE(String_equals(identifier->name, "expr"));
 	} TEST_END();
 
+	TEST_BEGIN("Simple string containing single interpolation expression") {
+		Lexer_setSource(
+			&lexer,
+			"str = \"pre \\((2 + 2)) post\"" LF
+		);
+
+		result = Parser_parse(&parser);
+		EXPECT_TRUE(result.success);
+	} TEST_END();
+
 	TEST_BEGIN("Simple string containing multiple interpolation expression") {
 		Lexer_setSource(
 			&lexer,

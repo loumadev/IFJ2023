@@ -1,6 +1,6 @@
 /**
  * @file include/compiler/parser/ExpressionParser.h
- * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @author Veronika Krobotová <xkrobo03@stud.fit.vut.cz>
  * @brief This file is part of the IFJ23 project.
  * @copyright Copyright (c) 2023
  */

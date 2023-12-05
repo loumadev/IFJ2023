@@ -1,7 +1,8 @@
 /**
  * @file src/compiler/parser/Parser.c
  * @author Jaroslav Louma <xlouma00@stud.fit.vutbr.cz>
- * @brief This file is part of the IFJ23 project.
+ * @author Radim Mifka <xmifka00@stud.fit.vutbr.cz>
+ * @brief Implemetation of recusive descent parser.
  * @copyright Copyright (c) 2023
  */
 
@@ -853,7 +854,20 @@ ParserResult __Parser_parseReturnStatement(Parser *parser) {
 
 	ExpressionASTNode *expression = NULL;
 
-	if(peek.token->type != TOKEN_EOF && peek.token->kind != TOKEN_RIGHT_BRACE) {
+	if(
+		peek.token->type != TOKEN_EOF &&
+		peek.token->kind != TOKEN_RIGHT_BRACE &&
+		// An empty return followed by another statement
+		peek.token->kind != TOKEN_FUNC &&
+		peek.token->kind != TOKEN_IF &&
+		peek.token->kind != TOKEN_WHILE &&
+		peek.token->kind != TOKEN_FOR &&
+		peek.token->kind != TOKEN_RETURN &&
+		peek.token->kind != TOKEN_BREAK &&
+		peek.token->kind != TOKEN_CONTINUE &&
+		peek.token->kind != TOKEN_LET &&
+		peek.token->kind != TOKEN_VAR
+	) {
 		ParserResult expressionResult = __Parser_parseExpression(parser);
 		if(!expressionResult.success) return expressionResult;
 		expression = (ExpressionASTNode*)expressionResult.node;

@@ -2295,6 +2295,55 @@ DESCRIBE(string_interpolation, "Interpolated string literal tokenization") {
 		EXPECT_TRUE(String_equals(token->value.string, " post"));
 	})
 
+	TEST_BEGIN("Interpolated string contining parentheses in expression") {
+		result = Lexer_tokenize(&lexer, "\"pre \\((expr * a) + b) post\"");
+		EXPECT_TRUE(result.success);
+
+		token = (Token*)Array_get(lexer.tokens, 0);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, "pre "));
+
+		token = (Token*)Array_get(lexer.tokens, 1);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_HEAD);
+
+		token = (Token*)Array_get(lexer.tokens, 2);
+		EXPECT_TRUE(token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(token->kind == TOKEN_LEFT_PAREN);
+
+		token = (Token*)Array_get(lexer.tokens, 3);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "expr"));
+
+		token = (Token*)Array_get(lexer.tokens, 4);
+		EXPECT_TRUE(token->type == TOKEN_OPERATOR);
+		EXPECT_TRUE(token->kind == TOKEN_STAR);
+
+		token = (Token*)Array_get(lexer.tokens, 5);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "a"));
+
+		token = (Token*)Array_get(lexer.tokens, 6);
+		EXPECT_TRUE(token->type == TOKEN_PUNCTUATOR);
+		EXPECT_TRUE(token->kind == TOKEN_RIGHT_PAREN);
+
+		token = (Token*)Array_get(lexer.tokens, 7);
+		EXPECT_TRUE(token->type == TOKEN_OPERATOR);
+		EXPECT_TRUE(token->kind == TOKEN_PLUS);
+
+		token = (Token*)Array_get(lexer.tokens, 8);
+		EXPECT_TRUE(token->type == TOKEN_IDENTIFIER);
+		EXPECT_TRUE(String_equals(token->value.identifier, "b"));
+
+		token = (Token*)Array_get(lexer.tokens, 9);
+		EXPECT_TRUE(token->type == TOKEN_STRING_INTERPOLATION_MARKER);
+		EXPECT_TRUE(token->kind == TOKEN_STRING_TAIL);
+
+		token = (Token*)Array_get(lexer.tokens, 10);
+		EXPECT_TRUE(token->kind == TOKEN_STRING);
+		EXPECT_TRUE(String_equals(token->value.string, " post"));
+	} TEST_END();
+
 	TEST("Interpolated string contining string as teh expression", {
 		result = Lexer_tokenize(&lexer, "\"pre \\(\"in\") post\"");
 		EXPECT_TRUE(result.success);

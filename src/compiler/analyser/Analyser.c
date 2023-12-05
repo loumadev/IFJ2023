@@ -310,6 +310,8 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 
 	Array *candidates = Array_alloc(0);
 
+	AnalyserResult lastError = AnalyserSuccess();
+
 	// Loop over possible candidates
 	for(size_t i = 0; i < overloads->size; i++) {
 		FunctionDeclaration *overload = Array_get(overloads, i);
@@ -347,8 +349,13 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 
 			AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, parameterType, &argumentType);
 			if(!result.success) {
-				Array_free(candidates);
-				return result;
+				// Array_free(candidates);
+				// return result;
+				lastError = result;
+				hasMatched = false;
+				break;
+			} else {
+				lastError = result;
 			}
 
 			// Non-matching parameter type
@@ -359,6 +366,10 @@ AnalyserResult __Analyser_resolveFunctionOverloadCandidates(
 		}
 
 		if(hasMatched) Array_push(candidates, overload);
+	}
+
+	if(candidates->size == 0 && !lastError.success) {
+		return lastError;
 	}
 
 	*outCandidates = candidates;
@@ -465,18 +476,20 @@ void __Analyser_registerBuiltInFunctions(Analyser *analyser) {
 
 	Lexer_setSource(
 		&lexer,
-		#define LF "\n"
-		"func readString() -> String? {return nil}" LF
-		"func readInt() -> Int? {return nil}" LF
-		"func readDouble() -> Double? {return nil}" LF
-		"func write() {}" LF // Parameters handled internally
-		"func Int2Double(_ term: Int) -> Double {return 0.0}" LF
-		"func Double2Int(_ term: Double) -> Int {return 0}" LF
-		"func length(_ s: String) -> Int {return 0}" LF
-		"func substring(of s: String, startingAt i: Int, endingBefore j: Int) -> String? {return nil}" LF
-		"func ord(_ c: String) -> Int {return 0}" LF
-		"func chr(_ i: Int) -> String {return \"\"}" LF
-		#undef LF
+		// #define LF "\n"
+		// "func readString() -> String? {return nil}" LF
+		// "func readInt() -> Int? {return nil}" LF
+		// "func readDouble() -> Double? {return nil}" LF
+		// "func write() {}" LF // Parameters handled internally
+		// "func Int2Double(_ term: Int) -> Double {return 0.0}" LF
+		// "func Double2Int(_ term: Double) -> Int {return 0}" LF
+		// "func length(_ s: String) -> Int {return 0}" LF
+		// "func substring(of s: String, startingAt i: Int, endingBefore j: Int) -> String? {return nil}" LF
+		// "func ord(_ c: String) -> Int {return 0}" LF
+		// "func chr(_ i: Int) -> String {return \"\"}" LF
+		// "" LF
+		#include "compiler/analyser/builtins.swift.h"
+		// #undef LF
 	);
 	ParserResult result = Parser_parse(&parser);
 	assertf(result.success, "Failed to parse built-in function declarations: %s", result.message->value);
@@ -484,10 +497,11 @@ void __Analyser_registerBuiltInFunctions(Analyser *analyser) {
 	ProgramASTNode *ast = (ProgramASTNode*)result.node;
 	Array *statements = ast->block->statements;
 
-	for(size_t i = 0; i < FUNCTIONS_COUNT; i++) {
+	for(size_t i = 0; i < statements->size; i++) {
 		FunctionDeclarationASTNode *functionNode = (FunctionDeclarationASTNode*)Array_get(statements, i);
 
-		functionNode->builtin = (enum BuiltInFunction)i;
+		if(i >= FUNCTIONS_COUNT) warnf("Found statement at index %zu, but only %d built-in functions are registered. Maybe forgot to update the 'BuiltInFunction' enum?", i, FUNCTIONS_COUNT);
+		else functionNode->builtin = (enum BuiltInFunction)i;
 
 		Array_unshift(analyser->ast->block->statements, functionNode);
 	}
@@ -538,6 +552,56 @@ void __Analyser_createBlockScopeChaining_processNode(Analyser *analyser, ASTNode
 		} break;
 	}
 }
+
+ExpressionASTNode* __Analyser_convertInterpolationToConcat(Analyser *analyser, BlockScope *scope, Array *strings, Array *expressions) {
+	if(strings->size == 1) {
+		return (ExpressionASTNode*)new_LiteralExpressionASTNode(
+			(ValueType){.type = TYPE_STRING, .isNullable = false},
+			(union TokenValue){.string = Array_get(strings, 0)}
+		);
+	}
+
+	Array *strs = Array_slice(strings, 0, strings->size - 1);
+	Array *exprs = Array_slice(expressions, 0, expressions->size - 1);
+
+	ExpressionASTNode *left = __Analyser_convertInterpolationToConcat(analyser, scope, strs, exprs);
+	LiteralExpressionASTNode *right = new_LiteralExpressionASTNode(
+		(ValueType){.type = TYPE_STRING, .isNullable = false},
+		(union TokenValue){.string = Array_get(strings, -1)}
+	);
+
+	ExpressionASTNode *expression = Array_get(expressions, -1);
+
+	// Stringify the expression
+	FunctionCallASTNode *stringify = new_FunctionCallASTNode(
+		new_IdentifierASTNode(String_alloc("__stringify__")),
+		new_ArgumentListASTNode(
+			Array_fromArgs(
+				1,
+				new_ArgumentASTNode(
+					expression,
+					NULL
+				)
+			)
+		)
+	);
+
+	BinaryExpressionASTNode *concat = new_BinaryExpressionASTNode(left, (ExpressionASTNode*)stringify, OPERATOR_PLUS);
+	concat->type = (ValueType){.type = TYPE_STRING, .isNullable = false};
+
+	Array_free(strs);
+	Array_free(exprs);
+
+	BinaryExpressionASTNode *expr = new_BinaryExpressionASTNode(
+		(ExpressionASTNode*)concat,
+		(ExpressionASTNode*)right,
+		OPERATOR_PLUS
+	);
+	expr->type = (ValueType){.type = TYPE_STRING, .isNullable = false};
+
+	return (ExpressionASTNode*)expr;
+}
+
 
 AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *node, BlockScope *scope) {
 	assertf(node->_type == NODE_IF_STATEMENT || node->_type == NODE_WHILE_STATEMENT, "Invalid node type %d", node->_type);
@@ -752,6 +816,8 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					} else {
 						HashMap_set(analyser->variables, id->value, declaration);
 					}
+
+					String_free(id);
 				}
 			} break;
 
@@ -885,14 +951,44 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 					true
 				);
 
-				// Add the new declaration to the scope of the for statement body
-				HashMap_set(forStatement->body->scope->variables, declaration->name->value, declaration);
-
 				// Assign the id of the iterator to the for statement for the codegen
 				forStatement->iterator->id = declaration->id;
 
-				// Assign the id to the for statement for the codegen
-				forStatement->id = Analyser_nextId(analyser);
+				// Add the new declaration to the scope of the for statement body
+				HashMap_set(forStatement->body->scope->variables, declaration->name->value, declaration);
+
+				// Additional stuff for the codegen
+				{
+					// Assign the id to the for statement
+					forStatement->id = Analyser_nextId(analyser);
+
+					// Create a new variable declaration for the end of the range
+					VariableDeclaration *endDeclaration = new_VariableDeclaration(
+						analyser,
+						NULL,
+						true,
+						(ValueType){.type = TYPE_INT, .isNullable = false},
+						String_alloc("__range_end__"),
+						false,
+						true
+					);
+
+					// Register the variable declarations to the global/function scope
+					FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, block->scope);
+					String *iteratorId = String_fromLong(declaration->id);
+					String *endId = String_fromLong(endDeclaration->id);
+
+					if(function) {
+						HashMap_set(function->variables, iteratorId->value, declaration);
+						HashMap_set(function->variables, endId->value, endDeclaration);
+					} else {
+						HashMap_set(analyser->variables, iteratorId->value, declaration);
+						HashMap_set(analyser->variables, endId->value, endDeclaration);
+					}
+
+					String_free(iteratorId);
+					String_free(endId);
+				}
 
 				// Analyse the body of the for statement
 				result = __Analyser_analyseBlock(analyser, forStatement->body);
@@ -901,6 +997,15 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 
 			case NODE_FUNCTION_DECLARATION: {
 				FunctionDeclarationASTNode *function = (FunctionDeclarationASTNode*)statement;
+
+				// Local scope function declarations are not supported
+				if(block->scope->parent) {
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_OTHER,
+						String_fromFormat("function declarations are not allowed inside local scope"),
+						NULL
+					);
+				}
 
 				AnalyserResult result = __Analyser_analyseBlock(analyser, function->body);
 				if(!result.success) return result;
@@ -1053,6 +1158,8 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 }
 
 AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionASTNode *node, BlockScope *scope, ValueType prefferedType, ValueType *outType) {
+	assertf(analyser != NULL);
+
 	switch(node->_type) {
 		case NODE_LITERAL_EXPRESSION: {
 			// Literals are handled by parser, we just might need to retype them if requested
@@ -1129,8 +1236,12 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 				FunctionDeclaration *declaration = Analyser_getFunctionById(analyser, call->id->id);
 				assertf(declaration);
 
-				*outType = declaration->returnType;
-				return AnalyserSuccess();
+				// Only use already resolved type if the preffered type is the same, otherwise try to resolve it again
+				// Not sure about the nullable part
+				if(declaration->returnType.type == prefferedType.type && declaration->returnType.isNullable == prefferedType.isNullable) {
+					*outType = declaration->returnType;
+					return AnalyserSuccess();
+				}
 			}
 
 			// If not in global scope, look for non-global variable declaration
@@ -1158,6 +1269,8 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 				AnalyserResult result = __Analyser_resolveFunctionOverloadCandidates(analyser, call, scope, &candidates);
 				if(!result.success) return result;
 
+				Array /*<FunctionDeclaration>*/ *betterCandidates = Array_alloc(1);
+
 				// Try to find the candidate with preffered return type
 				for(size_t i = 0; i < candidates->size; i++) {
 					FunctionDeclaration *candidate = Array_get(candidates, i);
@@ -1166,12 +1279,71 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 						// Multiple candidates matching
 						if(declaration) {
 							hasMultipleCandidates = true;
-							break;
+						} else {
+							declaration = candidate;
 						}
 
-						declaration = candidate;
+						Array_push(betterCandidates, candidate);
 					}
 				}
+
+				// If there are multiple candidates matching, try to find the best one
+				if(betterCandidates->size > 1) {
+					Array *arguments = call->argumentList->arguments;
+					Array /*<int>*/ *exactMatches = Array_alloc(betterCandidates->size);
+
+					for(size_t i = 0; i < arguments->size; i++) {
+						ArgumentASTNode *argument = Array_get(arguments, i);
+
+						for(size_t j = 0; j < betterCandidates->size; j++) {
+							FunctionDeclaration *candidate = Array_get(betterCandidates, j);
+							ParameterASTNode *parameter = Array_get(candidate->node->parameterList->parameters, i);
+
+							ValueType type;
+							AnalyserResult result = __Analyser_resolveExpressionType(analyser, argument->expression, scope, (ValueType){.type = TYPE_UNKNOWN, .isNullable = false}, &type);
+							if(!result.success) return result;
+
+							int score = 0;
+
+							score += type.type == parameter->type->type.type;
+							score += type.isNullable == parameter->type->isNullable;
+
+							int *count = Array_get(exactMatches, j);
+							if(!count) {
+								count = mem_alloc(sizeof(int));
+								*count = 0;
+								Array_set(exactMatches, j, count);
+							}
+
+							(*count) += score;
+						}
+					}
+
+					// Find the candidate with the most unique exact matches
+					int maxExactMatches = 0;
+					int count = 0;
+					size_t index = 0;
+
+					for(size_t i = 0; i < exactMatches->size; i++) {
+						int *exactMatchCount = Array_get(exactMatches, i);
+
+						if(exactMatchCount && *exactMatchCount > maxExactMatches) {
+							maxExactMatches = *exactMatchCount;
+							count = 1;
+							index = i;
+						} else if(exactMatchCount && *exactMatchCount == maxExactMatches) {
+							count++;
+						}
+					}
+
+					// Found the best candidate
+					if(count == 1) {
+						declaration = Array_get(betterCandidates, index);
+						hasMultipleCandidates = false;
+					}
+				}
+
+				Array_free(betterCandidates);
 			} else if(overloads) {
 				declaration = Array_get(overloads, 0);
 				assertf(declaration);
@@ -1701,26 +1873,21 @@ AnalyserResult __Analyser_resolveExpressionType(Analyser *analyser, ExpressionAS
 		case NODE_INTERPOLATION_EXPRESSION: {
 			InterpolationExpressionASTNode *interpolation = (InterpolationExpressionASTNode*)node;
 
-			// Validate all the expressions
-			for(size_t i = 0; i < interpolation->expressions->size; i++) {
-				ExpressionASTNode *expression = Array_get(interpolation->expressions, i);
+			// Convert the interpolation to a concatenation
+			ExpressionASTNode *concat = __Analyser_convertInterpolationToConcat(
+				analyser,
+				scope,
+				interpolation->strings,
+				interpolation->expressions
+			);
 
-				ValueType type;
-				AnalyserResult result = __Analyser_resolveExpressionType(analyser, expression, scope, prefferedType, &type);
-				if(!result.success) return result;
+			// Analyse the concatenated string
+			ValueType type;
+			AnalyserResult result = __Analyser_resolveExpressionType(analyser, concat, scope, prefferedType, &type);
+			if(!result.success) return result;
 
-				// NOTE: Not specified in the assignment, but Swift is okay with this (just prints some warnings)
-				// if(type.isNullable) {
-				// 	return AnalyserError(
-				// 		RESULT_ERROR_SEMANTIC_INVALID_TYPE,
-				// 		String_fromFormat(
-				// 			"value of optional type '%s' must be unwrapped to a value of type 'String'",
-				// 			__Analyser_stringifyType(type)->value
-				// 		),
-				// 		NULL
-				// 	);
-				// }
-			}
+			interpolation->concatenated = (BinaryExpressionASTNode*)concat;
+			*outType = interpolation->concatenated->type;
 		} break;
 
 		default: {
@@ -1794,8 +1961,11 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 					);
 				}
 
-				// Both name and label are the same
-				if(parameter->externalId && String_equals(name, parameter->externalId->name->value)) {
+				bool areNamesEqual = parameter->externalId && String_equals(name, parameter->externalId->name->value);
+				bool isUnderscoreDeclaration = parameter->isLabeless && areNamesEqual;
+
+				// Both name and label are the same (only if the parameter has an external name)
+				if(!isUnderscoreDeclaration && areNamesEqual) {
 					return AnalyserError(
 						RESULT_ERROR_SEMANTIC_OTHER, // TODO: Fixed
 						String_fromFormat("parameter name same as external label '%s'", name->value),
@@ -1829,19 +1999,21 @@ AnalyserResult __Analyser_collectFunctionDeclarations(Analyser *analyser) {
 				parameter->type->type = variable->type;
 				parameter->internalId->id = variable->id;
 
-				// If the parameter is not in the hashmap yet
-				if(!HashMap_has(variables, name->value)) {
-					// Add the parameter to the hashmap
-					HashMap_set(variables, name->value, variable);
-					continue;
-				}
+				if(!isUnderscoreDeclaration) {
+					// If the parameter is not in the hashmap yet
+					if(!HashMap_has(variables, name->value)) {
+						// Add the parameter to the hashmap
+						HashMap_set(variables, name->value, variable);
+						continue;
+					}
 
-				// There is already a parameter with the same name
-				return AnalyserError(
-					RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed?
-					String_fromFormat("invalid redeclaration of '%s'", name->value),
-					NULL
-				);
+					// There is already a parameter with the same name
+					return AnalyserError(
+						RESULT_ERROR_SEMANTIC_VARIABLE_REDEFINITION, // TODO: Fixed?
+						String_fromFormat("invalid redeclaration of '%s'", name->value),
+						NULL
+					);
+				}
 			}
 		}
 
