@@ -67,6 +67,10 @@
 </style>
 
 <header>
+<br>
+<br>
+<br>
+
 <p class="h1 center">Dokumentácia</p>
 <p class="h2 center">Implementácia prekladaču imperatívného jazyka IFJ23</p>
 <p class="h3 center">Tým xlouma00, varianta TRP</p>
@@ -80,7 +84,18 @@
 <span class="center">Radim Mifka (xmifka00) 25%</span>
 <span class="center">Jaroslav Novotný (xnovot2r) 25%</span>
 
-//TODO: extensions
+<br>
+<br>
+<br>
+
+<span class="center">Rozšírenia:</span>
+<p>
+	<small class="center">OVERLOAD</small>
+	<small class="center">INTERPOLATION</small>
+	<small class="center">BOOLTHEN</small>
+	<small class="center">CYCLES</small>
+	<small class="center">FUNEXP</small>
+</p>
 </header>
 
 
@@ -100,11 +115,12 @@
 		- [HashMap](#hashmap)
 		- [HashSet](#hashset)
 		- [Array (Stack/Queue)](#array-stackqueue)
+		- [String](#string)
 		- [TextRange](#textrange)
-	- [Vnútorné súčasti](#vnútorné-súčasti)
 		- [MemoryAllocator](#memoryallocator)
 		- [InspectorAPI](#inspectorapi)
 		- [Assertf](#assertf)
+	- [Vnútorné súčasti](#vnútorné-súčasti)
 
 
 <div class="pagebreak"></div>
@@ -175,6 +191,8 @@ Pre rozšírenie `INTERPOLATION` sme pri tokenizácii string literálov museli d
 
 ### Sémantická analýza
 
+// TODO: symtable.c
+
 ### Generátor kódu
 
 
@@ -182,25 +200,72 @@ Pre rozšírenie `INTERPOLATION` sme pri tokenizácii string literálov museli d
 
 ## Dátové štrukúry
 
+Všetky dátové štruktúry boli navrhnuté tak, aby boli kompatibilné s InspectorAPI, podrobne opísaného ďalej v tomto dokumente. 
+// TODO: More stuff here
+
 ### HashMap
+
+Implementácia sa nachádza v súboroch `HashMap.h` a `HashMap.c`.
+
+Štruktúra `HashMap` reprezentuje tabuľku s rozptýlenými položkami, implementovanú prvotne schémou separate chaining, ktorá ale následne po dôkladnom preštudovaní zdania musela byť zmenená na schému open adressing, aby bola v súlade so zadaním. Tabuľka je reprezentovaná ako dynamické pole, ktoré obsahuje jednotlivé záznamy. Každý záznam obsahuje informáciu o kľúči (v našom prípade je to hodnota C stringu) a hodnote, ktorá je reprezentovaná generickým pointerom. Štruktúra obsahuje základné API metódy (funkcie) na pridanie/odobranie prvku a na zistenie, či sa daný prvok v tabuľke nacházda.
+
+**Poznámka:** Podľa zadania by mal súbor `symtable.c` obsahovať implementáciu práve tejto tabuľky, čo však u nás nebolo možné zrealizovať, nakoľko súbor `symtable.c` počíta s tým, že sa daná tabuľka využíva _len na uchovávanie informácií o symboloch_, čo však v prípade nášho súboru `HashMap.c` nie je pravda, a preto sme sa rozhodli dať túto implementáciu do samostatného súboru, a zo súboru `symtable.c` túto implementáciu len importovať (tak, aby to bolo v súlade so zadaním ale aj logicky rozčlenené). V našom projekte sa štruktúra `HashMap` využíva na rôznych miestach a na rôzne použitie, nie len na ukladanie symbolov.
+
+Dátová štruktúra sa aktívne využíva v časti sémantickej analýzy a generovania kódu.
 
 ### HashSet
 
+Implementácia sa nachádza v súboroch `PointerSet.h` a `PointerSet.c`.
+
+Štruktúra s konštatným prístupom, veľmi podobná štruktúre `HashMap` s tým rozdielom, že vnútorné záznamy obsahujú len hodnoty, ktorých dáta sú použité zároveň ako kľúče. Štruktúru sme implementovali pomocou schémy separate chaining, je však zjednodušená na statické pole, tj. load factor nie je prítomný (čím viac záznamov set obsahuje, tým je šanca na kolíziu vyššia). Táto štruktúra sa používa len v časti manažmentu pamäti, ktorá bude podrobne opísaná neskôr v tomto dokumente.
+
+Dátová štruktúra sa aktívne využíva v časti pamäťovej alokácie.
+
 ### Array (Stack/Queue)
 
+Implementácia sa nachádza v súboroch `Array.h` a `Array.c`.
+
+V našej implementácii, dátová štrukúra slúži primárne ako dynamicky alokované pole, ktoré je rozšírené o bohatú sadu API metód, ktoré umožňujú s týmto poľom pracovať ako so zásobníkom alebo frontou (`push`/`pop` a `unshift`/`shift`). Taktiež obsahuje rôzne iné metódy na uľačenie práce s poľami (`slice`, `splice`, `insert`, `join` a mnoho ďalších). Taktiež obsahuje metódu `fromArgs`, pomocou ktorej sa alokuje nové pole, do ktorého sa automaticky pridajú hodnoty z argumentov. Štrukúra je uložená ako blok kontinuálnej pamäti, pre rýchli prístup; má tiež schopnosť automatickej realokácie svojej pamäti v prípade potreby (napr. pridanie nového prvku do poľa s plnou kapacitou). Prvky poľa sú generické pointre.
+
+Dátová štruktúra sa aktívne využíva v každej časti projektu.
+
+### String
+
+Implementácia sa nachádza v súboroch `String.h` a `String.c`.
+
+Štruktúra `String` umožňuje dynamickú prácu s reťazcami, podobne ako štruktúra `Array`. Rovnako ako pri šturkúre `Array`, táto štruktúra obsahuje bohaté API, vďaka ktorému je možne robiť takmer všetky bežné reťazcové operácie. Implementovali sme aj podporu pre konvertovanie medzi poľom a reťazcom (`split` a `join`), takžtiež sme implementovali konverzie dátových typov C na ich textové reprezentácie (`fromLong`, `String_fromDouble`, ...), či aj ikonickú funkcionalitu `printf` ako `String_fromFormat`.
+
+Dátová štruktúra sa aktívne využíva v každej časti projektu.
+
 ### TextRange
+
+Implementácia sa nachádza v súboroch `TextRange.h` a `TextRange.c`.
+
+Jednoduchá dátová štruktúra slúžiaca ako Buffer View (reprezentuje sub-string nejakého väčšieho stringu, bez nutnosti jeho realokácie). Uchováva práve 2 pointre, a to na začiatok a koniec v cieľovom buffri (stringu). Používa sa v lexikálnej analýze na efektívnu komparáciu substringov a ako identifikácia, kde v zdrojom texte sa nejaký token nachádza (spoločne s riadkom a sĺpcom).
+
+Dátová štruktúra sa aktívne využíva v časti lexikálnej analýzy.
 
 
 <div class="pagebreak"></div>
 
 
-## Vnútorné súčasti
-
 ### MemoryAllocator
+
+Keďže ručný manažment pamäti v C môže byť pri väčších a komplexnejších projekotch dosť náročný, rozhodli sme sa pre implemnetáciu vlastného alokátora pamäti, ktorý umožňuje štandardné možnosti alokácie (`malloc`, `calloc`, `realloc` a `free`) obohatené o novú implementáciu `recalloc` (realokuje pamäť a nový blok pamäti sa inicializuje na `0`). Odlišnosťou od predvoleného C alokátora je to, že nie je nutné pri každej alokácii volať späťne funkciu `free`, pretože táto pamäť sa vnútorne ukladá do štruktúry `PointerSet` (podrobne popísanú vyššie v tomto dokumente) a pri konci programu sa všetká neuvoľnená pamäť automaticky uvoľní, čo zamedzí akékoľvek memory leaky. Rovnako tak aj garantuje validný pointer pri alokácii; pri zlyhaní alokácie sa program automaticky ukončí, čo dáva možnosť odstrániť zbytočný kód (porovnanie s `NULL`).
 
 ### InspectorAPI
 
+InspectorAPI slúži ako preddefinované rozhranie na vypís ladiacích hlášok a logovanie hodnôt premenných. Definuje spôsob, akým sa má obsah všetkých dátových štruktúr vypisovať. Rovnako tak definuje aj potrebné nástroje na výpis, aby boli všetky výpisy jednotné. Podporuje výpisy všetkých základných dátových typov.
+
+Speciálne makro `dumpvar` je navrhnuté tak, aby bolo pre vývojára čo najjednochšie a najrýchlejšie použiteľné. Namiesto tradičného `printf("%d", value);` stačí napísať `dumpvar(value)` a makro automaticky vypíše vhodne naformátovanú hlášku s názvom premennej, jej hodnotou, číslom riadku a cestou k súboru. Makro je preťažené (overloadnuté) tak, že dokáže prijímať až 8, akýchkoľvek parametrov, v akomkoľvek poradí, čím sa rýchle výpisy premenných pri ladení niekoľkokrát zefektívnili.
+
 ### Assertf
+
+Táto súčasť obsahuje definície makier určených na zachytávanie vnútorných, neočakávaných chýb. Definuje hlavné makro `assertf`, ktoré je preťažené a dokáže prijímať podmienku, podmienku a hlášku alebo podmienku, formát a parametre. Pri nevyhovujúcej podmienke program vypíše chybovú hlášku s ladiacími informáciami a bezpečne preruší vykonávanie programu ešte predtým, ako by potenciálne mohla nastať chyba alebo nedefinované správanie. Z toho sa ďalej derivuje makro `fassertf`, ktoré predpokladá podmienku vždy ako nevyhovujúcu a teda pri narazení na toto makro v programe je garantované, že sa program hneď ukončí ako pri `assertf`. Posledné makro `warnf` má rovnaký účinok ako `fassertf`, avšak program sa neukončí, teda výsledkom bude len ladiaca hláška.
+
+## Vnútorné súčasti
+
+Projekt ďalej obsahuje súčasti ako `colors.h`, ktorá definuje základné ASCII escape sekvencie na výpisy farebných hlášok alebo `overload.h`, ktorá slúži na preťaženie (overloadovanie) makier (spúšťa rôzne pod-makrá pri rôznom počte parametrov). Všetky tieto súčasti sú aktívne využívané ostatnými časťami projektu.
 
 
 <div class="pagebreak"></div>
