@@ -732,6 +732,9 @@ void __Codegen_evaluateExpression(Codegen *codegen, ExpressionASTNode *expressio
 		case NODE_UNARY_EXPRESSION: {
 			UnaryExpressionASTNode *unaryExpression = (UnaryExpressionASTNode*)expression;
 			__Codegen_evaluateExpression(codegen, unaryExpression->argument);
+            if(unaryExpression->operator == OPERATOR_NOT) {
+                Instruction_nots();
+            }
 		} break;
 		case NODE_BINARY_EXPRESSION: {
 			BinaryExpressionASTNode *binaryExpression = (BinaryExpressionASTNode*)expression;
