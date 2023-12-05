@@ -43,7 +43,11 @@ void __Instruction_escape_string(String *string) {
 			String *replacement = String_fromFormat("\\0%d", c);
 			String_append(&buffer, replacement->value);
 			String_free(replacement);
-		} else {
+		} else if (c > 126) {
+            String *replacement = String_fromFormat("\\%d", c);
+            String_append(&buffer, replacement->value);
+            String_free(replacement);
+          else {
 			String_appendChar(&buffer, c);
 		}
 	}
