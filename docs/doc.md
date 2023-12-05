@@ -203,6 +203,12 @@ Pokud parser úspěšně zpracuje všechny vytvořené tokeny, vrátí syntaktic
 
 #### Precedenční analýza
 
+Precedenční analýza výrazů je implementována v souboru `ExpressionParser.c`. Analýza probíhá na základě precedenční tabulky. Pro precedenční analýzu jsou použity dva zásobníky - hlavní a pomocný, oba implementované jako dynamické pole v souboru `Array.c`. Hlavní zásobník slouží k uchování tokenů a mezivýsledků během analýzy a je z něj odebrán konečný výsledek analýzy, který je pomocí makra `ParserSucces` společně s řízením předán zpět rekurzivní analýze. Pomocný zásobník je využíván pro redukce pravidel, při kterých se vytváří jednotlivé větve AST. V případě neúspěšné redukce vrací precedenční analýza rekurzivní analýze `ParserError`.  Zásobníky obsahují strukturu `StackItem`, která v sobě uchovává ukazatel na token, ukazatel na větev AST, informaci o tom, zda je token terminál nebo neterminál a v důsledku rozšíření BOOLTHEN obsahuje také informaci o tom, jestli je operátor postfixový nebo prefixový. 
+
+Obslužná rutina v případě, kdy precedenční tabulka vrátí symbol X (značící chybu), spočívá ve snaze o úspěšné zpracování (redukci) současného obsahu hlavního zásobníku. Pokud je pokus neúspěšný, vrátí precedenční analýza chybový kód a hlášku, v opačném případě se výraz úspěšně vyhodnotí.  
+
+Do precedenční analýzy bylo přidáno několik rozšíření. BOOLTHEN je implementováno přidáním operátorů do precedenční tabulky. FUNEXP a INTERPOLATION jsou řešena pomocí kontroly současně zpracovávaného a nadcházejícího tokenu. Pokud je vyhodnoceno, že se jedná o funkci nebo string interpolation, je zavolána funkce `__Parser_parseFunctionCallExpression` resp. `__Parser_parseStringInterpolation`, po zpracování části výrazu pomocnými funkcemi analýza dále pokračuje. 
+
 ### Sémantická analýza
 
 // TODO: symtable.c
@@ -284,6 +290,29 @@ Projekt ďalej obsahuje súčasti ako `colors.h`, ktorá definuje základné ASC
 
 <div class="pagebreak"></div>
 
+### Precedenční tabulka
+|          | + -  | * /  | x!   | ??   | r    | i   | (     | )   | !x   | \|\|  | &&  | $    |
+| ---      | ---  | ---  | ---  | ---  | ---  | --- | ---  | ---  | ---  | ----  | --- | ---  |
+| __+ -__  | R   | S   |S   | R  | R | S | S | R | S  | R    | R  | R |
+|__* /__   | R   | R   |S   | R  | R | S | S | R | S  | R    | R  | R |
+| __x!__   | R   | R   |X   | R  | R | X | X | R | R  | R    | R  | R |
+| __??__   | S   | S   |S   | S  | S | S | S | R | S  | S    | S  | R |
+| __r__    | S   | S   |S   | R  | X | S | S | R | S  | R    | R  | R |
+| __i__    | R   | R   |R   | R  | R | X | X | R | X  | R    | R  | R |
+| __(__    | S   | S   |S   | S  | S | S | S | E | S  | S    | S  | X |
+| __)__    | R   | R   |R   | R  | R | X | X | R | X  | R    | R  | R |
+| __!x__   | R   | R   |S   | R  | R | S | S | R | X  | R    | R  | R |
+| __\|\|__ | S   | S   |S   | S  | S | S | S | R | S  | R    | R  | R |
+| __&&__   | S   | S   |S   | S  | S | S | S | R | S  | R    | R  | R |
+| __$__    | S   | S   |S   | S  | S | S | S | X | S  | S    | S  | X |
+
+Pozn.: 
+- r: relační operátory ==, !=, <, >, <=, >=
+- i: literály
+- R: >
+- S: <
+- E: =
+- X: Invalid
 
 ---
 
