@@ -972,6 +972,7 @@ AnalyserResult __Analyser_analyseBlock(Analyser *analyser, BlockASTNode *block) 
 						false,
 						true
 					);
+					forStatement->range->endId = endDeclaration->id;
 
 					// Register the variable declarations to the global/function scope
 					FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, block->scope);

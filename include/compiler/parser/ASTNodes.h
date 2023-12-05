@@ -300,6 +300,7 @@ typedef struct RangeASTNode {
 	enum ASTNodeType _type;
 	ExpressionASTNode *start;
 	ExpressionASTNode *end;
+	size_t endId;
 	enum OperatorType operator;
 } RangeASTNode;
 
