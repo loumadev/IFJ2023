@@ -232,6 +232,7 @@ RangeASTNode* new_RangeASTNode(ExpressionASTNode *start, ExpressionASTNode *end,
 	node->start = start;
 	node->end = end;
 	node->operator = operator;
+	node->endId = 0;
 	return node;
 }
 
