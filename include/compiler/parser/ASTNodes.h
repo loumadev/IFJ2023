@@ -182,12 +182,12 @@ typedef struct ReturnStatementASTNode {
 
 typedef struct BreakStatementASTNode {
 	enum ASTNodeType _type;
-	size_t id;
+	size_t id; // This must be the second field
 } BreakStatementASTNode;
 
 typedef struct ContinueStatementASTNode {
 	enum ASTNodeType _type;
-	size_t id;
+	size_t id; // This must be the second field
 } ContinueStatementASTNode;
 
 typedef struct ParameterASTNode {
@@ -293,7 +293,7 @@ typedef struct WhileStatementASTNode {
 	enum ASTNodeType _type;
 	BlockASTNode *body; // This must be the second field
 	ASTNode /*<ExpressionASTNode | OptionalBindingConditionASTNode>*/ *test; // This must be the third field
-	size_t id;
+	size_t id; // This must be the fourth field
 } WhileStatementASTNode;
 
 typedef struct RangeASTNode {
@@ -308,8 +308,8 @@ typedef struct ForStatementASTNode {
 	enum ASTNodeType _type;
 	BlockASTNode *body; // This must be the second field
 	IdentifierASTNode *iterator;
+	size_t id; // This must be the fourth field
 	RangeASTNode *range;
-	size_t id;
 } ForStatementASTNode;
 
 typedef struct AssignmentStatementASTNode {

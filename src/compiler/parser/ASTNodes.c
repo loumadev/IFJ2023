@@ -100,11 +100,13 @@ ReturnStatementASTNode* new_ReturnStatementASTNode(
 
 BreakStatementASTNode* new_BreakStatementASTNode() {
 	prepare_node_of(BreakStatementASTNode, NODE_BREAK_STATEMENT)
+	node->id = 0;
 	return node;
 }
 
 ContinueStatementASTNode* new_ContinueStatementASTNode() {
 	prepare_node_of(ContinueStatementASTNode, NODE_CONTINUE_STATEMENT)
+	node->id = 0;
 	return node;
 }
 
