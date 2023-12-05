@@ -7,7 +7,7 @@
 
 #include <stdbool.h>
 
-#define ALLOCATOR_SET_SIZE 100
+#define ALLOCATOR_SET_SIZE 2048
 
 typedef struct PointerNode {
 	void *ptr;
