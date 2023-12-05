@@ -189,6 +189,20 @@ Pre rozšírenie `INTERPOLATION` sme pri tokenizácii string literálov museli d
 
 ### Syntaktická analýza
 
+Syntaktická analýza je realizována prostřednictvím postupného zanořování na základě tokenů, poskytnutých lexikálním analyzátorem a výrazy jsou zpracovány na základě precedeční tabulky. Tyto procesy jsou známé jako analýza rekurzivním sestupem a precedenční analýza.
+
+#### Analýza rekurzivním sestupem
+
+Analýza rekurzivním sestupem závisí na sadě pravidel, které definuje LL Tabulka gramatiky. Má za úkol rozpoznat a přetvořit získávané tokeny na odpovídající uzly `ASTNodes` abstraktního syntaktického stromu, který ve výsledku tvoří celkovou strukturu vstupního programu.
+
+V souboru `Parser.c` se nachází implementace parseru, který komunikuje s lexikálním analyzátorem pomocí funkce `Lexer_nextToken`. Parser na základě přijatého tokenu rozhoduje, o které pravidlo gramatiky nebo jeho součásti aktuálně jde. Každé pravidlo je implementováno jako samostatná funkce, do kterých se postupně zanořuje, vytvářejíc tak stromovou strukturu zvanou `AST` (Abstract Syntax Tree). Pokud parser detekuje token, který nesouhlasí s aktuální syntaxí, vyvolá chybu syntaktické analýzy.
+
+Při zpracování výrazů předává řízení precedenční analýze `ExpressionParser` a dále, pak pracuje již s vyhotoveným výrazem a pokračuje dál ve vytváření dalších uzlů.
+
+Pokud parser úspěšně zpracuje všechny vytvořené tokeny, vrátí syntaktický strom celého vstupního programu. Tento strom následně slouží jako vstup pro sémantickou analýzu, která provádí další ověření a analýzu významu programu.
+
+#### Precedenční analýza
+
 ### Sémantická analýza
 
 // TODO: symtable.c
