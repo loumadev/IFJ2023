@@ -148,6 +148,10 @@
 			- [Prechody](#prechody)
 			- [Vyhodnocovanie overloadov](#vyhodnocovanie-overloadov)
 		- [Generátor kódu](#generátor-kódu)
+			- [Generovanie programu](#generovanie-programu)
+				- [Vstavané funkcie](#vstavané-funkcie)
+				- [Vnútorné funkcie](#vnútorné-funkcie)
+				- [Generovanie hlavnej časti programu](#generovanie-hlavnej-časti-programu)
 	- [Dátové štruktúry](#dátové-štruktúry)
 		- [HashMap](#hashmap)
 		- [HashSet](#hashset)
@@ -207,6 +211,10 @@ Projekt sme vyvíjali v jazyku C, na vývoj sme používali VS Code / CLion, kó
 Aj napriek tomu, že niektorí z nás už skúsenosti s vytváraním prekladačov mali, sa každý z nás naučil niečo nové.
 
 <!-- <div class="pagebreak"></div> -->
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br>
 
 ## Technické detaily
 
@@ -266,6 +274,8 @@ Po úspešnom vytvorení syntaktického stromu syntaktickým (AST) analyzátorom
 
 Keďže sémantická analýza (analyzátor - analyser) a generovanie kódu v našej implementácii silne spolupracujú, vymysleli sme spôsob, ako uspokojiť obe strany, a to tak, že každému úspešne vyhodnotenému identifikátoru priradíme unikátne ID. Tým sa stratia všetky problémy s redefiníciou premenných s rovnakým názvom v inom scope a preťaženie funkcií, a bude sa tak dať jednoznačne určiť o ktorú deklaráciu sa jedná. Informácie o všetkých deklaráciách si analyzátor uchováva v štruktúre `HashMap` aby k nim vedel rýchlo pristupovať (indexované podľa ID).
 
+<br><br>
+
 Deklarácie premenných sa z pohľadu generátora dajú rozdeliť do dvoch kategórií:
 1. Premenné deklarované v globálnom scope (program scope)
 2. Premenné deklarované v scope funkccie (function scope)
@@ -305,6 +315,8 @@ Tento algoritmus sme vymysleli úplne sami, bez akýchkoľvek referencií a pri 
 Generátor na vstupe dostáva abstraktný syntaktický strom (AST) a postupným rekurzívnym prechádzaním stromu generuje na
 výstupe kód v jazyka IFJcode23. Generátor je implementovaný v súbore `Codegen.c`. Inštrukčná sada IFJcode23 je
 implementovaná v súbore `Instructions.c`. Generátor využíva zásobníkovú architektúru s drobnými optimalizáciami.
+
+<br>
 
 #### Generovanie programu
 Generovanie programu začiná vygenerovaním hlavičky IFJcode23. Následne sa generujú pomocné globálne premenné. Tie slúžia
@@ -349,10 +361,13 @@ ostanú na zásobníku.
 
 <!-- <div class="pagebreak"></div> -->
 
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br>
+
 ## Dátové štruktúry
 
-Všetky dátové štruktúry boli navrhnuté tak, aby boli kompatibilné s InspectorAPI, podrobne opísaného ďalej v tomto dokumente. 
-// TODO: More stuff here
+Všetky dátové štruktúry boli navrhnuté tak, aby boli kompatibilné s InspectorAPI, podrobne opísaného ďalej v tomto dokumente.
 
 ### HashMap
 
@@ -399,8 +414,16 @@ Dátová štruktúra sa aktívne využíva v časti lexikálnej analýzy.
 
 <!-- <div class="pagebreak"></div> -->
 
-## Vnútorné súčasti
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
 
+## Vnútorné súčasti
 
 ### MemoryAllocator
 
@@ -420,6 +443,9 @@ Táto súčasť obsahuje definície makier určených na zachytávanie vnútorn�
 
 Projekt ďalej obsahuje súčasti ako `colors.h`, ktorá definuje základné ASCII escape sekvencie na výpisy farebných hlášok alebo `overload.h`, ktorá slúži na preťaženie (overloadovanie) makier (spúšťa rôzne pod-makrá pri rôznom počte parametrov). Všetky tieto súčasti sú aktívne využívané ostatnými časťami projektu.
 
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
 
 ## Záver
 
@@ -430,6 +456,15 @@ Projekt bol pre nás aj napriek jeho zložitosti a častej negatívnej kritike o
 Ja, Jaroslav Louma, ako líder nášho tímu by som sa chcel oficiálne poďakovať všetkým členom môjho tímu, ktorí odviedli neuveriteľne kvalitnú prácu a boli úžasnými kolegami, ale aj kamarátmi (v ťažkých časoch). Na každého som sa mohol plne spoľahnúť, každý si splnil svoje povinnosti na 110%, aj napriek tomu, že som mal na každého vysoké nároky. Ak bolo treba niečo "narýchlo" upraviť alebo opraviť, nikto s tým nemal žiaden problém, za čo som nesmierne rád; takúto kolaboráciu si nesmierne cením. Ešte raz vám všetkým ďakujem a teším sa na našu ďalšiu spoluprácu.
 
 <!-- <div class="pagebreak"></div> -->
+
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
 
 ## FSM Lexikálneho analyzátora
 
@@ -447,7 +482,7 @@ Ja, Jaroslav Louma, ako líder nášho tímu by som sa chcel oficiálne poďakov
 
 ### Gramatika označení prechodov
 
-Keďže FSM diagram má vcelku kryptické označenia prechodov, rozhodli sme sa vytvoriť jednoduchú gramatiku, ktorá tieto prechody popisuje (pozn. nemusí byť z formálneho pohľadu správna, ide len o pomôcku pre čitateľa).
+Keďže FSM diagram má vcelku kryptické označenia prechodov, rozhodli sme sa vytvoriť jednoduchú gramatiku, ktorá tieto prechody popisuje (pozn.: nemusí byť z formálneho pohľadu správna, ide len o pomôcku pre čitateľa).
 
 ```js
 LF => '\n'
@@ -482,6 +517,8 @@ A+'b...n' => '$(A)b...n'
 * `SP` - Space-like (` `, `\t`, `\f`)
 * `N` - Číslo
 * `CMT` - Komentár
+
+<br>
 
 ## LL
 
@@ -559,7 +596,13 @@ A+'b...n' => '$(A)b...n'
 
 **Poznámky:**
 * Pravidlá pre spracovanie výrazov sú popísané precedenčnou tabuľkou, nižšie v tomto dokumente.
-* Pravidlá rozsahových výrazov (range) sme sa rozhodli spracovávať pomocou metódy rekurzívneho zostupu, nie precedenčnou analýzou
+* Pravidlá rozsahových výrazov (range) sme sa rozhodli spracovávať pomocou metódy rekurzívneho zostupu, nie precedenčnou analýzou.
+
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br><br><br><br>
 
 ### LL Tabuľka
 
@@ -611,6 +654,9 @@ A+'b...n' => '$(A)b...n'
 |      break-statement       |       |       |       |        |       |       |       |       |       |       |       |       |       |       |       |        |         |       |       |       |            |   68    |          |
 |      return-statement      |       |       |       |        |       |       |       |       |       |       |       |       |       |       |       |        |         |       |       |       |            |         |    69    |
 
+<br><br><br><br><br>
+<br><br><br><br><br>
+<br>
 
 ## Precedenčná tabuľka
 |         | `+` `-` | `*` `/` | `x!` | `??` | r   | i   | `(` | `)` | `!x` | `\|\|` | `&&` | $   |
