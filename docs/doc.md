@@ -302,7 +302,50 @@ Následne sa z týchto kandidátov vyberú tí, ktorí majú najvyššie skóre.
 Tento algoritmus sme vymysleli úplne sami, bez akýchkoľvek referencií a pri testovaní s originálnym jazykom Swift boli výsledky testov v 100% prípadoch totožné, čo znamená, že sa musí jednať o takmer dokonalú repliku algoritmu, ktorý na rozpoznávanie overloadov používa jazyk Swift.
 
 ### Generátor kódu
+Generátor na vstupe dostáva abstraktný syntaktický strom (AST) a postupným rekurzívnym prechádzaním stromu generuje na
+výstupe kód v jazyka IFJcode23. Generátor je implementovaný v súbore `Codegen.c`. Inštrukčná sada IFJcode23 je
+implementovaná v súbore `Instructions.c`. Generátor využíva zásobníkovú architektúru s drobnými optimalizáciami.
 
+#### Generovanie programu
+Generovanie programu začiná vygenerovaním hlavičky IFJcode23. Následne sa generujú pomocné globálne premenné. Tie slúžia
+pre vybrané špecifické vstavané funkcie (napr. `write(...)`) na uchovávanie a manipuláciu s argumentami alebo návratovými
+hodnotami. Ako ďalšia časť nasleduje vygenerovanie inštrukcie `JUMP $main`, ktorá preskočí ostatné pomocné deklarácie
+(viz. nižšie). Následne sa generujú vstavané funkcie, po nich nasledujú uživateľom definované funkcie.
+
+Po vygenerovaní týchto pomocných štruktúr sa vygeneruje návestia `$main` (`LABEL $main`) a začne sa generovanie hlavnej
+časti programu.
+
+##### Vstavané funkcie
+
+Niektoré builtin funkcie sú implementované priamo v generátore kódu. Tieto funkcie sa vygenerujú len v momente, keď
+analýzator nájde ich výskyt. Medzi tieto funkcie patrí `ord`, `length`, `chr`, `substr`. V momente keď generátor
+narazí na volanie týchto funkcií, vygeneruje sa obsluha volania inštrukcie a inštrukcia `CALL` na danú funkciu. Ak 
+funkcia vracia hodnotu (teda návratový typ nie je typu `void`), taktiež sa generuje obsluha tejto návratovej hodnoty, 
+ktorá sa vloží na vrchol zásobníka.
+
+##### Vnútorné funkcie
+
+Generátor kódu prekladá aj niekoľko vnútorných funkcií, ktoré slúžia na prevod dát a manipuláciu s nimi pri
+reťazcovej interpolácii. Tieto funkcie sú implementované v jazyku Swift a ich kód je podhodený generátoru kódu ktorý
+ich preloží do jazyka IFJcode23. Generátor teda vníma interpoláciu ako akúľovek inú (uživateľom definovanú) funkciu.
+
+Vďaka tomuto prístupu je implementácia interpolácie pre nás jednoduchšia, keďže sa pracuje len z jazykom Swift, ktorý 
+zakrýva nízkoúrovňovú implementáciu. To sa hodí, keďže pri interpolácií sa musí implemenovať veľa operácií, ktoré nemajú 
+priamu podporu v inštrukčnej sade (modulo) a aj sa musí volať veľa funkcií už implementovaných funkcií - chr, int2double a iné.
+Volanie takýchto funkcií znamená aj veľa obsluhy, kde sa pri ručnom písaní môže ľahko zaniesť chyba. Generovanie 
+funckcií je oproti tomu deterministické a zadarmo (keďže je implementované nezávisle od podpory interpolácie).
+
+##### Generovanie hlavnej časti programu
+
+Ako prvé nastáva generovanie premenných. Okrem globálnych premenných sa generujú aj premenné, ktoré síce nie sú
+globálne, ale sú z globálného rozsahu viditeľné - teda generujú sa všetky premenné okrem tých, ktoré sú definované vo
+funkciách. To nám umožňuje sa efektívne vyhýbať opakovaným deklaráciam - napr. v cykle. Pre funkcie potom platí 
+identická filozofia, ktorá poskytuje identické výhody. Pri funkciách sa to hodí najmä pri rekurzií. Následne sa generuje 
+telo programu.
+
+Vďaka použitu zásobníkovej architektúry sme získali zadarmo schopnosť spracovávať zložité výrazy, keďže ich výsledky 
+sa postupne zoskupujú na zásobníku. Podobné platí aj pre rekurziu - výsledky volaní netreba nikam ukladať, pretože 
+ostanú na zásobníku.
 
 <!-- <div class="pagebreak"></div> -->
 
