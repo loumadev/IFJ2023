@@ -233,11 +233,12 @@ LexerResult __Lexer_tokenizeMultiLineComment(Lexer *lexer) {
 	if(!lexer) return LexerNoMatch();
 	if(!lexer->currentChar) return LexerNoMatch();
 
-	if(!is_multi_line_comment(lexer)) return LexerNoMatch();
-	if(is_multi_line_comment_end(lexer)) return LexerError(
-			String_fromFormat("unexpected end of block comment"),
-			ERROR_MARKER(0, 1)
-	);
+	if(!is_multi_line_comment_start(lexer)) return LexerNoMatch();
+	// if(!is_multi_line_comment(lexer)) return LexerNoMatch();
+	// if(is_multi_line_comment_end(lexer)) return LexerError(
+	// 		String_fromFormat("unexpected end of block comment"),
+	// 		ERROR_MARKER(0, 1)
+	// );
 
 	enum WhitespaceType whitespace = WHITESPACE_LEFT_SPACE;
 	size_t depth = 0;

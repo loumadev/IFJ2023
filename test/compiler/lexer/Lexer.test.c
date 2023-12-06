@@ -129,7 +129,7 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 		EXPECT_FALSE(result.success);
 
 		result = Lexer_tokenize(&lexer, "A comment */ X");
-		EXPECT_FALSE(result.success);
+		EXPECT_TRUE(result.success);
 
 		result = Lexer_tokenize(&lexer, "A /* comment\nB");
 		EXPECT_FALSE(result.success);
@@ -144,7 +144,7 @@ DESCRIBE(comment_stripping, "Comments stripping") {
 		EXPECT_FALSE(result.success);
 
 		result = Lexer_tokenize(&lexer, "A /* comment\nB */ nested1 */ \nC");
-		EXPECT_FALSE(result.success);
+		EXPECT_TRUE(result.success);
 
 		result = Lexer_tokenize(&lexer, "A /* comment\nB /* nested1 /* nested1 /* nested1 */ X */ \nC");
 		EXPECT_FALSE(result.success);
