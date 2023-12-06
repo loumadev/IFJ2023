@@ -4,11 +4,13 @@ IFJ23
 
 ## base
 
-type-annotation → `:` type<br>
-//type → `String` | `Int` | `Double`<br>
-type → identifier // Built-in types will be resolved at semantic analysis<br>
-
+program → statements?
 code-block → `{` statements? `}`<br>
+
+statements → statement statements
+
+type-annotation → `:` type<br>
+type → identifier
 
 ## literals
 
@@ -59,6 +61,9 @@ statement → function-declaration<br>
 statement → variable-declaration<br>
 statement → if-statement<br>
 statement → while-statement<br>
+statement → for-in-statement<br>
+statement → continue-statement<br>
+statement → break-statement<br>
 statement → return-statement<br>
 statement → expression-statement<br>
 
@@ -76,7 +81,7 @@ function-body → code-block<br>
 
 parameter-clause → `(` `)` | `(` parameter-list `)`<br>
 parameter-list → parameter | parameter `,` parameter-list<br>
-parameter → external-parameter-name? local-parameter-name type-annotation initializer?<br>
+parameter → external-parameter-name local-parameter-name type-annotation initializer?<br>
 external-parameter-name → identifier<br>
 local-parameter-name → identifier<br>
 
@@ -119,6 +124,22 @@ else-clause → `else` code-block | `else` if-statement<br>
 ## while statement
 
 while-statement → `while` condition code-block<br>
+
+## for in statement
+
+for-in-statement → `for` variable-name `in` range code-block<br>
+
+range → close-range | half-open-range<br>
+close-range → expression...expression<br>
+half-open-range → expression..<expression<br>
+
+## continue statement
+
+continue-statement → `continue`<br>
+
+## break statement
+
+break-statement → `break`<br>
 
 ## return statement
 
