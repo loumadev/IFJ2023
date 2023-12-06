@@ -1,3 +1,10 @@
+/**
+ * @file include/compiler/analyser/builtins.swift.h
+ * @author Author Name <xlogin00@stud.fit.vutbr.cz>
+ * @brief This file is part of the IFJ23 project.
+ * @copyright Copyright (c) 2023
+ */
+
 #define LF "\n"
 "func readString() -> String? {return nil}" LF
 "func readInt() -> Int? {return nil}" LF
@@ -118,3 +125,6 @@
 "}" LF
 "" LF
 #undef LF
+
+
+/** End of file include/compiler/analyser/builtins.swift.h **/
