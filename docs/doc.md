@@ -1,9 +1,9 @@
 <style>
-	* {
-		box-sizing: border-box !important;
-  	}
+    * {
+        box-sizing: border-box !important;
+      }
 
-	:root {
+    :root {
         --text-color: white;
         --background-color: transparent;
     }
@@ -11,7 +11,7 @@
     .center {
         display: block;
         margin: 0 auto;
-		text-align: center;
+        text-align: center;
     }
 
     .katex-display {
@@ -38,61 +38,61 @@
         margin-top: 1.5em !important;
     }
 
-	@media print {
-		body {
-			border: 10mm solid var(--background-color);
-		}
-	}
+    @media print {
+        body {
+            border: 10mm solid var(--background-color);
+        }
+    }
 
-	@media print {
-		.pagebreak {
-			break-after: page;
-		}
-	}
+    @media print {
+        .pagebreak {
+            break-after: page;
+        }
+    }
 </style>
 
 <style>
-	.h1 {
-		font-size: 38px;
-		font-weight: 600;
-	}
+    .h1 {
+        font-size: 38px;
+        font-weight: 600;
+    }
 
-	.h2 {
-		font-size: 24px;
-	}
+    .h2 {
+        font-size: 24px;
+    }
 
-	.h3 {
-		font-size: 18px;
-	}
+    .h3 {
+        font-size: 18px;
+    }
 
-	.markdown-body {
-		font-size: 14px;
-	}
+    .markdown-body {
+        font-size: 14px;
+    }
 
-	.markdown-body table td,
-	.markdown-body table th {
-		padding: 0.1em 0.4em;
-		vertical-align: middle;
-   		text-align: center;
-	}
+    .markdown-body table td,
+    .markdown-body table th {
+        padding: 0.1em 0.4em;
+        vertical-align: middle;
+           text-align: center;
+    }
 
-	.markdown-body table th {
-		font-weight: 400;
-	}
+    .markdown-body table th {
+        font-weight: 400;
+    }
 
-	h3[id="ll-tabuľka"] + table {
-		margin: 0px -50px;
-		min-width: 121.25vw;
-		max-width: 121.25vw;
-		font-size: 11px;
-	}
+    h3[id="ll-tabuľka"] + table {
+        margin: 0px -50px;
+        min-width: 121.25vw;
+        max-width: 121.25vw;
+        font-size: 11px;
+    }
 </style>
 
 <style>
 .pagebreak {
-	height: 0px !important;
-	margin: 0 !important;
-	padding: 0 !important;
+    height: 0px !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 </style>
 
@@ -122,11 +122,11 @@
 
 <span class="center">Rozšírenia:</span>
 <p>
-	<small class="center">OVERLOAD</small>
-	<small class="center">INTERPOLATION</small>
-	<small class="center">BOOLTHEN</small>
-	<small class="center">CYCLES</small>
-	<small class="center">FUNEXP</small>
+    <small class="center">OVERLOAD</small>
+    <small class="center">INTERPOLATION</small>
+    <small class="center">BOOLTHEN</small>
+    <small class="center">CYCLES</small>
+    <small class="center">FUNEXP</small>
 </p>
 </header>
 
@@ -137,43 +137,43 @@
 # Obsah
 - [Obsah](#obsah)
 - [Tím](#tím)
-	- [Detaily o práci v tíme](#detaily-o-práci-v-tíme)
-	- [Technické detaily](#technické-detaily)
-		- [Lexikálna analýza](#lexikálna-analýza)
-		- [Syntaktická analýza](#syntaktická-analýza)
-			- [Analýza rekurzívnym zostupom](#analýza-rekurzívnym-zostupom)
-			- [Precedenčná analýza](#precedenčná-analýza)
-		- [Sémantická analýza](#sémantická-analýza)
-			- [Deklarácie](#deklarácie)
-			- [Prechody](#prechody)
-			- [Vyhodnocovanie overloadov](#vyhodnocovanie-overloadov)
-		- [Generátor kódu](#generátor-kódu)
-			- [Generovanie programu](#generovanie-programu)
-				- [Vstavané funkcie](#vstavané-funkcie)
-				- [Vnútorné funkcie](#vnútorné-funkcie)
-				- [Generovanie hlavnej časti programu](#generovanie-hlavnej-časti-programu)
-	- [Dátové štruktúry](#dátové-štruktúry)
-		- [HashMap](#hashmap)
-		- [HashSet](#hashset)
-		- [Array (Stack/Queue)](#array-stackqueue)
-		- [String](#string)
-		- [TextRange](#textrange)
-	- [Vnútorné súčasti](#vnútorné-súčasti)
-		- [MemoryAllocator](#memoryallocator)
-		- [InspectorAPI](#inspectorapi)
-		- [Assertf](#assertf)
-		- [Vnútorné súčasti](#vnútorné-súčasti-1)
-	- [Záver](#záver)
-		- [Poďakovanie](#poďakovanie)
-	- [FSM Lexikálneho analyzátora](#fsm-lexikálneho-analyzátora)
-		- [Diagram](#diagram)
-		- [Dôležité poznámky](#dôležité-poznámky)
-		- [Gramatika označení prechodov](#gramatika-označení-prechodov)
-		- [Legenda stavov](#legenda-stavov)
-	- [LL](#ll)
-		- [LL Gramatika](#ll-gramatika)
-		- [LL Tabuľka](#ll-tabuľka)
-	- [Precedenčná tabuľka](#precedenčná-tabuľka)
+  - [Detaily o práci v tíme](#detaily-o-práci-v-tíme)
+  - [Technické detaily](#technické-detaily)
+    - [Lexikálna analýza](#lexikálna-analýza)
+    - [Syntaktická analýza](#syntaktická-analýza)
+      - [Analýza rekurzívnym zostupom](#analýza-rekurzívnym-zostupom)
+      - [Precedenčná analýza](#precedenčná-analýza)
+    - [Sémantická analýza](#sémantická-analýza)
+      - [Deklarácie](#deklarácie)
+      - [Prechody](#prechody)
+      - [Vyhodnocovanie overloadov](#vyhodnocovanie-overloadov)
+    - [Generátor kódu](#generátor-kódu)
+      - [Generovanie programu](#generovanie-programu)
+        - [Vstavané funkcie](#vstavané-funkcie)
+        - [Vnútorné funkcie](#vnútorné-funkcie)
+        - [Generovanie hlavnej časti programu](#generovanie-hlavnej-časti-programu)
+  - [Dátové štruktúry](#dátové-štruktúry)
+    - [HashMap](#hashmap)
+    - [HashSet](#hashset)
+    - [Array (Stack/Queue)](#array-stackqueue)
+    - [String](#string)
+    - [TextRange](#textrange)
+  - [Vnútorné súčasti](#vnútorné-súčasti)
+    - [MemoryAllocator](#memoryallocator)
+    - [InspectorAPI](#inspectorapi)
+    - [Assertf](#assertf)
+    - [Vnútorné súčasti](#vnútorné-súčasti-1)
+  - [Záver](#záver)
+    - [Poďakovanie](#poďakovanie)
+  - [FSM Lexikálneho analyzátora](#fsm-lexikálneho-analyzátora)
+    - [Diagram](#diagram)
+    - [Dôležité poznámky](#dôležité-poznámky)
+    - [Gramatika označení prechodov](#gramatika-označení-prechodov)
+    - [Legenda stavov](#legenda-stavov)
+  - [LL](#ll)
+    - [LL Gramatika](#ll-gramatika)
+    - [LL Tabuľka](#ll-tabuľka)
+  - [Precedenčná tabuľka](#precedenčná-tabuľka)
 
 
 <div class="pagebreak"></div>
@@ -182,25 +182,25 @@
 # Tím
 
 1. Jaroslav Louma
-	* Dizajn projektu
-	* Vnútorné utility projektu
-	* Testovací framework
-	* Lexikálna analýza
-	* Sémantická analýza
-	* Rekurzívna syntaktická analýza
-	* Dokumentácia
-	* Unit testy
+    * Dizajn projektu
+    * Vnútorné utility projektu
+    * Testovací framework
+    * Lexikálna analýza
+    * Sémantická analýza
+    * Rekurzívna syntaktická analýza
+    * Dokumentácia
+    * Unit testy
 2. Veronika Krobotová
-	* Precedenčná syntaktická analýza
-	* Unit testy
+    * Precedenčná syntaktická analýza
+    * Unit testy
 2. Radim Mifka
-	* Vnútorné utility projektu
-	* Rekurzívna syntaktická analýza
-	* Unit testy
+    * Vnútorné utility projektu
+    * Rekurzívna syntaktická analýza
+    * Unit testy
 1. Jaroslav Novotný
-	* Dizajn generátora kódu
-	* Generátor kódu
-	* E2E testy
+    * Dizajn generátora kódu
+    * Generátor kódu
+    * E2E testy
 
 ## Detaily o práci v tíme
 
@@ -232,14 +232,14 @@ Pri prijatí prvého znaku potenciálneho tokenu sa rozhodne o čo za token by s
 
 Po úspešnom spracovaní každého tokenu sa následne, separátne spracováva whitespace. V našej implementácii rozlišujeme 3 druhy whitespacu, a to:
 1. Space-like
-	* Aspoň jeden biely znak typu `SP`, `TAB` alebo `FF`
-	* Viac-riadkový komentár rozložený práve na jednom riadku
+    * Aspoň jeden biely znak typu `SP`, `TAB` alebo `FF`
+    * Viac-riadkový komentár rozložený práve na jednom riadku
 2. Newline-like
-	* Aspoň jeden biely znak typu `LF` alebo `CR`
-	* Viac-riadkový komentár rozložený aspoň na dvoch riadkoch
-	* Jedno-riadkový komentár
+    * Aspoň jeden biely znak typu `LF` alebo `CR`
+    * Viac-riadkový komentár rozložený aspoň na dvoch riadkoch
+    * Jedno-riadkový komentár
 3. Limit
-	* Reprezentuje markery `BOF` a `EOF`
+    * Reprezentuje markery `BOF` a `EOF`
 Systém si vnútorne drží posledný priradený druh whitespacu, vďaka čomu dokáže poskytovať whitepace z oboch strán tokenu, čo sa aktívne využíva v ďalších fázach kompilácie. Táto informácie je ukladaná ako bit field, pre rýchly a efektívny prístup.
 
 Pre rozšírenie `INTERPOLATION` sme pri tokenizácii string literálov museli dávať pozor na špeciálnu escape sekvenciu `\(...)`, kde sa na mieste `...` mohol nachádzať akýkoľvek počet ďalších tokenov. Tento problém sme vyriešili tak, že pri nájdení takejto escape sekvencie sme do token streamu umelo vložili špeciálny typ tokenu (interpolation marker), ktorý indikuje začiatok interpolačného výrazu v stringu. Následne sa zavolá funkcia, ktorá má na starosti tokenizáciu tokenov obsiahnutých v tejto escape sekvencii. Funckia rekurzívne žiada o nové tokeny, čo umožňuje zanorenie takýchto escape sekvencií; zároveň sleduje výskyt zátvoriek v interpolačnom výraze a ak ich počet dosiahne `0`, ukončí tokenizáciu a vráti sa späť do funkcie tokenizujúcej string literál. Následne sa do token streamu vloží ďalší špeciálny token, značiaci koniec interpolačného výrazu. Text medzi jednotlivými interpoláciami a začiatkom/koncom string literálu sa rozdelí do samostatných string literálov. Tento proces sa deje v cykle, čo umožňuje mať takýchto escape sekvencií v jednom string literáli viac. Po dokončení tokenizácie interpolačného string literálu sa prvý interpolation marker nastaví na druh `head` a posledný na druh `tail`, čo umožní korektné spracovávanie v ďalších fázach kompilácie.
@@ -288,18 +288,18 @@ Obdobne to funguje aj pri premenných deklarovaných vo funkciách, avšak tie s
 
 Naša implementácia silne benefituje z možnosti viac-prechodovej analýzy, a to v troch krokoch (prechodoch):
 1. Vytvorenie zreťazenia scopov (block scope chaining):
-	* Rekurzívnym prechodom AST sa vytvárajú bloky scopov, ktoré obsahujú:
-    	* štruktúru `HashMap`, ktorá uchováva informácie o deklarovaných premenných (indexovaných názvom)
-    	* referenciu na funkciu alebo cyklus, ktorej je daný scope súčasťou (ak existuje)
-    	* referenciu na vyšší scope (ak existuje)
-  	* Vďaka týmto informáciám sa dá riešiť prekrývanie premenných (variable shadowing), validácia `return`, `break` a `continue` statementov, ale aj efektívnejšia generácia výsledného kódu
+    * Rekurzívnym prechodom AST sa vytvárajú bloky scopov, ktoré obsahujú:
+        * štruktúru `HashMap`, ktorá uchováva informácie o deklarovaných premenných (indexovaných názvom)
+        * referenciu na funkciu alebo cyklus, ktorej je daný scope súčasťou (ak existuje)
+        * referenciu na vyšší scope (ak existuje)
+    * Vďaka týmto informáciám sa dá riešiť prekrývanie premenných (variable shadowing), validácia `return`, `break` a `continue` statementov, ale aj efektívnejšia generácia výsledného kódu
 2. Zber deklarácií funkcií:
-	* Lineárnym prechodom hlavného tela programu sa zozbierajú všetky deklarácie funkcií
-	* Detekcia podobnosti voči ostatným deklarovaným funkciám s rovnakým názvom (overload redeclaration)
-	* Priradenie unikátneho ID premennej podľa ktorej sa bude identifikovať
-	* Vytvorenie vnútorných deklarácií pre parametre funkcie
+    * Lineárnym prechodom hlavného tela programu sa zozbierajú všetky deklarácie funkcií
+    * Detekcia podobnosti voči ostatným deklarovaným funkciám s rovnakým názvom (overload redeclaration)
+    * Priradenie unikátneho ID premennej podľa ktorej sa bude identifikovať
+    * Vytvorenie vnútorných deklarácií pre parametre funkcie
 3. Analýza celého programu
-	* Rekurzívnym prechodom AST sa vyhodnotí každý jeden uzol `ASTNode`
+    * Rekurzívnym prechodom AST sa vyhodnotí každý jeden uzol `ASTNode`
 
 #### Vyhodnocovanie overloadov
 
