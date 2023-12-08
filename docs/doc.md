@@ -240,6 +240,7 @@ Po úspešnom spracovaní každého tokenu sa následne, separátne spracováva 
     * Jedno-riadkový komentár
 3. Limit
     * Reprezentuje markery `BOF` a `EOF`
+
 Systém si vnútorne drží posledný priradený druh whitespacu, vďaka čomu dokáže poskytovať whitepace z oboch strán tokenu, čo sa aktívne využíva v ďalších fázach kompilácie. Táto informácie je ukladaná ako bit field, pre rýchly a efektívny prístup.
 
 Pre rozšírenie `INTERPOLATION` sme pri tokenizácii string literálov museli dávať pozor na špeciálnu escape sekvenciu `\(...)`, kde sa na mieste `...` mohol nachádzať akýkoľvek počet ďalších tokenov. Tento problém sme vyriešili tak, že pri nájdení takejto escape sekvencie sme do token streamu umelo vložili špeciálny typ tokenu (interpolation marker), ktorý indikuje začiatok interpolačného výrazu v stringu. Následne sa zavolá funkcia, ktorá má na starosti tokenizáciu tokenov obsiahnutých v tejto escape sekvencii. Funckia rekurzívne žiada o nové tokeny, čo umožňuje zanorenie takýchto escape sekvencií; zároveň sleduje výskyt zátvoriek v interpolačnom výraze a ak ich počet dosiahne `0`, ukončí tokenizáciu a vráti sa späť do funkcie tokenizujúcej string literál. Následne sa do token streamu vloží ďalší špeciálny token, značiaci koniec interpolačného výrazu. Text medzi jednotlivými interpoláciami a začiatkom/koncom string literálu sa rozdelí do samostatných string literálov. Tento proces sa deje v cykle, čo umožňuje mať takýchto escape sekvencií v jednom string literáli viac. Po dokončení tokenizácie interpolačného string literálu sa prvý interpolation marker nastaví na druh `head` a posledný na druh `tail`, čo umožní korektné spracovávanie v ďalších fázach kompilácie.
@@ -270,15 +271,15 @@ Do precedenčnej analýzy bolo pridaných niekoľko rozšírení. `BOOLTHEN` je 
 
 Po úspešnom vytvorení syntaktického stromu (AST) syntaktickým analyzátorom sa prevádza sémantická analýza, ktorá má za úlohu zistiť, či je daný program v súlade s pravidlami jazyka IFJ23. Jedná sa o najkomplexnejšiu časť projektu.
 
-<br><br>
+<br>
 
 #### Deklarácie
 
 Keďže sémantická analýza (analyzátor - analyser) a generovanie kódu v našej implementácii silne spolupracujú, vymysleli sme spôsob, ako uspokojiť obe strany, a to tak, že každému úspešne vyhodnotenému identifikátoru priradíme unikátne ID. Tým sa stratia všetky problémy s redefiníciou premenných s rovnakým názvom v inom scope a preťaženie funkcií, a bude sa tak dať jednoznačne určiť o ktorú deklaráciu sa jedná. Informácie o všetkých deklaráciách si analyzátor uchováva v štruktúre `HashMap` aby k nim vedel rýchlo pristupovať (indexované podľa ID).
 
 Deklarácie premenných sa z pohľadu generátora dajú rozdeliť do dvoch kategórií:
-1. Premenné deklarované v globálnom scope (program scope)
-2. Premenné deklarované v scope funkccie (function scope)
+1. premenné deklarované v globálnom scope (program scope)
+2. premenné deklarované v scope funkccie (function scope)
 
 Premenné, ktoré sú deklarované v niektorom z globálnych scopov (napr. premenná v konštrukcii `if`), sú ukladané na jednom mieste v štruktúre `HashMap`, osobitne od premenných definovaných vo funkciách. Pri analýze sa overí, či je prístup k danej premennej validný, tým pádom je bezpečné považovať všetky premenné za globálne.
 
@@ -292,29 +293,28 @@ Naša implementácia silne benefituje z možnosti viac-prechodovej analýzy, a t
         * štruktúru `HashMap`, ktorá uchováva informácie o deklarovaných premenných (indexovaných názvom)
         * referenciu na funkciu alebo cyklus, ktorej je daný scope súčasťou (ak existuje)
         * referenciu na vyšší scope (ak existuje)
-    * Vďaka týmto informáciám sa dá riešiť prekrývanie premenných (variable shadowing), validácia `return`, `break` a `continue` statementov, ale aj efektívnejšia generácia výsledného kódu
+    * Vďaka týmto informáciám sa dá riešiť prekrývanie premenných (variable shadowing), validácia `return`, `break` a `continue` statementov, ale aj efektívnejšia generácia výsledného kódu.
 2. Zber deklarácií funkcií:
-    * Lineárnym prechodom hlavného tela programu sa zozbierajú všetky deklarácie funkcií
-    * Detekcia podobnosti voči ostatným deklarovaným funkciám s rovnakým názvom (overload redeclaration)
-    * Priradenie unikátneho ID premennej podľa ktorej sa bude identifikovať
-    * Vytvorenie vnútorných deklarácií pre parametre funkcie
+    * Lineárnym prechodom hlavného tela programu sa zozbierajú všetky deklarácie funkcií.
+    * Detekcia podobnosti voči ostatným deklarovaným funkciám s rovnakým názvom (overload redeclaration).
+    * Priradenie unikátneho ID premennej podľa ktorej sa bude identifikovať.
+    * Vytvorenie vnútorných deklarácií pre parametre funkcie.
 3. Analýza celého programu
-    * Rekurzívnym prechodom AST sa vyhodnotí každý jeden uzol `ASTNode`
+    * Rekurzívnym prechodom AST sa vyhodnotí každý jeden uzol `ASTNode`.
 
 #### Vyhodnocovanie overloadov
 
 Keďže sme sa rozhodli podporovať rozšírenie `OVERLOAD`, museli sme vymyslieť spôsob akým by sme vedeli identifikovať o ktorú preťaženú (overloadovanú) funkciu sa jedná. Správny výber funkcie je ovplyvnený počtom a názvom parametrov, návratovou hodnotu a typom parametrov. Pri volaní funkcie sa najprv nájde prvá iterácia vhodných kandidátov a to tých, ktorí majú zhodný počet a názvy všetkých parametrov ako volaná funkcia. Ak sa nájde viac ako jeden kandidát a zároveň je volanie funkcie súčasťou výrazu, je snaha o implicitné pretypovanie celého výrazu tak, aby návratová hodnota kandidáta bola prijateľná v danom výraze. Ak po tejto iterácii existuje viac ako jeden kandidát, prejde sa na poslednú - tretiu iteráciu, kedy sa každému kandidátovi pridelí jednoznačné skóre, na koľko "bodov" sa zhoduje s daným volaním funkcie. Kandidát môže skóre získať ak:
 
-* Je typ n-tého argumentu rovnaký ako typ n-tého parametru (bez implicitného pretypovania)
-* Je nullability flag (možnosť hodnoty byť `nil`) n-tého argumentu rovnaký ako nullability flag n-tého parametru
+* je typ n-tého argumentu rovnaký ako typ n-tého parametru (bez implicitného pretypovania)
+* je nullability flag (možnosť hodnoty byť `nil`) n-tého argumentu rovnaký ako nullability flag n-tého parametru
 
 Následne sa z týchto kandidátov vyberú tí, ktorí majú najvyššie skóre. Ak je takýchto kandidátov viac ako jeden, jedná sa o chybu a nie je možné jednoznačne určiť o volanie ktorej funkcie sa jedná.
 
 Tento algoritmus sme vymysleli úplne sami, bez akýchkoľvek referencií a pri testovaní s originálnym jazykom Swift boli výsledky testov v 100% prípadoch totožné, čo znamená, že sa musí jednať o takmer dokonalú repliku algoritmu, ktorý na rozpoznávanie overloadov používa jazyk Swift.
 
 ### Generátor kódu
-Generátor na vstupe dostáva abstraktný syntaktický strom (AST) a postupným rekurzívnym prechádzaním stromu generuje na
-výstupe kód v jazyka IFJcode23. Generátor je implementovaný v súbore `Codegen.c`. Inštrukčná sada IFJcode23 je
+Generátor na vstupe dostáva abstraktný syntaktický strom (AST), obohatený o užitočné informácie sémantickým analyzérom a postupným rekurzívnym prechádzaním stromu generuje na výstupe kód v jazyka IFJcode23. Generátor je implementovaný v súbore `Codegen.c`. Inštrukčná sada IFJcode23 je
 implementovaná v súbore `Instructions.c`. Generátor využíva zásobníkovú architektúru s drobnými optimalizáciami.
 
 #### Generovanie programu
@@ -392,6 +392,8 @@ V našej implementácii, dátová štruktúra slúži primárne ako dynamicky al
 
 Dátová štruktúra sa aktívne využíva v každej časti projektu.
 
+<br><br><br><br><br>
+
 ### String
 
 Implementácia sa nachádza v súboroch `String.h` a `String.c`.
@@ -417,8 +419,7 @@ Dátová štruktúra sa aktívne využíva v časti lexikálnej analýzy.
 <br><br><br><br><br>
 <br><br><br><br><br>
 <br><br><br><br><br>
-<br><br><br><br><br>
-<br><br><br><br><br>
+<br><br><br>
 
 ## Vnútorné súčasti
 
@@ -476,6 +477,7 @@ Ja, Jaroslav Louma, ako líder nášho tímu by som sa chcel oficiálne poďakov
 * `*note3` - Rovnaký prípad ako `*note2`; Prechod sa stará o ukončenie tokenizácie konzumáciou uzatváracej zátvorky v interpolácii a pokračuje späť v spracovaní stringu.
 * Na spracovanie vnorených komentárov sa používa počítadlo, v diagrame označené ako `dpt1` (operácie s touto premennou sú ekvivalentné ako v jazyku C).
 * Po spracovaní viacriadkového reťazca sa prevedie validácia a sanitácia výsledného reťazca (odstránenie indentácie).
+* Podľa diagramu, číselné literály môžu obsahovať znak `_` v prípadoch uvedených diagramom, avšak vo finálnej verzii našej implementácie toto nie je možné.
 
 ### Gramatika označení prechodov
 
@@ -514,8 +516,6 @@ A+'b...n' => '$(A)b...n'
 * `SP` - Space-like (` `, `\t`, `\f`)
 * `N` - Číslo
 * `CMT` - Komentár
-
-<br>
 
 ## LL
 
