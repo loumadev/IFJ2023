@@ -162,7 +162,7 @@
     - [MemoryAllocator](#memoryallocator)
     - [InspectorAPI](#inspectorapi)
     - [Assertf](#assertf)
-    - [Vnútorné súčasti](#vnútorné-súčasti-1)
+    - [Ostatné](#ostatné)
   - [Záver](#záver)
     - [Poďakovanie](#poďakovanie)
   - [FSM Lexikálneho analyzátora](#fsm-lexikálneho-analyzátora)
@@ -206,7 +206,7 @@
 
 Spoločne sme sa všetci podieľali na implementácii jazyka IFJ23, ktorý je podmnožinou jazyka Swift, prekladaného do jazyka symbolických adries IFJCode23, ktorý sa následne interpretuje pomocou dodaného interpreta.
 
-Projekt sme vyvíjali v jazyku C, na vývoj sme používali VS Code / CLion, kód sme verziovali pomocou systému GitHub ([git.loumadev.eu/IFJ2023](https://git.loumadev.eu/IFJ2023)) a na komunikáciu a kolaboráciu sme používali Discord.
+Projekt sme vyvíjali v jazyku C, na vývoj sme používali VS Code / CLion, kód sme verziovali pomocou systému GitHub ([git.loumadev.eu/IFJ2023](https://git.loumadev.eu/IFJ2023)) a na komunikáciu a kolaboráciu sme používali Discord a Google Meet.
 
 Aj napriek tomu, že niektorí z nás už skúsenosti s vytváraním prekladačov mali, sa každý z nás naučil niečo nové.
 
@@ -218,7 +218,7 @@ Aj napriek tomu, že niektorí z nás už skúsenosti s vytváraním prekladačo
 
 ## Technické detaily
 
-V projekte sme využívali objektovo orientovaný spôsob programovania, tj. každá štruktúra obsiahnutá v samostatnom súbore predstavuje triedu, kde funkcie začínajúce názvom tejto štruktúry sú metódy definované v tejto triede. Hlavičkové súbory obsahujú _len_ metódy (funkcie), ktoré majú byť dostupné pre ostatné súčasti projektu. Ostatné funkcie, ktoré sú len pre vnútorné použitie daného komponentu sú definované v súbore s ich implementáciou a sú prefixované reťazcom `__`. Voľne prístupné funkcie majú kompletnú dokumentáciu pomocou kompatibilnú so systémom Doxygen.
+V projekte sme využívali objektovo orientovaný spôsob programovania, tj. každá štruktúra obsiahnutá v samostatnom súbore predstavuje triedu, kde funkcie začínajúce názvom tejto štruktúry sú metódy definované v tejto triede. Hlavičkové súbory obsahujú _len_ metódy (funkcie), ktoré majú byť dostupné pre ostatné súčasti projektu. Ostatné funkcie, ktoré sú len pre vnútorné použitie daného komponentu sú definované v súbore s ich implementáciou a sú prefixované reťazcom `__`. Voľne prístupné funkcie majú kompletnú dokumentáciu kompatibilnú so systémom Doxygen.
 
 Projekt okrem súborov obsahujúcich priamo komponenty zodpovedné za kompiláciu kódu obsahuje aj vnútorné súčasti (implementácie dátových štruktúr, makier, ...).
 
@@ -226,7 +226,7 @@ Projekt má vo svojom základe adresárovú štruktúru, ktorá ale pri odovzdan
 
 ### Lexikálna analýza
 
-Lexikálna analýza sa skladá s konečného stavového automatu (FSM), ktorý neobsahuje explicitné stavy, tj. jeho stav je určený aktuálnym znakom, aktuálnou funkciou a stavovými premennými. Implementácia lexikálneho analyzátoru (lexer) sa nachádza v súbore `Lexer.c`. Hlavnou úlohou lexeru v našom projekte je prevádzanie vstupného toku znakov čítaného zo štandardného vstupu na tok väčších stavebných blokov, v našej implementácii nazývaných tokeny. Štruktúra obsahujúca všetky potrebné informácie o tokene sa nachádza v súbore `Token.c`, ktoré sú napríklad o aký typ (napr. interpunkcia) a druh (napr. otáznik) tokenu sa jedná, aká je jeho hodnota (napr. číselný, string literál) alebo aký druh bielych znakov sa nachádza v jeho okolí (whitespace).
+Lexikálna analýza sa skladá z konečného stavového automatu (FSM), ktorý neobsahuje explicitné stavy, tj. jeho stav je určený aktuálnym znakom, aktuálnou funkciou a stavovými premennými. Implementácia lexikálneho analyzátoru (lexer) sa nachádza v súbore `Lexer.c`. Hlavnou úlohou lexeru v našom projekte je prevádzanie vstupného toku znakov čítaného zo štandardného vstupu na tok väčších stavebných blokov, v našej implementácii nazývaných tokeny. Štruktúra obsahujúca všetky potrebné informácie o tokene sa nachádza v súbore `Token.c`, ktoré sú napríklad o aký typ (napr. interpunkcia) a druh (napr. otáznik) tokenu sa jedná, aká je jeho hodnota (napr. číselný, string literál) alebo aký druh bielych znakov sa nachádza v jeho okolí (whitespace).
 
 Pri prijatí prvého znaku potenciálneho tokenu sa rozhodne o čo za token by sa mohlo jednať. Následne sa zavolá funkcia, ktorá ďalej znak po znaku spracováva daný typ tokenov. Po úspešnom spracovaní aktuálneho tokenu sa token pridá do vnútorného buffru obsahujúceho tokeny na spracovanie (pretože jedna požiadavka na spracovanie nového tokenu nemusí nutne znamenať vytvorenie práve jedného tokenu (napr. interpolácia v string literáli)) a následne sa systém prideľujúci tokeny postará o jeho pridelenie žiadateľovi.
 
@@ -268,7 +268,7 @@ Do precedenčnej analýzy bolo pridaných niekoľko rozšírení. `BOOLTHEN` je 
 
 ### Sémantická analýza
 
-Po úspešnom vytvorení syntaktického stromu syntaktickým (AST) analyzátorom sa prevádza sémantická analýza, ktorá má za úlohu zistiť, či je daný program v súlade s pravidlami jazyka IFJ23. Jedná sa o najkomplexnejšiu časť projektu.
+Po úspešnom vytvorení syntaktického stromu (AST) syntaktickým analyzátorom sa prevádza sémantická analýza, ktorá má za úlohu zistiť, či je daný program v súlade s pravidlami jazyka IFJ23. Jedná sa o najkomplexnejšiu časť projektu.
 
 <br><br>
 
@@ -436,7 +436,7 @@ InspectorAPI slúži ako preddefinované rozhranie na výpis ladiacich hlášok 
 
 Táto súčasť obsahuje definície makier určených na zachytávanie vnútorných, neočakávaných chýb. Definuje hlavné makro `assertf`, ktoré je preťažené a dokáže prijímať podmienku, podmienku a hlášku alebo podmienku, formát a parametre. Pri nevyhovujúcej podmienke program vypíše chybovú hlášku s ladiacimi informáciami a bezpečne preruší vykonávanie programu ešte predtým, ako by potenciálne mohla nastať chyba alebo nedefinované správanie. Z toho sa ďalej derivuje makro `fassertf`, ktoré predpokladá podmienku vždy ako nevyhovujúcu, a teda pri narazení na toto makro v programe je garantované, že sa program hneď ukončí ako pri `assertf`. Posledné makro `warnf` má rovnaký účinok ako `fassertf`, avšak program sa neukončí, teda výsledkom bude len ladiaca hláška.
 
-### Vnútorné súčasti
+### Ostatné
 
 Projekt ďalej obsahuje súčasti ako `colors.h`, ktorá definuje základné ASCII escape sekvencie na výpisy farebných hlášok alebo `overload.h`, ktorá slúži na preťaženie (overloadovanie) makier (spúšťa rôzne pod-makrá pri rôznom počte parametrov). Všetky tieto súčasti sú aktívne využívané ostatnými časťami projektu.
 
@@ -471,7 +471,7 @@ Ja, Jaroslav Louma, ako líder nášho tímu by som sa chcel oficiálne poďakov
 
 ### Dôležité poznámky
 
-* `*note1` - Prechod predstavuje prechody operátorov "`'...'`, `'..<'`, `'&&'`, `'||'`, `'??'`, `'=='`, `'!='`, `'>='`, `'<='`, `'->'`, `'='`, `'>'`, `'<'`, `'+'`, `'-'`, `'*'`, `'/'`, `'('`, `')'`, `'{'`, `'}'`, `','`, `':'`, `';'`, `'='`, `'?'`, `'!'`". (Nie je zahrnuté v diagrame z veľkostných dôvodov.)
+* `*note1` - Prechod predstavuje prechody operátorov "`'...'`, `'..<'`, `'&&'`, `'||'`, `'??'`, `'=='`, `'!='`, `'>='`, `'<='`, `'->'`, `'='`, `'>'`, `'<'`, `'+'`, `'-'`, `'*'`, `'/'`, `'('`, `')'`, `'{'`, `'}'`, `','`, `':'`, `';'`, `'='`, `'?'` a `'!'`". (Nie je zahrnuté v diagrame z veľkostných dôvodov.)
 * `*note2` - Z dôvodu rozšírenia `INTERPOLATION` musíme v priebehu spracovania jedného tokenu spustiť spracovanie ďalších tokenov (podrobne opísané v sekcii Lexikálna analýza); Prechody označené touto poznámkou vnútorne počítajú počet zátvoriek, a spracovávajú tokeny pokiaľ sa počet zátvoriek nerovná `0` (nie je možné opísať vo FSM, pretože takýchto počítadiel môže existovať v jednom momente viac).
 * `*note3` - Rovnaký prípad ako `*note2`; Prechod sa stará o ukončenie tokenizácie konzumáciou uzatváracej zátvorky v interpolácii a pokračuje späť v spracovaní stringu.
 * Na spracovanie vnorených komentárov sa používa počítadlo, v diagrame označené ako `dpt1` (operácie s touto premennou sú ekvivalentné ako v jazyku C).
@@ -502,13 +502,13 @@ A+'b...n' => '$(A)b...n'
 ### Legenda stavov
 * `SL` - Single-line
 * `ML` - Multi-line
-* `_e` - Koniec (napr. čísla)
+* `_e` - End (koniec; napr. čísla)
 * `_s` - Sign (znamienko)
 * `_u` - Unicode escape sekvencia
 * `_exp` - Exponent
 * `_esc` - Escape sekvencia
-* `_flt` - Floating point
-* `_dec` - Dekadické číslo (podporu iných základov sme odstránili)
+* `_flt` - Floating point (desatinné číslo)
+* `_dec` - Decimal (decimálne (celé) číslo; podporu iných základov sme odstránili)
 * `ID` - Identifikátor
 * `LF` - Line Feed-like (`\n`, `\r`)
 * `SP` - Space-like (` `, `\t`, `\f`)
@@ -656,23 +656,23 @@ A+'b...n' => '$(A)b...n'
 <br>
 
 ## Precedenčná tabuľka
-|         | `+` `-` | `*` `/` | `x!` | `??` | r   | i   | `(` | `)` | `!x` | `\|\|` | `&&` | $   |
-| ------- | ------- | ------- | ---- | ---- | --- | --- | --- | --- | ---- | ------ | ---- | --- |
-| `+` `-` | R       | S       | S    | R    | R   | S   | S   | R   | S    | R      | R    | R   |
-| `*` `/` | R       | R       | S    | R    | R   | S   | S   | R   | S    | R      | R    | R   |
-| `x!`    | R       | R       | X    | R    | R   | X   | X   | R   | R    | R      | R    | R   |
-| `??`    | S       | S       | S    | S    | S   | S   | S   | R   | S    | S      | S    | R   |
-| r       | S       | S       | S    | R    | X   | S   | S   | R   | S    | R      | R    | R   |
-| i       | R       | R       | R    | R    | R   | X   | X   | R   | X    | R      | R    | R   |
-| `(`     | S       | S       | S    | S    | S   | S   | S   | E   | S    | S      | S    | X   |
-| `)`     | R       | R       | R    | R    | R   | X   | X   | R   | X    | R      | R    | R   |
-| `!x`    | R       | R       | S    | R    | R   | S   | S   | R   | X    | R      | R    | R   |
-| `\|\|`  | S       | S       | S    | S    | S   | S   | S   | R   | S    | R      | R    | R   |
-| `&&`    | S       | S       | S    | S    | S   | S   | S   | R   | S    | R      | R    | R   |
-| `$`     | S       | S       | S    | S    | S   | S   | S   | X   | S    | S      | S    | X   |
+|          | `+`, `-` | `*`, `/` | `x!` | `??` | r   | i   | `(` | `)` | `!x` | `\|\|` | `&&` | $   |
+| -------- | -------- | -------- | ---- | ---- | --- | --- | --- | --- | ---- | ------ | ---- | --- |
+| `+`, `-` | R        | S        | S    | R    | R   | S   | S   | R   | S    | R      | R    | R   |
+| `*`, `/` | R        | R        | S    | R    | R   | S   | S   | R   | S    | R      | R    | R   |
+| `x!`     | R        | R        | X    | R    | R   | X   | X   | R   | R    | R      | R    | R   |
+| `??`     | S        | S        | S    | S    | S   | S   | S   | R   | S    | S      | S    | R   |
+| r        | S        | S        | S    | R    | X   | S   | S   | R   | S    | R      | R    | R   |
+| i        | R        | R        | R    | R    | R   | X   | X   | R   | X    | R      | R    | R   |
+| `(`      | S        | S        | S    | S    | S   | S   | S   | E   | S    | S      | S    | X   |
+| `)`      | R        | R        | R    | R    | R   | X   | X   | R   | X    | R      | R    | R   |
+| `!x`     | R        | R        | S    | R    | R   | S   | S   | R   | X    | R      | R    | R   |
+| `\|\|`   | S        | S        | S    | S    | S   | S   | S   | R   | S    | R      | R    | R   |
+| `&&`     | S        | S        | S    | S    | S   | S   | S   | R   | S    | R      | R    | R   |
+| `$`      | S        | S        | S    | S    | S   | S   | S   | X   | S    | S      | S    | X   |
 
 **Poznámky:**
-- r: relačné operátory `==`, `!=`, `<`, `>`, `<=`, `>=`
+- r: relačné operátory `==`, `!=`, `<`, `>`, `<=` a `>=`
 - i: literály
 - R: `>`
 - S: `<`
