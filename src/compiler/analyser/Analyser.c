@@ -654,6 +654,18 @@ AnalyserResult __Analyser_validateTestCondition(Analyser *analyser, ASTNode *nod
 
 		// Set the id from which the value is unwrapped
 		condition->fromId = declaration->id;
+
+		// Try to find the nearest function scope
+		FunctionDeclaration *function = Analyser_getNearestFunctionDeclaration(analyser, conditionalStatemnt->body->scope);
+
+		// Register the variable declaration to the global/function scope
+		String *id = String_fromLong(newDeclaration->id);
+
+		if(function) {
+			HashMap_set(function->variables, id->value, newDeclaration);
+		} else {
+			HashMap_set(analyser->variables, id->value, newDeclaration);
+		}
 	} else {
 		// Get the type of the test expression
 		ValueType type;
